@@ -1,0 +1,90 @@
+/*
+ * Pathes only are valid once for every message.
+ * I.e. pathes can only address fields in submmessage:
+ * /message1/message2/message3/field1
+ *
+ * invalid/impossbile due to aliasing:
+ * /message1/field1/field2
+ * 
+ */
+
+option avr {
+	varintbits=32;
+	intsize=16;
+	toString=false;
+	toASCII="";
+	stringtype=C;
+	fromMemory="";
+	endian=little;
+}
+
+option arduino_minipro : avr {
+	//filename="avrp4-avr";
+	/DeviceInfo/name: stringtype=class,default="board1";
+	/Sensor_AD/value: intsize=8;
+	/EmbeddedSystem/ad_converter: arraysize=2;
+	/EmbeddedSystem/pwm: used=false;
+	/*
+	/EmbeddedSystem/ad_converter[0]/name: default="core temp.";	// impossible due to aliasing
+	/EmbeddedSystem/ad_converter[1]/name: default="ambient temp.";	// this would be a conflict
+	*/
+}
+
+message Sensor_AD
+{
+	optional unsigned value = 1;
+	optional string port = 2;
+	optional string name = 3;
+	optional string dimension = 4;
+	optional float slope = 5 [ default = 1 ];
+	optional float bias = 6 [ default = 0 ];
+	optional unsigned num_bits = 7;
+}
+
+message Sensor_Digital_Input
+{
+	enum digital_value {
+		low = 0;
+		high = 1;
+		error = 2;
+		invalid = 3;
+	}
+	optional digital_value value = 1;
+	optional string port = 2;
+	optional string name = 3;
+	optional string low_name = 4;
+	optional string high_name = 5;
+}
+
+message Actuator_Digital
+{
+	optional bool value = 1;
+	optional string port = 2;
+	optional string name = 3;
+	optional string low_name = 4;
+	optional string high_name = 5;
+}
+
+message Actuator_PWM_8Bit
+{
+	optional uint8 duty_cycle = 1;
+	optional string port = 2;
+	optional string name = 3;
+}
+
+message DeviceInfo
+{
+	optional string name = 1;
+	optional string system = 2;
+	optional string revision = 3;
+}
+
+
+message EmbeddedSystem
+{
+	optional DeviceInfo info = 1;
+	repeated Sensor_AD ad_converter = 2 [ arraysize=4 ];
+	repeated Sensor_Digital_Input digital_in = 3 [ arraysize=4 ];
+	repeated Actuator_Digital digital_out = 4 [ arraysize=4 ];
+	repeated Actuator_PWM_8Bit pwm = 8 [ arraysize=4 ];
+}

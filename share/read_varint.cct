@@ -1,0 +1,127 @@
+/*
+ *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *
+ *  This source file belongs to Wire-Format-Compiler.
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "sysconfig.h"
+
+/* wfc-template:
+ * function: read_varint
+ */
+unsigned read_varint_default(const uint8_t *wire, ssize_t wl, varint_t *r)
+{
+	uint8_t u8;
+	int n = 0;
+	varint_t v = 0;
+	do {
+		if (--wl < 0)
+			$handle_error;
+		u8 = *wire++;
+		v |= (varint_t)(u8&~0x80) << (n*7);
+		++n;
+	} while ((u8 & 0x80) && (n < ($varintbits/7+1)));
+	*r = v;
+	if (($varintbits != 64) && (u8 & 0x80)) {
+		while (*wire++ & 0x80)
+			++n;
+		++n;
+	}
+	return n;
+}
+
+
+/* wfc-template:
+ * function: read_varint
+ * description: without temporary variable; probably slower without being smaller
+ */
+unsigned read_varint_alt0(const uint8_t *wire, ssize_t wl, varint_t *r)
+{
+	uint8_t u8;
+	int n = 0;
+	*r = 0;
+	do {
+		if (--wl < 0)
+			$handle_error;
+		u8 = *wire++;
+		*r |= (uint64_t)(u8&~0x80) << (n*7);
+		++n;
+	} while ((u8 & 0x80) && (n < (WFC_VARINTBITS/7+1)));
+	return n;
+}
+
+
+/* wfc-template:
+ * function: read_varint
+ * description: just a different way to calculate the end of loop
+ */
+unsigned read_varint_alt1(const uint8_t *wire, ssize_t wl, varint_t *r)
+{
+	uint8_t u8;
+	int n = 0;
+	*r = 0;
+	do {
+		if (--wl < 0)
+			$handle_error;
+		u8 = *wire++;
+		*r |= (uint64_t)(u8&~0x80) << (n*7);
+		++n;
+	} while ((u8 & 0x80) && (n < ((8*sizeof(varint_t))/7+1)));
+	return n;
+}
+
+
+#ifdef TEST
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int write_varint(uint8_t *wire, ssize_t wl, varint_t v)
+{
+	uint8_t *w = wire;
+	do {
+		if (--wl < 0)
+			abort();
+		uint8_t u8 = v & 0x7f;
+		v >>= 7;
+		if (v)
+			u8 |= 0x80;
+		*wire = u8;
+		++wire;
+	} while (v);
+	return wire-w;
+}
+
+
+int main()
+{
+	uint64_t data[] = {
+		0, 1, 10, 1000000, UINT64_MAX
+	};
+	uint8_t buf[32];
+	for (int i = 0; i < sizeof(data)/sizeof(data[0]); ++i) {
+		write_varint(buf,sizeof(buf),data[i]);
+		varint_t v;
+		read_varint_default(buf,sizeof(buf),&v);
+		assert(v == data[i]);
+		read_varint_alt0(buf,sizeof(buf),&v);
+		assert(v == data[i]);
+		read_varint_alt1(buf,sizeof(buf),&v);
+		assert(v == data[i]);
+	}
+	printf("OK.\n");
+}
+#endif

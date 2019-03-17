@@ -1,0 +1,48 @@
+
+
+message DataTypes
+{
+	// Field IDs (the number after =) are encoded as a varint << 3.
+	// The lower 3 bits are used to specify the encoding of the next
+	// bytes.
+	// I.e. field IDs < 8 are encoded as a single byte.
+	// Field IDs > 8 need at least 2 bytes.
+
+	// boolean datatype, encoded as single byte
+	bool mybool = 1;
+
+	// unsigned encoded as variable length integer (varint_t)
+	unsigned my_u = 2;
+
+	// signed encoded as variable length integer (varint_t)
+	// negative values always have maximum encoding length (10 bytes)
+	int my_i = 3;
+
+	// signed encoded as variable length signed integer (varsint_t)
+	signed my_s = 4;
+
+	// uint8_t encoded as single byte
+	fixed8 f8 = 5;
+
+	// int8_t encoded as single byte
+	sfixed8 sf8 = 6;
+
+	// 16,32,64 bit integer work in the same fashion
+
+	// float encoded as 4 bytes
+	float f = 7;
+
+	// fieldIDs >=8 are encoded as varint
+	// double encoded as 8 bytes
+	double d = 8;
+
+	// strings and bytes are encoded with length prefix
+	string s = 9;
+	bytes b = 10;
+
+	// array of variable length integer
+	repeated int ri = 11;
+
+	// arrays can be stored more efficiently using the packed option
+	repeated signed rs = 12 [ packed= true ];
+}

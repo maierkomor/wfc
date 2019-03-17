@@ -1,0 +1,10 @@
+option withEqual = true;
+option withUnequal = true;
+option header="cstring.h";
+
+message StringTypes
+{
+	string s1 = 1;
+	string s2 = 2	[ stringtype=C ];
+	string s3 = 3	[ stringtype=CString ];
+}

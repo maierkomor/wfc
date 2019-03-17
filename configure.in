@@ -1,0 +1,76 @@
+#
+#  Copyright (C) 2017-2019, Thomas Maier-Komor
+#
+#  This source file belongs to Wire-Format-Compiler.
+#
+#  This program is free software: you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License as published by
+#  the Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#  GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License
+#  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+AC_INIT([Wire Format Compiler],ignored,thomas@maier-komor.de,wfc)
+AC_CONFIG_SRCDIR([src/wfc.cc])
+AC_LANG([C++])
+
+AC_CANONICAL_SYSTEM
+AC_EXEEXT
+
+AC_PREFIX_DEFAULT(/usr/local)
+test "$prefix" = NONE && prefix=/usr/local
+test "$exec_prefix" = NONE && exec_prefix=$prefix
+
+AC_LANG_C
+AC_PROG_CC(gcc clang cc)
+AC_PROG_CXX(g++ clang++ c++)
+
+AC_SUBST(CFLAGS)
+AC_SUBST(CXXFLAGS)
+
+AC_PROG_INSTALL
+AC_PATH_PROG(YACC,bison)
+AC_PATH_PROG(LEX,flex)
+AC_PATH_PROG(RM,rm)
+AC_PATH_PROG(MV,mv)
+AC_PATH_PROG(CP,cp)
+AC_PATH_PROG(MKDIR,mkdir)
+AC_PATH_PROG(SED,sed)
+AC_PATH_PROG(DIFF,diff)
+AC_PATH_PROG(HG,hg)
+
+AC_ARG_ENABLE(beta,
+        AS_HELP_STRING([--enable-beta],[enable beta features]),
+        [enable_beta=yes],
+        )
+if test x$enable_beta = xyes ; then
+	echo enabling beta features
+	AC_SUBST(BETA,[-DBETA_FEATURES])
+else
+	AC_SUBST(BETA,"")
+fi
+
+$YACC -V | grep "(GNU Bison) 3." > /dev/null
+if test x$? = x0 ; then
+	echo checking bison version... OK
+else
+	echo GNU bison version 3.x required
+	exit 1
+fi
+
+AC_SUBST(RELEASE,m4_esyscmd(date +%y%m|tr '\n' ' '))
+AC_SUBST(DEBUG)
+AC_SUBST(CC)
+AC_SUBST(CXX)
+AC_SUBST(prefix)
+
+AC_OUTPUT(Makefile)
+
+# vim:tw=0

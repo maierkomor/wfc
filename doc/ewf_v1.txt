@@ -1,0 +1,62 @@
+Protocol Specificaton of Embedded Wire Format Version 1
+=======================================================
+
+Options:
+- used:
+	- valid values: true[default], false
+	- interacts with: option unknown
+	Description:
+	If option used is set to "false", no code will be generated for
+	the specified field. This reduces code size for message with
+	fields that are never being used, but also renders those fields
+	unavailable.
+	Interaction wit option "unknown": if unknown is set to "assert",
+	code for unknown and unused fields must be separated. Therefore,
+	this interaction will impact code size slightly.
+
+Error conditions:
+- invalid field tag
+- varint out of range
+- invalid object length
+- invalid message length
+- invalid byte[] length
+- invalid string length
+
+variable coding:
+hexrange		decrange		type	bits	bytes
+..ff			0..255			uint8	8	1
+..ffff			..65535			uint16	16	2
+..1f ffff		..2097151		varint	21	3
+..ffff ffff		..UIN32_MAX		uint32	32	4
+..7 ffff ffff					varint	35	5
+..3ff ffff ffff					varint 	42	6
+..1 ffff ffff ffff				varint 	49	7
+						uint64	64	8
+
+encoding types (lower 3 bits of field tag):
+- 0: variable length integer (same as protobuf)
+- 1: 64-bit (same as protobuf)
+- 2: length prefixed byte array (same as protobuf)
+- 3: 8-bit  (incompatible extension over protobuf v1)
+- 4: 16-bit (incompatible extension over protobuf v1)
+- 5: 32-bit (same as protobuf)
+- 6: invalid/not used/reserved
+- 7: invalid/not used/reserved
+
+Coding Limits of Enums:
+=======================
+gprotov3 encodes enums always and only as varint, due to following facts:
+- enums 0..127 or 0..255 could be encoded as uint8_t[], but future expansion
+  above this range would not be possible anymore
+- repeated integer objects cannot be encoded with flexible underlying type,
+  as the encoding provides only information about the amount of encoded data
+
+
+Deviations over Google Protocol Buffers implementation:
+=======================================================
+- required fields don't provide has/clear interface and omit associated
+  bit for presence testing
+- optional fields can be forced to omit a dedicated valid bit by setting
+  field-option 'validbit' to 'implicit'. In this case an invalid value is
+  necessary, which defaults to zero, but can be overridden by field-option
+  'invalid'.

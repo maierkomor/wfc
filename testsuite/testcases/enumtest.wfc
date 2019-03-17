@@ -1,0 +1,36 @@
+option withUnequal=true;
+option withEqual=true;
+
+/*
+option default {
+	/EnumTest/B/waterstate2: toString="fmt_waterstate";
+}
+*/
+option	/EnumTest/B/waterstate2: toString="fmt_waterstate";
+
+
+message EnumTest
+{
+	message A {
+		enum waterstate1 {
+			option allow_alias = true;
+			frozen = -1;
+			slippery = 0;
+			wet = 1;
+			fluid = 1;
+		}
+		optional waterstate1 w = 1;
+	}
+
+	message B {
+		enum waterstate2 {
+			ice = -1;
+			liquid = 0;
+			steam = 1;
+		}
+		optional waterstate2 water = 1;
+	}
+
+	optional A a = 1;
+	optional B b = 2;
+}

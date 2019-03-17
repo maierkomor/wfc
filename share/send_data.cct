@@ -1,0 +1,189 @@
+/*
+ *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *
+ *  This source file belongs to Wire-Format-Compiler.
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "sysconfig.h"
+
+/* wfc-template:
+ * function: send_u16
+ */
+void send_u16($putparam, uint16_t v)
+{
+	$wireput(v & 0xff);
+	v >>= 8;
+	$wireput(v);
+}
+
+
+/* wfc-template:
+ * function: send_u32
+ */
+void send_u32($putparam, uint32_t v)
+{
+	$wireput(v & 0xff);
+	v >>= 8;
+	$wireput(v & 0xff);
+	v >>= 8;
+	$wireput(v & 0xff);
+	v >>= 8;
+	$wireput(v);
+}
+
+
+/* wfc-template:
+ * function: send_u64
+ * Optimize: size
+ */
+void send_u64_size($putparam, uint64_t v)
+{
+	unsigned n = 7;
+	do {
+		$wireput(v & 0xff);
+		v >>= 8;
+	} while (--n);
+	$wireput(v);
+}
+
+
+/* wfc-template:
+ * function: send_u64
+ * Optimize: review
+ */
+void send_u64_review($putparam, uint64_t v)
+{
+	$wireput((v >> 0) & 0xff);
+	$wireput((v >> 8) & 0xff);
+	$wireput((v >> 16) & 0xff);
+	$wireput((v >> 24) & 0xff);
+	$wireput((v >> 32) & 0xff);
+	$wireput((v >> 40) & 0xff);
+	$wireput((v >> 48) & 0xff);
+	$wireput((v >> 56) & 0xff);
+}
+
+
+/* wfc-template:
+ * function: send_u64
+ * Optimize: speed
+ */
+void send_u64_speed($putparam, uint64_t v)
+{
+	$wireput(v & 0xff);
+	v >>= 8;
+	$wireput(v & 0xff);
+	v >>= 8;
+	$wireput(v & 0xff);
+	v >>= 8;
+	$wireput(v & 0xff);
+	v >>= 8;
+	$wireput(v & 0xff);
+	v >>= 8;
+	$wireput(v & 0xff);
+	v >>= 8;
+	$wireput(v & 0xff);
+	v >>= 8;
+	$wireput(v);
+}
+
+
+/* wfc-template:
+ * function: send_bytes
+ */
+void send_bytes_0($putparam, const uint8_t *d, unsigned n)
+{
+	const uint8_t *e = d + n;
+	while (d != e) {
+		for (unsigned i = 0; i < n; ++i)
+			$wireput((uint8_t)*d++);
+	}
+}
+
+
+/* wfc-template:
+ * function: send_bytes
+ */
+void send_bytes_1($putparam, const uint8_t *d, unsigned n)
+{
+	for (unsigned i = 0; i < n; ++i)
+		$wireput((uint8_t)*d++);
+}
+
+
+/* wfc-template:
+ * function: send_varint
+ */
+void send_varint($putparam, varint_t v)
+{
+	do {
+		uint8_t u8 = v & 0x7f;
+		v >>= 7;
+		if (v)
+			u8 |= 0x80;
+		$wireput(u8);
+	} while (v);
+}
+
+
+
+/* no-wfc-template:
+ * function: send_xvarint
+ */
+void send_xvarint($putparam, varint_t v)
+{
+	do {
+		uint8_t u8 = v & 0x7f;
+		v >>= 7;
+		if (v)
+			u8 |= 0x80;
+		$wireput(u8);
+	} while (v);
+}
+
+
+/* wfc-template:
+ * function: send_msg
+ * Optimize: speed
+ */
+template <class C>
+void send_msg_fast(std::string &str, const C &c)
+{
+	size_t off = str.size();
+	str.append(9,0x80);
+	str.push_back(0x0);
+	c.toString(str);
+	size_t n = str.size() - off - 10;
+	while (n) {
+		str[off++] |= (n&0x7f);
+		n >>= 7;
+	}
+}
+
+
+/* wfc-template:
+ * function: send_msg
+ */
+template <class C>
+void send_msg(std::string &str, const C &c)
+{
+	std::string tmp;
+	c.toString(tmp);
+	send_varint(str,tmp.size());
+	str.append(tmp);
+}
+
+/*vim:syntax=c */

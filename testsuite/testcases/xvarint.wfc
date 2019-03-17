@@ -1,0 +1,32 @@
+
+option vi16 {
+	varintbits=16;
+	intsize=16;
+	namespace = VI16;
+	withEqual=true;
+	withUnequal=true;
+}
+
+option vi32 {
+	varintbits=32;
+	intsize=32;
+	namespace = VI32;
+	withEqual=true;
+	withUnequal=true;
+}
+
+option vi64 {
+	intsize=64;
+	withEqual=true;
+	withUnequal=true;
+}
+
+message M
+{
+	int i0 = 1;
+	int i1 = 2;
+	int i2 = 3;
+	signed s0 = 4;
+	signed s1 = 5;
+	signed s2 = 6;
+}

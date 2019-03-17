@@ -1,0 +1,36 @@
+/* test case for verifying implicit/explicit valid bits
+ */
+
+option header="math.h";
+option header="cstring.h";
+option withEqual=true;
+option withUnequal=true;
+
+enum finger_t {
+	nofinger = 0;
+	thumb = 1;
+	forefinger = 2;
+	middlefinger = 3;
+	ringfinger = 4;
+	littlefinger = 5;
+}
+
+message M
+{
+	string s1e = 1		[ stringtype=std::string ];
+	string s1i = 2		[ stringtype=std::string, unset="" ];
+	string s2e = 3		[ stringtype=pointer ];
+	//string s2i = 4	[ stringtype=pointer, unset="" ];	-- doesn't make sense
+	string s3e = 5		[ stringtype=CString ];
+	string s3i = 6		[ stringtype=CString, unset="" ];
+	bytes b1e = 11		[ bytestype=std::string ];
+	bytes b1i = 12		[ bytestype=std::string, unset="" ];
+	bytes b2e = 13		[ bytestype=CString];
+	bytes b2i = 14		[ bytestype=CString, unset="" ];
+	finger_t e1e = 20;
+	finger_t e1i = 21	[ unset=nofinger ];
+	float f1e = 30;
+	float f1i = 31		[ unset=-1 ];
+	double d1e = 32;
+	double d1i = 33		[ unset=-1 ];
+}

@@ -1,0 +1,34 @@
+option header="cstring.h";
+option header="bytes.h";
+option stringtype=CString;
+option bytestype=Bytes;
+option withEqual=true;
+option withUnequal=true;
+option toJSON="";
+option toString="";
+
+option avr {
+	varintbits = 32;
+	toASCII="";
+	stringtype=CString;
+	bytestype=Bytes;
+	withUnequal=true;
+	endian=little;
+	/NodeInfo/ports: arraysize=4;
+	/Port/name: stringtype=CString;
+}
+
+
+message Port
+{
+	optional string id = 1;
+	optional string name = 2	[stringtype=pointer];
+}
+
+message NodeInfo
+{
+	required string node = 1;
+	repeated Port ports = 2;
+	optional bytes hash = 3;
+}
+

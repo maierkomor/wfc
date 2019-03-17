@@ -1,0 +1,117 @@
+//option UnknownField=assert;
+option withEqual=true;
+option withUnequal=true;
+option SortMembers=type;
+option toString="toString";
+option header="cstring.h";
+
+enum packable_enum {
+	pe_0 = 0;
+	pe_1 = 0xa;
+	pe_2 = 0x40;
+	pe_3 = 0x7f;
+}
+
+enum generic_enum {
+	ge_0 = 0;
+	ge_1 = -1;
+	ge_2 = 1;
+	ge_3 = 0x7f;
+	ge_4 = 0x80;
+	ge_5 = 0xff;
+	ge_6 = 0x3fff;
+	ge_7 = 0x4000;
+	ge_8 = 0xffff;
+}
+
+
+message Packable
+{
+	required packable_enum PackedEnum = 1 [ default = pe_3 ];
+	required bool Bool = 2 [ default = true ];
+	required uint8 U8 = 3 [ default = 0xff ];
+	required int8 I8 = 4 [ default = -128 ];
+	required sint8 S8 = 5 [ default = -120 ];
+}
+
+
+message TestBench
+{
+	required int32 VI32 = 1;
+	required sint32 SVI32 = 2;
+	required int64 VI64 = 3	[default=3];
+	required sint64 SVI64 = 4;
+	required double RDouble = 5;
+	required bool B0 = 6;
+	required bool B1 = 7;
+
+	optional fixed8 FI8 = 8;
+	optional fixed16 FI16 = 9 [default=6];
+	optional fixed32 FI32 = 10;
+	optional fixed64 FI64 = 11;
+
+	optional string STR = 12;
+	repeated string STRV = 13;
+	optional float Float = 14;
+
+	optional fixed8 xtag1byte = 0xf;
+	optional fixed8 xtag2byte = 0x10;
+
+
+	optional bytes BYTESO = 17;
+	required bytes BYTESR = 18;
+	repeated bytes BYTESV = 19;
+
+	required Packable PackedMsg = 20;
+	repeated Packable PackedMsgV = 21;
+
+	repeated fixed8 PackedF8Vector = 0x20 [packed=true];
+	repeated fixed16 PackedF16Vector = 0x21 [packed=true];
+	repeated fixed32 PackedF32Vector = 0x22 [packed=true];
+	repeated fixed64 PackedF64Vector = 0x23 [packed=true];
+	repeated fixed8 UnpackedF8Vector = 0x24;
+	repeated fixed16 UnpackedF16Vector = 0x25;
+
+	repeated sfixed8 PackedS8Vector = 0x26 [packed=true];
+	repeated sfixed16 PackedS16Vector = 0x27 [packed=true];
+	repeated sfixed32 PackedS32Vector = 0x28 [packed=true];
+	repeated sfixed64 PackedS64Vector = 0x29 [packed=true];
+	repeated sfixed8 UnpackedS8Vector = 0x2a;
+	repeated sfixed16 UnpackedS16Vector = 0x2b;
+
+	repeated generic_enum GenericEnumV = 0x2c;
+	repeated generic_enum GenericEnumPV = 0x2d;
+
+	optional fixed8 SI8 = 0x30;
+	optional fixed16 SI16 = 0x31 [default=6];
+	optional fixed32 SI32 = 0x32;
+	optional fixed64 SI64 = 0x33;
+
+	optional fixed32 OF32 = 0x40;
+	optional float OFloat = 0x41;
+	repeated float FloatV = 0x42;
+	optional double ODouble = 0x43;
+	repeated double DoubleV = 0x44;
+
+	optional string SSO = 0x50	[stringtype=std::string];
+	required string SSR = 0x51	[stringtype=std::string];
+	repeated string SSV = 0x52	[stringtype=std::string];
+
+	optional string SCO = 0x53	[stringtype=CString];
+	required string SCR = 0x54	[stringtype=CString];
+	repeated string SCV = 0x55	[stringtype=CString];
+
+	optional string SPO = 0x56	[stringtype=pointer];
+	required string SPR = 0x57	[stringtype=pointer];
+	repeated string SPV = 0x58	[stringtype=pointer];
+
+	message KVPair
+	{
+		required string key = 1;
+		required string value = 2;
+	}
+
+	optional KVPair kvpair1 = 0x60;
+	repeated KVPair kvpairs = 0x61;
+
+}

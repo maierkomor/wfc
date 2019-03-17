@@ -1,0 +1,20 @@
+syntax: glob
+*.o
+*.d
+*.gcda
+*.gcno
+.depend
+*.gcov
+*.csv
+core
+src/position.hh
+src/stack.hh
+src/location.hh
+src/tokenizer.cc
+src/xproto.cc
+src/xproto.h
+src/xproto_tok.cc
+bin/wfc
+src/version.h
+src/template_lib.cc
+src/template_lib.h

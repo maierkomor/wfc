@@ -1,0 +1,341 @@
+/*
+ * Copyright 2015-2017, Thomas Maier-Komor
+ * LICENSE: GPLv3, see file LICENSE for details
+ */
+
+option toASCII = "";
+//option toWire = "";
+//option toMemory = "";
+//option toString = "";
+//option toSink= "";
+option endian=little;
+//option checks=true;
+option Optimize = speed;
+option withEqual=true;
+option withUnequal=true;
+option Terminator=ff;
+
+message HostScope
+{
+	message MetaData
+	{
+		required uint32 protocol_version = 1;
+		required uint64 timestamp = 2;
+		required string hostscope_version = 3;
+	}
+
+	required MetaData metadata = 1;
+
+
+	message HostInfo
+	{
+		required string hostname = 1;
+		required uint64 uptime = 2;
+		required string osname = 3;
+		optional string osrelease = 4;
+		optional string osversion = 5;
+		optional string proctype = 6;
+		optional string machtype = 7;
+		optional uint32 minuseruid = 8;
+	}
+
+	required HostInfo hostinfo = 2;
+
+
+	message LoadAvg
+	{	// div-base: 10
+		required uint32 loadav1m = 1 [ default = 0 ];
+		required uint32 loadav5m = 2 [ default = 0 ];
+		required uint32 loadav15m = 3 [ default = 0 ];
+	}
+
+	optional LoadAvg loadavg = 3;
+
+
+	message Memory
+	{
+		optional uint64 physical = 1;	// in kiB
+		optional uint64 free = 2;	// in kiB
+		optional uint64 swapsize = 3;	// in kiB
+		optional uint64 pagedout = 4;	// in kiB
+		optional uint64 locked = 5;	// in kiB
+	}
+
+	optional Memory mem = 4;
+
+
+	message PowerSupply
+	{
+		required string name = 1;
+		required string state = 2;
+		optional uint32 capacity = 3;
+	}
+
+	repeated PowerSupply power_supplies = 5;
+
+
+	message LinuxInfo
+	{
+		required uint32 forks = 1;
+		required uint32 ctxtsw = 2;
+		required uint32 intrs = 3;
+		required uint32 sirqs = 4;
+	}
+
+	optional LinuxInfo linux_info = 8;
+
+
+	message LinuxVmstat
+	{
+		optional uint64 nr_free_pages = 1;
+//		optional uint64 nr_alloc_batch = 2;
+//		optional uint64 nr_inactive_anon = 3;
+//		optional uint64 nr_active_anon = 4;
+//		optional uint64 nr_inactive_file = 5;
+//		optional uint64 nr_active_file = 6;
+//		optional uint64 nr_unevictable = 7;
+		optional uint64 nr_mlock = 8;
+		optional uint64 nr_anon_pages = 9;
+//		optional uint64 nr_mapped = 10;
+		optional uint64 nr_file_pages = 11;
+//		optional uint64 nr_dirty = 12;
+//		optional uint64 nr_writeback = 13;
+//		optional uint64 nr_slab_reclaimable = 14;
+//		optional uint64 nr_slab_unreclaimable = 15;
+//		optional uint64 nr_page_table_pages = 16;
+		optional uint64 nr_kernel_stack = 17;
+//		optional uint64 nr_unstable = 18;
+//		optional uint64 nr_bounce = 19;
+//		optional uint64 nr_vmscan_write = 20;
+//		optional uint64 nr_vmscan_immediate_reclaim = 21;
+//		optional uint64 nr_writeback_temp = 22;
+//		optional uint64 nr_isolated_anon = 23;
+//		optional uint64 nr_isolated_file = 24;
+		optional uint64 nr_shmem = 25;
+//		optional uint64 nr_dirtied = 26;
+//		optional uint64 nr_written = 27;
+//		optional uint64 numa_hit = 28;
+//		optional uint64 numa_miss = 29;
+//		optional uint64 numa_foreign = 30;
+//		optional uint64 numa_interleave = 31;
+//		optional uint64 numa_local = 32;
+//		optional uint64 numa_other = 33;
+//		optional uint64 nr_anon_transparent_hugepages = 34;
+//		optional uint64 nr_free_cma = 35;
+//		optional uint64 nr_dirty_threshold = 36;
+//		optional uint64 nr_dirty_background_threshold = 37;
+		optional uint64 pgpgin = 38;
+		optional uint64 pgpgout = 39;
+//		optional uint64 pswpin = 40;
+//		optional uint64 pswpout = 41;
+//		optional uint64 pgalloc_dma = 42;
+//		optional uint64 pgalloc_dma32 = 43;
+//		optional uint64 pgalloc_normal = 44;
+//		optional uint64 pgalloc_movable = 45;
+		optional uint64 pgfree = 46;
+//		optional uint64 pgactivate = 47;
+//		optional uint64 pgdeactivate = 48;
+		optional uint64 pgfault = 49;
+		optional uint64 pgmajfault = 50;
+//		optional uint64 pgrefill_dma = 51;
+//		optional uint64 pgrefill_dma32 = 52;
+//		optional uint64 pgrefill_normal = 53;
+//		optional uint64 pgrefill_movable = 54;
+//		optional uint64 pgsteal_kswapd_dma = 55;
+//		optional uint64 pgsteal_kswapd_dma32 = 56;
+//		optional uint64 pgsteal_kswapd_normal = 57;
+//		optional uint64 pgsteal_kswapd_movable = 58;
+//		optional uint64 pgsteal_direct_dma = 59;
+//		optional uint64 pgsteal_direct_dma32 = 60;
+//		optional uint64 pgsteal_direct_normal = 61;
+//		optional uint64 pgsteal_direct_movable = 62;
+//		optional uint64 pgscan_kswapd_dma = 63;
+//		optional uint64 pgscan_kswapd_dma32 = 64;
+//		optional uint64 pgscan_kswapd_normal = 65;
+//		optional uint64 pgscan_kswapd_movable = 66;
+//		optional uint64 pgscan_direct_dma = 67;
+//		optional uint64 pgscan_direct_dma32 = 68;
+//		optional uint64 pgscan_direct_normal = 69;
+//		optional uint64 pgscan_direct_movable = 70;
+//		optional uint64 pgscan_direct_throttle = 71;
+//		optional uint64 zone_reclaim_failed = 72;
+//		optional uint64 pginodesteal = 73;
+//		optional uint64 slabs_scanned = 74;
+//		optional uint64 kswapd_inodesteal = 75;
+//		optional uint64 kswapd_low_wmark_hit_quickly = 76;
+//		optional uint64 kswapd_high_wmark_hit_quickly = 77;
+//		optional uint64 pageoutrun = 78;
+//		optional uint64 allocstall = 79;
+//		optional uint64 pgrotated = 80;
+//		optional uint64 numa_pte_updates = 81;
+//		optional uint64 numa_huge_pte_updates = 82;
+//		optional uint64 numa_hint_faults = 83;
+//		optional uint64 numa_hint_faults_local = 84;
+//		optional uint64 numa_pages_migrated = 85;
+//		optional uint64 pgmigrate_success = 86;
+//		optional uint64 pgmigrate_fail = 87;
+//		optional uint64 compact_migrate_scanned = 88;
+//		optional uint64 compact_free_scanned = 89;
+//		optional uint64 compact_isolated = 90;
+//		optional uint64 compact_stall = 91;
+//		optional uint64 compact_fail = 92;
+//		optional uint64 compact_success = 93;
+//		optional uint64 htlb_buddy_alloc_success = 94;
+//		optional uint64 htlb_buddy_alloc_fail = 95;
+//		optional uint64 unevictable_pgs_culled = 96;
+//		optional uint64 unevictable_pgs_scanned = 97;
+//		optional uint64 unevictable_pgs_rescued = 98;
+//		optional uint64 unevictable_pgs_mlocked = 99;
+//		optional uint64 unevictable_pgs_munlocked = 100;
+//		optional uint64 unevictable_pgs_cleared = 101;
+//		optional uint64 unevictable_pgs_stranded = 102;
+//		optional uint64 thp_fault_alloc = 103;
+//		optional uint64 thp_fault_fallback = 104;
+//		optional uint64 thp_collapse_alloc = 105;
+//		optional uint64 thp_collapse_alloc_failed = 106;
+//		optional uint64 thp_split = 107;
+//		optional uint64 thp_zero_page_alloc = 108;
+//		optional uint64 thp_zero_page_alloc_failed = 109;
+//		optional uint64 nr_tlb_remote_flush = 110;
+//		optional uint64 nr_tlb_remote_flush_received = 111;
+//		optional uint64 nr_tlb_local_flush_all = 112;
+//		optional uint64 nr_tlb_local_flush_one = 113;
+	}
+
+	optional LinuxVmstat linux_vmstat = 9;
+
+	message LinuxCPU	// info from /proc/stat
+	{
+		required uint32 id = 1;
+		required uint32 user = 2;
+		required uint32 nice = 3;
+		required uint32 system = 4;
+		required uint32 idle = 5;
+		required uint32 iowait = 6;
+		optional uint32 irq = 7;	// irq + softirq
+		optional uint32 vhost = 8;	// steal+guest+guest_nice
+		optional uint32 currtemp = 9;
+		optional uint32 crittemp = 10;
+		optional uint32 currmhz = 11;
+	}
+
+	repeated LinuxCPU linux_cpus = 10;
+
+	/*
+	message SolarisInfo
+	{
+		required uint32 itv_time = 1;	// interval time in ms
+		required uint32 intrs = 2 [ default = 0 ];
+		required uint32 intrblk = 3 [ default = 0 ];
+		required uint32 xcalls = 4 [ default = 0 ];
+		required uint32 pswitch = 5 [ default = 0 ];
+		required uint32 migrate = 6 [ default = 0 ];
+		required uint32 invswitch = 7 [ default = 0 ];
+		required uint32 syscalls = 8 [ default = 0 ];
+		required uint32 forks = 9 [ default = 0 ];
+		required uint32 execs = 10 [ default = 0 ];
+		required uint32 reads = 11 [ default = 0 ];
+		required uint32 writes = 12 [ default = 0 ];
+		required uint32 lockfails = 13 [ default = 0 ];
+	}
+
+	optional SolarisInfo solaris_info = 8;
+
+	message SolarisCPU
+	{
+		required uint32 id = 1;
+		required uint32 user = 2 [ default = 0 ];	// in per [div_base]
+		required uint32 kernel = 3 [ default = 0 ];
+		required uint32 idle = 4 [ default = 0 ];
+		required uint32 xcal = 5 [ default = 0 ];
+		required uint32 intr = 6 [ default = 0 ];
+		required uint32 ithr = 7 [ default = 0 ];
+		required uint32 iblk = 8 [ default = 0 ];
+		required uint32 csw = 9 [ default = 0 ];
+		required uint32 icsw = 10 [ default = 0 ];
+		required uint32 migr = 11 [ default = 0 ];
+		required uint32 smtx = 12 [ default = 0 ];
+		required uint32 srw = 13 [ default = 0 ];
+		required uint32 sysc = 14 [ default = 0 ];
+		required uint32 minf = 15 [ default = 0 ];
+		required uint32 majf = 16 [ default = 0 ];
+	}
+
+	repeated SolarisCPU solaris_cpus = 9;
+	*/
+
+	message Process
+	{
+		required string command = 1;
+		required uint32 pid = 2;
+		required uint32 uid = 3;
+		optional uint32 prio = 4;
+		optional uint32 nthreads = 5;
+		optional uint64 time = 8;	// ms since started
+		optional uint32 putime = 9;
+		optional uint32 pstime = 10;
+		optional uint64 virmem = 16;	// virtual memory total in kB
+		optional uint64 rssmem = 17;	// currently resident in physcial memory in kB
+		optional uint64 sharedmem = 18;	// shared memory size in kB
+//		optional uint64 exclmem = 19;	// exclusive memory size in kB
+		optional uint64 minflts = 28;
+		optional uint64 majflts = 29;
+		optional uint32 rchars = 30;
+		optional uint32 wchars = 31;
+	}
+
+	repeated Process processes = 12;
+	
+	message User
+	{
+		required uint32 uid = 1;
+		required string name = 2;
+		required uint32 nproc = 3;	// current number of processes
+		optional uint32 nthreads = 4;
+
+		optional uint64 rssmem = 8;	// currently resident in physcial memory in kB
+		optional uint64 sharedmem = 9;
+//		optional uint64 exclmem = 10;
+
+		optional uint64 minflts = 12;
+		optional uint64 majflts = 13;
+
+		optional uint32 putime = 16;
+		optional uint32 pstime = 17;
+
+		optional uint32 rchars = 20;
+		optional uint32 wchars = 21;
+	}
+
+	repeated User users = 16;
+
+	message Disk
+	{
+		required string devname = 1;
+		optional uint64 ktotal = 2;
+		optional uint32 nops = 4;
+		optional uint32 nread = 5;
+		optional uint32 nwrite = 6;
+		optional uint32 kread = 8;
+		optional uint32 kwrite = 9;
+		optional uint32 perc_busy = 10;
+		optional uint32 opsqueued = 12;
+	}
+
+	repeated Disk disks = 17;
+
+	message NetDevice
+	{
+		required string devname = 1;
+		optional uint32 nreceived = 2;
+		optional uint32 kreceived = 3;
+		optional uint32 ereceived = 4;
+		optional uint32 dreceived = 5;
+		optional uint32 ntransmit = 6;
+		optional uint32 ktransmit = 7;
+		optional uint32 etransmit = 8;
+		optional uint32 dtransmit = 9;
+	}
+
+	repeated NetDevice netdevices = 18;
+}

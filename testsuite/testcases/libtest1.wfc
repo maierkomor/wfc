@@ -1,0 +1,10 @@
+// option include="../share/wiresize.cc";
+option wiresize=wiresize_2;
+option withEqual=true;
+option withUnequal=true;
+
+message msg
+{
+	int64 vi1 = 1;
+	int64 vi2 = 2;
+}

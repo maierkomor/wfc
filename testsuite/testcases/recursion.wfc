@@ -1,0 +1,16 @@
+option withEqual=true;
+option withUnequal=true;
+
+message File 
+{
+	required string name = 1;
+	required uint32 mode = 2;
+	optional bytes data = 3;
+}
+
+message Directory
+{
+	required string name = 1;
+	repeated File files = 2;
+	repeated Directory subdirs = 3;
+}

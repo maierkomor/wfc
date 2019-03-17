@@ -1,0 +1,38 @@
+Release R1920:
+==============
+- first public release
+- use option -h to query available options
+
+
+Versions below are unpublished prior releases that were used for hostscope and
+other private projects.
+
+Version 0.6.0:
+==============
+- added null/ff termination support
+
+Version 0.5.0:
+==============
+- added JSON generation
+- added XML generation
+- added support for invalid value based has_ methods
+- added option to return referene instead pointer from mutables
+- enhanced error messages of parser
+- enhanced code template infrastructure
+
+Version 0.4.0:
+==============
+- integrated code library
+- optimization and fixes
+
+Version 0.3.0:
+==============
+- baseline for first hostscope release with wfc code
+
+Version 0.2.0:
+==============
+- lots of fixes, changes, and enhancements
+
+Version 0.1.0:
+==============
+- initial version

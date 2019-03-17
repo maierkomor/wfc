@@ -1,0 +1,49 @@
+// .wfc files start with the option section.
+// Every option setting is introduced by the keyword 'option'.
+// This section is purely optional.
+
+option toASCII="";
+
+// Options can also be grouped and named as a "target".
+// An option group or target is not active by default.
+// It can be activated using the command line option -t<target>.
+// e.g. "-t receiver" in this case
+option receiver
+{
+	// setting a target forces other options to be overriden
+	toSink="";
+	toASCII="";
+
+	// In our example the receiver ignores the "postage" field.
+	// Therefore, we tag it as unused.
+	// To reference it, start with the encabsulating message(s)
+	// separated by slash followed by the field name.
+	/letter/postage:	used = false;
+}
+
+
+// Next we define a message class.
+// For every field of the message class, there are several 
+// methods generated to access the field.
+message letter
+{
+	// Every field requires a type, a name, and a coding ID.
+	// The coding ID must not be modified once you have live data
+	// that you want to access. The field ID identifies the 
+	// relevant data in a serialized data stream.
+	// 
+	// Per default all fields are "optional". I.e. there will
+	// be no data serialized for the field, if it has not been
+	// set.
+	string sender = 1;
+
+	// Field 2 in this example is set to be required.
+	// Therefore, it will be initialized to its set default value.
+	required string receiver = 2	[ default = "return to sender" ];
+
+	// Integer values are encoded as variable length integers,
+	// unless requested otherwise via type or option.
+	unsigned postage = 3;
+
+	string text = 4;
+}

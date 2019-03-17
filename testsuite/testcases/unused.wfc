@@ -1,0 +1,12 @@
+option UnknownField = assert;
+option withEqual=true;
+option withUnequal=true;
+
+message Msg
+{
+	int64 used1 = 1;
+	int32 unused2 = 2	[ used = false ];
+	string used3 = 3;
+	fixed32 unused4 = 4	[ used = false ];
+	bytes unused5 = 5	[ used = false ];
+}

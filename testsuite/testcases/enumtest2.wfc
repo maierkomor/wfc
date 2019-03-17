@@ -1,0 +1,17 @@
+
+
+message Sensor
+{
+	enum sensortype {
+
+	}
+
+	enum dimension_t {
+		dim_none = 0	[ string = "" ];
+		dim_km_h = 1	[ string = "km/h" ];
+		dim_m = 2	[ string = "m" ];
+		dim_sec = 3	[ string = "sec." ];
+	}
+
+	dimension_t dim = 1;
+}

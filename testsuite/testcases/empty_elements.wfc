@@ -1,0 +1,27 @@
+option withUnequal=true;
+option withEqual=true;
+
+message Empty
+{
+	optional int32 i32 = 201;
+	optional uint32 u32 = 202;
+	optional float f = 203;
+	optional bytes bx = 204;
+	optional string sx = 205;
+}
+
+
+message EmptyArrays
+{
+	repeated int32 a32 = 301;
+	repeated double ad = 302;
+	repeated string astr = 303;
+	repeated bytes ab = 304;
+}
+
+
+message Something
+{
+	repeated Empty empty = 1;
+	optional EmptyArrays arrays = 2;
+}

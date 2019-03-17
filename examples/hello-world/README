@@ -1,0 +1,19 @@
+The hello world example consist of following files:
+	- letter.wfc
+	- sender.cpp
+	- receiver.cpp
+	- Makefile
+
+The Makefile is used to compile the example using make.
+
+letter.wfc provides the message description of a letter.
+
+Make uses the WFC compiler to generate C++ files that provide data
+serialization and deserialization.
+
+sender.cpp and receiver.cpp are the source files for 2 executables that
+exchange data. sender.cpp request the user to enter content for a letter and
+writes the data to the file myletter.bin to the filesystem.
+
+receiver.cpp reads myletter.cpp and prints out its content, ignoring the field
+"postage".

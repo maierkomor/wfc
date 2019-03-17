@@ -1,0 +1,287 @@
+\documentclass[12pt]{article}
+\title{WFC - wire format compiler}
+\author{Thomas Maier-Komor}
+\date{September 2018}
+
+\begin{document}
+
+\maketitle
+
+\section{About}
+WFC, the wire format compiler provides the infrastructure for
+serializing and deserializing objects to binary streams independently of
+the software and hardware platform. The generated code is especially
+optimized for embedded systems, and serveral options provide means to
+tune the code regarding specific aspects. Like this the code can be
+tailored for running on a variety of systems from 8 bits to 64 bits.
+
+The description language for defining message classes is a
+language-extension of Protocol Buffers. Therefore, WFC is able to work
+with {\tt .proto} files that were written for Protocal Buffers.
+
+\section{Data Serialization}
+Data serialization works as in Protocol Buffers V2 and later, but provides
+extensions for embedded systems.
+
+Integer data is either stored directly in little endian format as fixed length
+block or as a varialbe length byte sequence. Variable length byte sequence
+stores 7 bits in one byte beginning with the least significant bit. The highest
+bit indicates if there are more bytes. Once all more siginicant bits are zero,
+bit 7 is set to zero to indicate the end of the variable length integer
+sequence.
+
+
+\subsection{Variable Length Encoding}
+
+The tables below show how a sample 32-bit word is encoded into a serialized
+data stream using variable length encoding.
+
+\subsubsection*{Sample 32-bit word {\tt 0xdcba} to be encoded}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+	Bit&31-24&23-16&15-8&7-0\\
+\hline
+	little endian address & {3} & {2} & {1} & {0} \\
+\hline
+	big-endian address & {0} & {1} & {2} & {3} \\
+\hline
+	hex value& {0xd} & {0xc} & {0xb} & {0xa} \\
+\hline
+	binary & {\tt 0b00001101} & {\tt 0b00001100} & {\tt 0b00001011} & {\tt 0b00001010}\\
+\hline
+\end{tabular}
+
+\subsubsection*{Sequentially Encoded Sample}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+	serialized data & {bit 0..6} & {bit 7..13} & {bit 14..20} &  {bit 21..27} \\
+\hline
+	extension bit & $1<<7$ & $1<<7$ & $1<<7$ & $0<<7$ \\
+\hline
+	extracted word values & {\tt 0x6} & {\tt 0x16} &  {\tt 0x30} &  {\tt 0x78} \\
+\hline
+	or'ed hex value & {\tt 0x86} & {\tt 0x96} & {\tt 0xb0} & {\tt 0x78} \\
+\hline
+	binary values &{\bf 1}0001010 & {\bf 1}0010110 & {\bf 1}0110000 & {\bf 0}1101000\\
+\hline
+\end{tabular}
+
+
+\subsection{Encoding Negative Values}
+Negative values can be encoded using two different methods:
+\begin{itemize}
+	\item[regular encoding] Regular encoding is used for data types {\tt
+		int, int16, int32, int64}. For these data types nothing special
+		is done, so all negative values will consume 10 bytes in a
+		sequential data stream, as all higher value bits are {\tt 1}.
+		For forward compatibility reasons the variable length encoding
+		is always performed as for a 64bit word.
+	\item[signed encoding] Signed encoding is used for data types {\tt
+		signed, sint16, sint32, sint64}. For signed encoding the most
+		significant bit is shifted into bit 0, all other bits are
+		shifted left by one, and xor'ed by 1 if the most significant
+		bit is {\tt 1}.
+\end{itemize}
+
+
+
+\section{Data Types}
+WFC offers several data types, some of which are implementation dependent. The
+in memory representation and serialization of some data types may depend on
+options. Please refer to the description of options, to learn the details.
+
+\subsection{Data Typese that are compatible to proto2}
+\begin{center}
+\begin{tabular}{|l|c|l|}
+\hline
+	data type & valid range & encoding\\
+\hline
+	bool	& false,true			& 1 Byte, varint\\
+	enum	& enumeration			& 1-10 Bytes, varint\\
+	int32	& SINT32\_MIN..SINT32\_MAX	& 1-10 Bytes, varint\\
+	sint32	& SINT32\_MIN..SINT32\_MAX	& 1-5 Bytes, varint\\
+	fixed32	& 0..UINT32\_MAX		& 4 Bytes, fixed length\\
+	sfixed32& SINT32\_MIN..SINT32\_MAX	& 4 Bytes, fixed length\\
+	int64	& SINT64\_MIN..SINT64\_MAX	& 1-10 Bytes, varint\\
+	sint64	& SINT64\_MIN..SINT64\_MAX	& 1-10 Bytes, varint\\
+	fixed64	& 0..UINT64\_MAX		& 8 Bytes, fixed length\\
+	sfixed64& SINT64\_MIN..SINT64\_MAX	& 8 Bytes, fixed length\\
+	float	& FLT\_MIN..FLT\_MAX		& 4 Bytes, fixed legnth\\
+	double	& DBL\_MIN..DBL\_MAX		& 8 Bytes, fixed legnth\\
+	string	& byte array			& varint length prefix followed by data\\
+	bytes	& byte array			& varint length prefix followed by data\\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{New Data Types}
+\begin{center}
+\begin{tabular}{|l|c|l|}
+\hline
+	data type & valid range & encoding\\
+\hline
+	int	& depends on {\tt intsize}	& 1-10 Bytes, varint\\
+	signed	& depends on {\tt intsize}	& 1-10 Bytes, varint\\
+	unsigned& depends on {\tt intsize}	& 1-10 Bytes, varint\\
+	uint8	& 0..255			& 1-2 Bytes, varint\\
+	int8	& -128..127			& 1-10 Bytes, varint\\
+	sint8	& -128..127			& 1-2 Bytes, varint\\
+	fixed8	& 0..255			& 1 Byte, fixed length\\
+	sfixed8	& -128..127			& 1 Byte, fixed length\\
+	int16	& SINT16\_MIN..SINT16\_MAX	& 1-10 Bytes, varint\\
+	sint16	& SINT16\_MIN..SINT16\_MAX	& 1-3 Bytes, varint\\
+	fixed16	& 0..UINT16\_MAX		& 2 Bytes, fixed length\\
+	sfixed16& SINT16\_MIN..SINT16\_MAX	& 2 Bytes, fixed length\\
+\hline
+\end{tabular}
+\end{center}
+
+
+\subsection{Repeated Data Types}
+Repeated Data Types are implemented using the STL class {\tt std::vector} per
+default.
+
+The binary option {\tt packed} may be used for a more efficient data
+serialization. Per default every element of a repeated variable is serialized
+with its own tag. For packed repeated data only one tag is written and the data
+is encoded with length prefix. This usually requires less memory.
+
+If option {\tt arraysize} is set, the element is implemented as a
+fixed size array using the {\tt array} class in {\tt include/array.h}. This may
+be preferable on systems with limited memory, when the maximum size of the
+array is known upfront.
+
+\subsection{Strings and Byte Arrays}
+The data types {\tt string} and {\tt bytes} are implemented using STL's {\tt
+std::string} template class per default. Using options {\tt stringtype} and
+{\tt bytestype} a different type for implementation can be specified.
+
+Set option {\tt stringtype} or {\tt bytestype} to the appropriate {\tt
+typename}. For {\tt stringtypes} an additional valid option is {\tt C} to
+implement as a C-String ({\tt const char *}). Be aware that for C-Strings there
+will never be a copy performed and no memory management is active. I.e. the
+pointed to data must stay valid as long as the message object is valid.
+Additionally, the C-String must not contain null bytes and must be terminated
+by a null byte, just like the C convention requires.
+
+For deserialized data with C-Strings it is sufficient to keep the received data
+block active and untouched. Using C-Strings can be a good way to keep the
+memory impact as low as possible.
+
+If a custom datatype is set for {\tt stringtype} or {\tt bytestype}, the option
+{\tt header} can be used to include a custom header file that defines the
+relevant datatype. E.g. add {\tt option header="mydatatype.h";} to make sure
+the necessary header is included.
+
+\subsection{Data Type Forward Compatibility}
+The table below which data types can be changed in the protocol specification
+file to which other data types, without breaking binary compatibility.
+
+\begin{tabular}{|l|l|}
+\hline
+	old data type & potential future data types\\
+\hline
+	int	& int64\\
+	signed	& sint64\\
+	unsigned& uint64\\
+	int8	& int16..int64 \\
+	int16	& int32..int64 \\
+	int32	& int64\\
+	uint8	& uint16..uint64\\
+	uint16	& uint32..uint64\\
+	uint32	& uint64\\
+	sint8	& sint16..sint64\\
+	sint16	& sint32..sint64\\
+	sint32	& sint64\\
+\hline
+\end{tabular}
+
+If all serialized data has non-negative values, {\tt int, int8, int16, int64}
+can be changed to their unsigned variants with same or wider bit-width.
+
+Changing to a more narrow bit width is possible, if all serialized data fits
+into the new bit width. For code size reasons the deserialization code does not
+perform data-width sanity checks. So be sure what you are doing.
+
+All fixed data types currently cannot be upgrade to a higher bit-width.
+
+\section{Extensions over Protocol Buffers}
+\subsection{Compiler Options}
+\begin{description}
+
+	\item [{\tt Subclasses}]
+Option {\tt SubClasses} causes nested messages to be generated as C++
+subclasses in their parent message class instead of mangled names that included
+the parent message.
+
+\item[{\tt withEqual and withUnequal}]
+	This binary option causes generation of comparions operator {\tt =} and
+		{\tt !=}, which provides content comparisons of message objects
+		of the same class. Set the relevant option to {\tt true} to
+		request generation of the relevant comparison operator.
+
+\item[Method Naming]
+	All method names can be specified by options that have the same name as
+		the default method name. Setting the relevant option ot {\tt
+		false} or an empty string suppresses generation of the method
+		if possible. Methods that can be renamed using this technique
+		are: {\tt toMemory, fromMemory, toWire, toSink}.
+
+\item[{\tt namespace}]
+	Use this option to set the {\tt namespace} of the generated message
+		classes.  Only the relevant message classes will be put in this
+		namespace. The shared library functions will be implemented as
+		defined in the library settings.
+
+\item[{\tt optimize}]
+	This option can be used to adjust the code generation target. 
+
+\item[{\tt unknown}]
+	This option specifies how to deal with unknown data fields. This is for
+		forward compatibility of the generated code. In case the
+		message description is extended later with additional fields,
+		the handling of unknown fields is necessary in the old code to
+		be able to deal with data provided by code that is based on a
+		later message definition.
+	
+	The default way of handling unknown data fields is to skip over this
+		data, and to simply ignore it. This can be changed to assert on
+		unknown data.
+
+\item[{\tt MutableType}]
+	To be able to modify the contents of a message field, the mutable
+		method is provided. This usually returns a pointer to the
+		mutable message member. Using this option the method can be
+		modified to return a reference instead of a pointer. This might
+		be preferable for certain coding conventions or coding guide
+		lines.
+	
+	Valid values for {\tt mutable\_type} are {\tt pointer}, which is the
+		default, and {\tt reference}.
+
+\item[{\tt ErrorHandling}]
+	For uncorrupted data transfer there should never be the requirement to
+		handle an error. But in the event of data corruption, it might
+		be necessary to recover processing, by raising the error to the
+		user code. Therefore, different ways for handling the error
+		sitation are provided.
+
+Default error handling is to cancel execution by returning an error code.
+Additionally it is possible to set the error handling to {\tt assert} or {\tt
+throw}. In case of {\tt assert}, an assertion is added to the code that is
+exected to not return. For {\tt throw} a throw statement is generated that
+passes the integer error code to the catching code. The error code can be used
+to identify the location at which the error happened.
+
+\end{description}
+
+\section{Compatibility with Protocol Buffers}
+\subsection{ProtoV2 Features Available in WFC}
+\subsection{Unsupported Features of Protocol Buffers}
+WFC tries to achieve maximum protov2 compatibility with additional extensions
+for embedded systems. Therefore, features of protov3 and later are not
+implemented in WFC, when there is no obvious benefit for embedded systems.
+
+\end{document}
+
+

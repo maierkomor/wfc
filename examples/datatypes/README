@@ -1,0 +1,12 @@
+This example demonstrates the different available data types
+that can be handled by WFC.
+
+To generate code for this example, run:
+../../bin/wfc datatypes.wfc
+
+Take a look at the generated datatypes.h to learn what interfaces are generated
+to handle the data. The file datatypes.cpp contains the complete
+implementation. So for integration into a project only this .cpp file and the
+relevant .h file must be included into the build process. The generated code
+only relies on include of the standard C++ library, which should be included
+per default on most systems when using a C++ compiler.

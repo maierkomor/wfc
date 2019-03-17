@@ -1,0 +1,29 @@
+option UnknownField=assert;
+option withEqual=true;
+option withUnequal=true;
+
+message TypeTest
+{
+	enum numbers {
+		option toString=num2str;
+		zero = 0;
+		one = 1;
+		two = 2;
+		three = 3;
+		four = 4;
+		five = 5;
+	}
+	repeated int32 i32 = 1		[ packed = true, arraysize=16 ];
+	repeated sint32 si32 = 2	[ packed = true ];
+	repeated int64 i64 = 3;
+	repeated sint64 si64 = 4;
+	repeated fixed32 fi32 = 5 	[ packed = true ];
+	repeated uint64 u64 = 6;
+	repeated uint64 pu64 = 7	[ packed = true ];
+	repeated numbers num = 8;
+	repeated numbers pnum = 9	[ packed = true ];
+	repeated float f32 = 10;
+	repeated float pf32 = 11	[ packed = true ];
+	repeated double f64 = 12;
+	repeated double pf64 = 13	[ packed = true ];
+}

@@ -1,0 +1,57 @@
+
+option sender
+{
+	withEqual=true;
+	withUnequal=true;
+	namespace=sender;
+	Optimize=review;	// needed to avoid clash of inline helper functions
+	wfclib=static;
+}
+
+option receiver
+{
+	/Msg/f8_1: used=false;
+	/Msg/f16_1: used=false;
+	/Msg/f32_1: used=false;
+	/Msg/f64_1: used=false;
+	/Msg/uvi_1: used=false;
+	/Msg/s_1: used=false;
+	/Msg/ru_1: used=false;
+	/Msg/ri_1: used=false;
+	/Msg/rs_1: used=false;
+	namespace=receiver;
+	Optimize=review;	// needed to avoid clash of inline helper functions
+	wfclib=static;
+}
+
+message Msg
+{
+	fixed8 f8_0 = 300;
+	fixed8 f8_1 = 301;
+
+	fixed16 f16_0 = 310;
+	fixed16 f16_1 = 311;
+
+	fixed32 f32_0 = 320;
+	fixed32 f32_1 = 321;
+
+	fixed64 f64_0 = 330;
+	fixed64 f64_1 = 331;
+
+	unsigned uvi_0 = 340;
+	unsigned uvi_1 = 341;
+
+	string s_0 = 350;
+	string s_1 = 351;
+
+	repeated unsigned ru_0 = 360;
+	repeated unsigned ru_1 = 361;
+
+	repeated int ri_0 = 370;
+	repeated int ri_1 = 371;
+
+	repeated signed rs_0 = 380;
+	repeated signed rs_1 = 381;
+
+	string end = 400;
+}

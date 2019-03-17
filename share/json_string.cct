@@ -1,0 +1,455 @@
+/*
+ *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *
+ *  This source file belongs to Wire-Format-Compiler.
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "sysconfig.h"
+
+#include <string>
+#include <sstream>
+
+/* wfc-template:
+ * function: json_indent
+ * sysinclude: ostream
+ */
+void json_indent($streamtype &json, unsigned indLvl)
+{
+	while (indLvl) {
+		--indLvl;
+		json.put(' ');
+		json.put(' ');
+	}
+}
+
+
+/* no-wfc-template:
+ * function: json_indent
+ */
+template <class C>
+void json_indent(J &json, unsigned indLvl)
+{
+	while (indLvl) {
+		--indLvl;
+		json.put(' ');
+		json.put(' ');
+	}
+}
+
+
+/* wfc-template:
+ * function: json_cstr
+ * sysinclude: stdio.h
+ */
+void json_cstr($streamtype &json, const char *cstr)
+{
+	json << '"';
+	char c = *cstr;
+	while (c) {
+		switch (c) {
+		case '\n':
+			json << '\\';
+			json << 'n';
+			break;
+		case '\r':
+			json << '\\';
+			json << 'r';
+			break;
+		case '\b':
+			json << '\\';
+			json << 'b';
+			break;
+		case '\f':
+			json << '\\';
+			json << 'f';
+			break;
+		case '\t':
+			json << '\\';
+			json << 't';
+			break;
+		case '\\':
+		case '"':
+		case '/':
+			json << '\\';
+			json << c;
+			break;
+		default:
+			if ((c >= 0x20) && (c <= 0x7e)) {
+				json << c;
+			} else {
+				char buf[8];
+				sprintf(buf,"\\u%04x",c);
+				json << buf;
+			}
+		}
+		++cstr;
+		c = *cstr;
+	}
+	json << '"';
+}
+
+
+/* no-wfc-template:
+ * function: json_cstr
+ * sysinclude: stdio.h
+ */
+void json_cstr(std::string &json, const char *cstr)
+{
+	json += '"';
+	char c = *cstr;
+	while (c) {
+		switch (c) {
+		case '\n':
+			json += '\\';
+			json += 'n';
+			break;
+		case '\r':
+			json += '\\';
+			json += 'r';
+			break;
+		case '\b':
+			json += '\\';
+			json += 'b';
+			break;
+		case '\f':
+			json += '\\';
+			json += 'f';
+			break;
+		case '\t':
+			json += '\\';
+			json += 't';
+			break;
+		case '\\':
+		case '"':
+		case '/':
+			json += '\\';
+			json += c;
+			break;
+		default:
+			if ((c >= 0x20) && (c <= 0x7e)) {
+				json += c;
+			} else {
+				char buf[8];
+				sprintf(buf,"\\u%04x",c);
+				json += buf;
+			}
+		}
+		++cstr;
+		c = *cstr;
+	}
+	json += '"';
+}
+
+
+/* wfc-template:
+ * function: json_string
+ * sysinclude: stdio.h
+ */
+template <class C>
+void json_string($streamtype &json, const C &str)
+{
+	json.put('"');
+	const char *data = (const char *)str.data();
+	size_t s = str.size();
+	while (s) {
+		char c = (char) *data++;
+		switch (c) {
+		case '\n':
+			json.put('\\');
+			json.put('n');
+			break;
+		case '\r':
+			json.put('\\');
+			json.put('r');
+			break;
+		case '\b':
+			json.put('\\');
+			json.put('b');
+			break;
+		case '\f':
+			json.put('\\');
+			json.put('f');
+			break;
+		case '\t':
+			json.put('\\');
+			json.put('t');
+			break;
+		case '\\':
+		case '"':
+		case '/':
+			json.put('\\');
+			json.put(c);
+			break;
+		default:
+			if ((c >= 0x20) && (c <= 0x7e)) {
+				json.put(c);
+			} else {
+				char buf[8];
+				int n = sprintf(buf,"\\u%04x",c);
+				json.write(buf,n);
+			}
+		}
+		--s;
+	}
+	json.put('"');
+}
+
+
+/* no-wfc-template:
+ * function: json_string
+ * sysinclude: stdio.h
+ */
+template <class C>
+void json_string(std::string &json, const C &str)
+{
+	json += '"';
+	const char *data = (const char *)str.data();
+	size_t s = str.size();
+	while (s) {
+		char c = (char) *data++;
+		switch (c) {
+		case '\n':
+			json += '\\';
+			json += 'n';
+			break;
+		case '\r':
+			json += '\\';
+			json += 'r';
+			break;
+		case '\b':
+			json += '\\';
+			json += 'b';
+			break;
+		case '\f':
+			json += '\\';
+			json += 'f';
+			break;
+		case '\t':
+			json += '\\';
+			json += 't';
+			break;
+		case '\\':
+		case '"':
+		case '/':
+			json += '\\';
+			json += c;
+			break;
+		default:
+			if ((c >= 0x20) && (c <= 0x7e)) {
+				json += c;
+			} else {
+				char buf[8];
+				sprintf(buf,"\\u%04x",c);
+				json += buf;
+			}
+		}
+		--s;
+	}
+	json += '"';
+}
+
+
+/* wfc-template:
+ * function: to_decstr
+ */
+template <typename T>
+void to_decstr($streamtype &s, T t)
+{
+	s << t;
+}
+
+
+/* no-wfc-template:
+ * function: to_decstr
+ */
+template <typename T>
+void to_decstr(std::string &s, T t)
+{
+	bool minus;
+	if (t < 0) {
+		minus = true;
+		t = -t;
+	} else {
+		minus = false;
+	}
+	char tmp[sizeof(T)*3+2], *at = tmp+sizeof(tmp) - 1;
+	*at = 0;
+	do {
+		T dec = t % 10;
+		--at;
+		*at = '0' + dec;
+		t /= 10;
+	} while (t != 0);
+	if (minus) {
+		--at;
+		*at = '-';
+	}
+	s.append(at);
+}
+
+
+/* wfc-template:
+ * function: to_dblstr
+ * sysinclude: math.h
+ */
+void to_dblstr_str($streamtype &s, double d)
+{
+	if (isnan(d))
+		s << "\"NaN\"";
+	else
+		s << d;
+}
+
+
+/* wfc-template:
+ * function: to_dblstr
+ * sysinclude: math.h
+ * sysinclude: stdio.h
+ */
+void to_dblstr_G(std::string &s, double d)
+{
+	if (isnan(d)) {
+		s += "\"NaN\"";
+	} else {
+		char tmp[16];
+		snprintf(tmp,sizeof(tmp),"%G",d);
+		s.append(tmp);
+	}
+}
+
+
+/* wfc-template:
+ * function: to_dblstr
+ * sysinclude: math.h
+ * sysinclude: stdio.h
+ */
+void to_dblstr_g(std::string &s, double d)
+{
+	if (isnan(d)) {
+		s += "\"NaN\"";
+	} else {
+		char tmp[16];
+		snprintf(tmp,sizeof(tmp),"%g",d);
+		s.append(tmp);
+	}
+}
+
+
+/* wfc-template:
+ * function: to_dblstr
+ * sysinclude: stdlib_noniso.h
+ * sysinclude: math.h
+ * comment: for ESP8266
+ */
+void to_dblstr_dtostrf(std::string &s, double d)
+{
+	if (isnan(d)) {
+		s += "\"NaN\"";
+	} else {
+		char tmp[16];
+		dtostrf(d,5,3,tmp);
+		s.append(tmp);
+	}
+}
+
+
+/* wfc-template:
+ * function: to_dblstr
+ */
+void to_dblstr($streamtype &s, double d)
+{
+	s << d;
+}
+
+
+/* wfc-template:
+ * function: to_dblstr
+ * sysinclude: sstream
+ */
+void to_dblstr_1(std::string &s, double d)
+{
+	std::stringstream ss;
+	ss << d;
+	s.append(ss.str());
+}
+
+
+/* wfc-template:
+ * function: to_dblstr
+ * sysinclude: stdlib.h
+ * sysinclude: math.h
+ * comment: for AVR, etc. when dtostre is available
+ */
+void to_dblstr_embedded(std::string &s, double d)
+{
+	if (isnan(d)) {
+		s += "\"NaN\"";
+	} else {
+		char buf[12];
+		dtostre(d,buf,3,0);	// 3 digits precision, plus sign omitted
+		s.append(buf);
+	}
+}
+
+
+#ifdef TEST
+#include <stdio.h>
+#include <sys/types.h>
+#include <math.h>
+
+#include <string>
+
+using namespace std;
+
+//template
+//void json_string<std::string>(std::string &json, const std::string &str);
+
+void json_string(std::string &json, const std::string &str)
+{
+	json_string<>(json,str);
+}
+
+
+
+int main()
+{
+	int64_t data[] = {
+		0,
+		 1, 9, 10, 99, 100, 1000000,
+		-1,-9,-10,-99,-100,-1000000,
+	};
+
+	string s;
+
+	for (int i = 0; i < sizeof(data)/sizeof(data[0]); ++i) {
+		to_decstr(s,data[i]);
+		printf("int64[%d]=%lld => '%s'\n",i,data[i],s.c_str());
+		s.clear();
+	}
+
+	double ddata[] = {
+		0, M_PI, M_E, 1E10, -1E10, 2.0/3.0
+	};
+
+	for (int i = 0; i < sizeof(ddata)/sizeof(ddata[0]); ++i) {
+		to_dblstr_1(s,ddata[i]);
+		printf("ddata[%d]=%g => '%s'\n",i,ddata[i],s.c_str());
+		s.clear();
+	}
+
+	return 0;
+}
+#endif
