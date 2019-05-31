@@ -1,0 +1,22 @@
+option withUnequal=true;
+
+message Fixed
+{
+	fixed8 f8 = 1;
+	sfixed8 sf8 = 2;
+	fixed16 f16 = 3;
+	sfixed16 sf16 = 4;
+	fixed32 f32 = 5;
+	sfixed32 sf32 = 6;
+	fixed64 f64 = 7;
+	sfixed64 sf64 = 8;
+
+	repeated fixed8 rf8 = 9;
+	repeated sfixed8 rsf8 = 10;
+	repeated fixed16 rf16 = 11;
+	repeated sfixed16 rsf16 = 12;
+	repeated fixed32 rf32 = 13;
+	repeated sfixed32 rsf32 = 14;
+	repeated fixed64 rf64 = 15;
+	repeated sfixed64 rsf64 = 16;
+}

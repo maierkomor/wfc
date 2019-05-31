@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2019, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -21,6 +21,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>

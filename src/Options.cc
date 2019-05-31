@@ -76,12 +76,12 @@ static bool init_module()
 	TextOptionList["SetPrefix"] = "prefix to use for set methods";
 	TextOptionList["toSink"] = "name of function for serializing with sink interface; \"\" to omit generation";
 
-	ValidOptions["VarIntBits"].insert("64");
-	ValidOptions["intsize"].insert("64");
 	TextOptionList["VarIntBits"] = "data type for varint_t (default: 64)";
+	ValidOptions["VarIntBits"].insert("64");
 	ValidOptions["VarIntBits"].insert("32");
 	ValidOptions["VarIntBits"].insert("16");
 	TextOptionList["intsize"] = "number of bits of default integer types (field option)";
+	ValidOptions["intsize"].insert("64");
 	ValidOptions["intsize"].insert("32");
 	ValidOptions["intsize"].insert("16");
 
@@ -210,7 +210,7 @@ void Options::initDefaults()
 	m_TextOptions["namespace"] = "";
 	m_TextOptions["toASCII"] = "toASCII";
 	m_TextOptions["toMemory"] = "toMemory";
-	m_TextOptions["toSink"] = "toSink";
+	m_TextOptions["toSink"] = "";
 	m_TextOptions["toString"] = "toString";
 	m_TextOptions["toWire"] = "toWire";
 	m_TextOptions["toJSON"] = "toJSON";
@@ -421,6 +421,10 @@ void Options::printTo(ostream &out, const string &prefix) const
 		for (auto i(o->m_TextOptions.begin()), e(o->m_TextOptions.end()); i != e; ++i) {
 			if (!devel && (TextOptionList.find(i->first.c_str()) == TextOptionList.end()))
 				continue;
+			if ((i->first == "Optimize") &&  (!printed.insert("Optimize_for").second))
+				continue;
+			if ((i->first == "Optimize_for") &&  (!printed.insert("Optimize").second))
+				continue;
 			if (!printed.insert(i->first).second)
 				continue;
 			char buf[70];
@@ -484,6 +488,7 @@ void Options::printTo(ostream &out, const string &prefix) const
 			out << '\n';
 		o = o->m_parent;
 	} while (o);
+	//out << prefix << "optmode " << OptimizationMode() << "\n";
 }
 
 
@@ -685,15 +690,15 @@ void Options::addOption(const char *option, const char *v, bool documented)
 	}
 	if (0 == strcasecmp(option,"Optimize")) {
 		if (value == "size")
-			m_TextOptions[option] = value;
+			m_TextOptions["Optimize"] = value;
 		else if (value == "speed")
-			m_TextOptions[option] = value;
+			m_TextOptions["Optimize"] = value;
 		else if (value == "review")
-			m_TextOptions[option] = value;
+			m_TextOptions["Optimize"] = value;
 		else if (value == "lite")
-			m_TextOptions[option] = value;
+			m_TextOptions["Optimize"] = value;
 		else if (value == "lite_runtime")
-			m_TextOptions[option] = value;
+			m_TextOptions["Optimize"] = value;
 		else
 			error("invalid argument for option %s: %s",option,value.c_str());
 		return;
@@ -820,13 +825,17 @@ const char *Options::getSource(const char *option) const
 
 optmode_t Options::OptimizationMode() const
 {
-	auto i = m_TextOptions.find("Optimize");
+	auto i = m_TextOptions.find("Optimize");	// Optimize has priority over Optimize_for
 	auto j = m_TextOptions.find("Optimize_for");
 	auto e = m_TextOptions.end();
 	if ((i == e) && (j == e)) {
 		if (m_parent)
 			return m_parent->OptimizationMode();
 		return optreview;
+	}
+	if ((i != e) && (j != e)) {
+		if (i->second != j->second)
+			error("inconsistent setting for optimization: Optimmize: '%s', Optimize_for: '%s'",i->second.c_str(),j->second.c_str());
 	}
 	if (i == e)
 		i = j;

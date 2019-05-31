@@ -27,7 +27,7 @@ CXXOBJS	= $(CXXSRCS:%.cpp=%.o) $(WFCOBJS)
 TESTCASES = \
 	corruption enumtest empty_test tttest vbittest xvarint \
 	cstrtest stringtest recursion json_hs lt1 skiptest reftest \
-	vbittest2 tttest
+	vbittest2 tttest fixed_test
 
 COMPILETESTS = \
 	unused
@@ -89,5 +89,8 @@ $(ODIR)/vbittest2: $(ODIR)/vbittest2.o $(ODIR)/validbits2.o $(ODIR)/wfc_support.
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 $(ODIR)/tttest: $(ODIR)/tttest.o $(ODIR)/tt.o $(WFCOBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+$(ODIR)/fixed_test: $(ODIR)/fixed_test.o $(ODIR)/fixed_only.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 

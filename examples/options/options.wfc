@@ -1,0 +1,48 @@
+
+/*
+ * The first option-set is for an embedded systems with 16 bits native word size.
+ */
+option optionset_16bits
+{
+	intsize=16;	// native integer size is 16bit, no larger integers are
+			// intended to be used.
+	varintbits=16;	// As RAM is limited to 16bit address range, and we don't employ
+			// integers with more than 16bits, we can limit the 
+			// varint size to 16bit, too.
+	toJSON="";	// JSON output is not needed, so we disable it.
+	toASCII="";	// ASCII output is not needed, so we disable it.
+	toString="";	// writing to a String requires dynamic memory allocation,
+			// which we want to avoid
+	toWire="";	// We intend to use toMemory, so we can skip toWire
+	optimize=size;	// flash is limited so we ask to optimize for code size
+
+	// As RAM is limited, we limit the number of elements to what is needed on the device,
+	// and allocate the RAM in an array. This is for message M -> element RS
+
+	/M/RS : arraysize = 4;
+}
+
+/*
+ * the second option-set is intended to receive the data from the 16bit controller on a PC.
+ */
+option pc
+{
+	endian=little;	// as the code is not shared, we can use the little-endian optimization
+			// for x86 CPUs.
+	optimize=speed;	// code size is not of interest, so we optimize for speed
+}
+
+
+message M
+{
+	int I0 = 1;		// unspecified integer sizes will use the maximum int size of the target.
+	unsigned U0 = 2;	// In consequence I0,U0,S0 with values beyond 16bits range, will end up
+	signed S0 = 3;		// corrupted when sending from PC to optionset_16bit.
+				// OTOH, there might be multiple sources with different value range,
+				// then these data-types are preferable to achieve compatibility.
+
+	uint16 U16 = 4;		// these data types work well in both directions
+	sint16 S16 = 5;
+
+	repeated sint8 RS = 6;
+}

@@ -3304,7 +3304,6 @@ fi
 
 if test x$enable_beta = xyes ; then
 	echo enabling beta features
-	#AC_DEFINE([BETA], [-DBETA_FEATURES], [define to 1 to activate beta features])
 	BETA=-DBETA_FEATURES
 
 else
@@ -3320,7 +3319,7 @@ else
 	exit 1
 fi
 
-RELEASE=1902
+RELEASE=1905
 
 
 

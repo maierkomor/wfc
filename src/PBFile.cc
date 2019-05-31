@@ -88,6 +88,7 @@ Options *PBFile::getOptions(const string &n)
 	for (size_t i = 1, s = options.size(); i != s; ++i)
 		if (options[i]->getName() == n)
 			return options[i];
+	error("unknown target options '%s'",n.c_str());
 	Options *o = new Options(n,Options::getDefaults());
 	options.push_back(o);
 	return o;

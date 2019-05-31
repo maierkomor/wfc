@@ -493,7 +493,7 @@ void Generator::field_fill(const string &arg)
 			(*this) << "$(m_field).push_back(" << arg << ");\n";
 			break;
 		case ft_msg:
-			(*this) <<	"n = $(m_field).back().$(fromMemory)(" << arg << ");\n";
+			(*this) << "n = $(m_field).back().$(fromMemory)(" << arg << ");\n";
 			break;
 		case ft_bytes:
 			(*this) << "$(m_field).push_back($(bytestype)(" << arg << "));\n";

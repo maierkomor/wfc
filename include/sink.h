@@ -17,8 +17,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SINK_H
-#define SINK_H
+#ifndef _SINK_H
+#define _SINK_H
 
 #include <string.h>
 #include <stdint.h>

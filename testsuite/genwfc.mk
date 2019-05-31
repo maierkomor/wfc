@@ -23,7 +23,7 @@ WFCSRCS = testcases/empty_elements.wfc testcases/enumtest.wfc testcases/validbit
 	  testcases/NodeInfo.wfc testcases/stringtypes.wfc testcases/recursion.wfc \
 	  testcases/libtest1.wfc testcases/hostscope.wfc testcases/xvarint.wfc \
 	  testcases/reference.wfc testcases/validbits2.wfc testcases/tt.wfc \
-	  testcases/unused.wfc
+	  testcases/unused.wfc testcases/fixed_only.wfc
 
 
 CXXSRCS	= $(WFCSRCS:testcases/%.wfc=$(ODIR)/%.cpp)

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2019, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -17,8 +17,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef WFC_SUPPORT_H
-#define WFC_SUPPORT_H
+#ifndef _WFC_SUPPORT_H
+#define _WFC_SUPPORT_H
 
 #include <iosfwd>
 #include <string>

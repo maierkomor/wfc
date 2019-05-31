@@ -17,8 +17,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef CSTRING_H
-#define CSTRING_H
+#ifndef _CSTRING_H
+#define _CSTRING_H
 
 #include <string.h>
 
@@ -211,4 +211,6 @@ struct CString
 };
 
 #endif
+
+
 #endif

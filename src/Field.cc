@@ -26,11 +26,81 @@
 #include <cassert>
 #include <stdlib.h>
 #include "wirefuncs.h"
+#include <set>
 
 using namespace std;
 
-
 string ParsingMessage;
+
+static const char *KeywordsA[] = {
+	"alignas",
+	"alignof",
+	"and",
+	"asm",
+	"auto",
+	"break",
+	"case",
+	"catch",
+	"char",
+	"class",
+	"const",
+	"const_cast",
+	"constexpr",
+	"continue",
+	"decltype",
+	"default",
+	"delete",
+	"do",
+	"double",
+	"dynamic_cast",
+	"else",
+	"explicit",
+	"extern",
+	"false",
+	"float",
+	"for",
+	"friend",
+	"goto",
+	"if",
+	"inline",
+	"long",
+	"mutable",
+	"namespace",
+	"new",
+	"nullptr",
+	"or",
+	"private",
+	"protected",
+	"public",
+	"register",
+	"reinterpret_cast",
+	"restrict",
+	"return",
+	"short",
+	"sizeof",
+	"static",
+	"static_assert",
+	"static_cast",
+	"struct",
+	"switch",
+	"template",
+	"this",
+	"throw",
+	"true",
+	"typedef",
+	"typeid",
+	"typename",
+	"union",
+	"using",
+	"virtual",
+	"void",
+	"volatile",
+	"while",
+	"xor",
+};
+
+
+static set<string> Keywords;
 
 
 Field::Field(const char *n, unsigned l, quant_t q, uint32_t t, long long i)
@@ -53,6 +123,12 @@ Field::Field(const char *n, unsigned l, quant_t q, uint32_t t, long long i)
 		warn("In message %s: field %s has invalid id %lld: id should be positive integer",ParsingMessage.c_str(),name.c_str(),i);
 	else if (i < 0)
 		fatal("In message %s: field %s has invalid id %lld: id must not be negative integer",ParsingMessage.c_str(),name.c_str(),i);
+	if (Keywords.empty()) {
+		for (size_t i = 0; i < sizeof(KeywordsA)/sizeof(KeywordsA[0]); ++i)
+			Keywords.insert(KeywordsA[i]);
+	}
+	if (Keywords.find(name) != Keywords.end())
+		error("invalid identifier %s",name.c_str());
 }
 
 
@@ -190,6 +266,9 @@ int64_t Field::getMaxSize() const
 				ms = strtol(maxlen.c_str(),0,0);
 			}
 			break;
+		case ft_int8:
+		case ft_uint8:
+		case ft_sint8:
 		case ft_int16:
 		case ft_uint16:
 		case ft_sint16:
@@ -415,6 +494,9 @@ wiretype_t Field::getEncoding() const
 	if ((type & ft_filter) == ft_enum)
 		return Enum::id2enum(type)->getEncoding();
 	switch (type) {
+	case ft_int8:
+	case ft_uint8:
+	case ft_sint8:
 	case ft_int16:
 	case ft_uint16:
 	case ft_sint16:
@@ -425,9 +507,6 @@ wiretype_t Field::getEncoding() const
 	case ft_uint64:
 	case ft_sint64:
 		return wt_varint;
-	case ft_int8:
-	case ft_uint8:
-	case ft_sint8:
 	case ft_bool:
 	case ft_fixed8:
 	case ft_sfixed8:
@@ -476,6 +555,9 @@ wiretype_t Field::getElementEncoding() const
 	if ((type & ft_filter) == ft_enum)
 		return Enum::id2enum(type)->getEncoding();
 	switch (type) {
+	case ft_int8:
+	case ft_uint8:
+	case ft_sint8:
 	case ft_int16:
 	case ft_uint16:
 	case ft_sint16:
@@ -486,9 +568,6 @@ wiretype_t Field::getElementEncoding() const
 	case ft_uint64:
 	case ft_sint64:
 		return wt_varint;
-	case ft_int8:
-	case ft_uint8:
-	case ft_sint8:
 	case ft_bool:
 	case ft_fixed8:
 	case ft_sfixed8:
@@ -651,6 +730,9 @@ bool Field::hasFixedSize() const
 	case ft_unsigned:
 	case ft_signed:
 	case ft_int:
+	case ft_int8:
+	case ft_sint8:
+	case ft_uint8:
 	case ft_int16:
 	case ft_sint16:
 	case ft_uint16:
@@ -662,9 +744,6 @@ bool Field::hasFixedSize() const
 	case ft_uint64:
 		return false;
 	case ft_bool:
-	case ft_int8:
-	case ft_sint8:
-	case ft_uint8:
 	case ft_fixed8:
 	case ft_sfixed8:
 	case ft_fixed16:

@@ -3,6 +3,8 @@ syntax: glob
 *.d
 *.gcda
 *.gcno
+*.orig
+*.rej
 .depend
 *.gcov
 *.csv
@@ -18,3 +20,4 @@ bin/wfc
 src/version.h
 src/template_lib.cc
 src/template_lib.h
+testsuite/fs_*

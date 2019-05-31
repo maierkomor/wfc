@@ -17,8 +17,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef BYTES_H
-#define BYTES_H
+#ifndef _BYTES_H
+#define _BYTES_H
 
 #include <inttypes.h>
 

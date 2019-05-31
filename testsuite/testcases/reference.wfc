@@ -31,7 +31,18 @@ message Packable
 	required bool Bool = 2 [ default = true ];
 	required uint8 U8 = 3 [ default = 0xff ];
 	required int8 I8 = 4 [ default = -128 ];
-	required sint8 S8 = 5 [ default = -120 ];
+	required sint8 S8 = 5 [ default = -128 ];
+}
+
+
+message FixedPackable
+{
+	required packable_enum PackedEnum = 1 [ default = pe_3 ];
+	required bool Bool = 2 [ default = true ];
+	required fixed8 F8 = 3 [ default = 0xff ];
+	required sfixed8 S8 = 4 [ default = -128 ];
+	required fixed16 F16 = 5 [ default = 0xffff ];
+	required sfixed16 S16 = 6 [ default = -129 ];
 }
 
 
@@ -64,6 +75,8 @@ message TestBench
 
 	required Packable PackedMsg = 20;
 	repeated Packable PackedMsgV = 21;
+	required FixedPackable FPackedMsg = 22;
+	repeated FixedPackable FPackedMsgV = 23;
 
 	repeated fixed8 PackedF8Vector = 0x20 [packed=true];
 	repeated fixed16 PackedF16Vector = 0x21 [packed=true];

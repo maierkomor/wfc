@@ -131,6 +131,12 @@ int main(int argc, char *argv[])
 	Packable *p = tb.add_PackedMsgV();
 	p->set_U8(0);
 	runcheck(tb);
+	p->set_I8(0);
+	runcheck(tb);
+
+	FixedPackable *f = tb.add_FPackedMsgV();
+	f->set_F8(0);
+	runcheck(tb);
 
 	tb.set_BYTESR(data,sizeof(data));
 	runcheck(tb);

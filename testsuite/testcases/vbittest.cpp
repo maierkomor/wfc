@@ -2,14 +2,15 @@
 #include <cstdlib>
 #include <iostream>
 #include <fcntl.h>
+#include <float.h>
 #include <assert.h>
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
-#ifdef __MINGW32__
-#include <float.h>
-#else
+#ifdef __linux__
 #include <values.h>
+#else
+#include <float.h>
 #endif
 
 #include "validbits.h"

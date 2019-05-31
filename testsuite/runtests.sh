@@ -34,6 +34,11 @@ flagsets[fs_OrLi]="-Or -fwfclib=inline"
 flagsets[fs_OrLe]="-Or -fwfclib=extern"
 flagsets[fs_O2le]="-O2 -fendian=little"
 
+CXXFLAGS0=$CXXFLAGS
+if [ "" == "$CXXFLAGS0" ]; then
+	CXXFLAGS0="-Os -g -Wall --std=c++11"
+fi
+
 
 for flagset in "${!flagsets[@]}"; do
 	echo testing with flagset $flagset
@@ -41,7 +46,7 @@ for flagset in "${!flagsets[@]}"; do
 	#ODIR=`pwd`/"$flagset"
 	ODIR="$flagset"
 	WFCFLAGS="${flagsets["$flagset"]}"
-	CXXFLAGS="-Os -g -I../include -I. -I$ODIR"
+	CXXFLAGS="$CXXFLAGS0 -I../include -I. -I$ODIR"
 	if [ -d $ODIR ]; then
 		rm -r $ODIR
 	fi

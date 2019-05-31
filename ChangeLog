@@ -1,4 +1,13 @@
-Release R1920:
+Release R1905:
+==============
+- fix: generated code with fixed8/fixed16 may not compile
+- fix: invalid handing of int8 in some cases
+- fix: remove superfluous duplicate parenthesis
+- enhancement: use emplace_back instead of resize
+- enhancement: safeguard identifiers against conflicts with keywords
+- change: disable Sink support per default to avoid include dependency
+
+Release R1902:
 ==============
 - first public release
 - use option -h to query available options

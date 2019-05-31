@@ -17,8 +17,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef ARRAY_H
-#define ARRAY_H
+#ifndef _ARRAY_H
+#define _ARRAY_H
 
 #include <assert.h>
 #include <stdint.h>

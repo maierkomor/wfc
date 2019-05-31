@@ -29,12 +29,14 @@
 #include "version.h"
 
 #include <assert.h>
-#include <string.h>
+#include <errno.h>
 #include <fstream>
-#include <time.h>
 #include <limits.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 
@@ -125,12 +127,16 @@ void CodeGenerator::writeLib(const char *basename)
 		impl->writeLib();
 	else if (isDir(basename)) {
 		char cwd[PATH_MAX];
-		getcwd(cwd,sizeof(cwd));
+		if (0 == getcwd(cwd,sizeof(cwd))) {
+			error("unable to determine current work directory: %s",strerror(errno));
+			return;
+		}
 		if (0 == chdir(basename))
 			impl->writeLib();
 		else
 			error("unable to cd to %s: %s",basename,strerror(errno));
-		chdir(cwd);
+		if (-1 == chdir(cwd))
+			warn("unable to change directory back to %s: %s",cwd,strerror(errno));
 	} else
 		error("Unable to change the name of the core library. Target directory must exist.");
 }
