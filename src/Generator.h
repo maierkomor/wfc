@@ -52,7 +52,7 @@ class Generator
 	void setVariableDec(const std::string &n, int64_t v);
 	void setVariableHex(const std::string &n, uint64_t v);
 	void clearVariable(const std::string &n);
-	void field_fill(const std::string &arg);
+	void fillField(const std::string &arg);
 	void setMode(genmode_t);
 
 	const Message *getMessage() const

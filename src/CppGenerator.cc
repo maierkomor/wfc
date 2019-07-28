@@ -53,7 +53,7 @@ CppGenerator::CppGenerator(PBFile *p, Options *o)
 , PaddedMsgSize(false)
 , SinkToTemplate(false)
 , WithJson(false)
-, EarlyDecode(false)	// TODO: bind to -Os or other option
+, EarlyDecode(false)
 , inlineClear(true)
 , inlineHas(true)
 , inlineGet(true)
@@ -370,11 +370,9 @@ void CppGenerator::initVBits(Message *m)
 	// valid bits are necessary for optional fields
 	// validbit=explicit: all types but ft_cstr get a valid-bit
 	// validbit=implicit: following types
-	if (m->isOneOf())
-		fatal("one-of messages are unsupported");
 	size_t vbit = 0;
-	for (size_t i = 0, n = m->numFields(); i != n; ++i) {
-		Field *f = m->getField(i);
+	for (auto i : m->getFields()) {
+		Field *f = i.second;
 		if ((f == 0) || (!f->isUsed()))
 			continue;
 		quant_t q = f->getQuantifier();
@@ -470,8 +468,8 @@ void CppGenerator::init(const vector<string> &msgs)
 
 void CppGenerator::scanRequirements(Message *m)
 {
-	for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-		Field *f = m->getField(i);
+	for (auto i : m->getFields()) {
+		Field *f = i.second;
 		if (f == 0)
 			continue;
 		if (!f->isUsed()) {
@@ -685,9 +683,8 @@ void CppGenerator::writeFiles(const char *basename)
 
 static void mangle_filename(string &dst, const string src)
 {
-	locale loc;
 	for (unsigned i = 0, n = src.length(); i != n; ++i) {
-		char c = toupper(src.at(i),loc);
+		char c = ::toupper(src.at(i));
 		if (c == '-')
 			c = '_';
 		else if (c == '.')
@@ -707,6 +704,11 @@ bool CppGenerator::writeMember(Generator &G, Field *f, bool def_not_init, bool f
 	if (!f->isUsed()) {
 		hasUnused = true;
 		G << "// omitted unused member $(fname)\n";
+		G.setField(0);
+		return first;
+	}
+	if (f->isVirtual()) {
+		G << "// no definition for virtual member $(fname)\n";
 		G.setField(0);
 		return first;
 	}
@@ -751,57 +753,81 @@ void CppGenerator::writeHeaderDecls(Generator &G, Field *f)
 		return;
 	if (!f->isUsed())
 		return;
+	bool v = f->isVirtual();
+	if (v) {
+		G.setVariable("virtual","virtual ");
+		G.setVariable("vimpl", " = 0");
+	} else {
+		G.setVariable("virtual","");
+		G.setVariable("vimpl", "");
+	}
 	G.setField(f);
 	bool simpletype = f->hasSimpleType();
-	uint8_t q = f->getQuantifier();
-	if (q != q_required)
-		G	<< "bool $(field_has)() const;\n";
-	if (q_repeated == q) {
-		G	<< "size_t $(fname)_size() const;\n";
-		if (f->hasMessageType())
-			G << "$(typestr)* $(field_add)();\n";
-		else if (simpletype)
-			G << "void $(field_add)($(typestr) v);\n";
-		else
-			G << "void $(field_add)(const $(typestr) &v);\n";
-	}
-	if (q != q_required)
-		G << "void $(field_clear)();\n";
-	if (q_repeated == q)
-		G << "$(fullrtype)$(field_get)(unsigned x) const;\n";
-	else
-		G << "$(fullrtype)$(field_get)() const;\n";
 	uint32_t type = f->getType();
-	if (type == ft_bytes)
-		G <<	"void $(field_set)(const void *data, size_t s);\n";
-	G << "void $(field_set)";
-	if (q_repeated == q)
-		G << "(unsigned x, $(fullrtype) v);\n";
-	else
-		G << "($(rtype) v);\n";
-	if (target->getOption("MutableType") == "pointer")
-		G << "$(ptype)$(field_mutable)";
-	else if (target->getOption("MutableType") == "reference")
-		G << "$(typestr) &$(field_mutable)";
-	else
-		abort();
-	if (q_repeated == q)
-		G << "(unsigned x);\n";
-	else
-		G << "();\n";
+	uint8_t q = f->getQuantifier();
+	if (q == q_optional)
+		G	<< "$(virtual)bool $(field_has)() const$(vimpl);\n";
 	if (q_repeated == q) {
-		if (unsigned s = f->getArraySize())
-			G << "array<$(typestr)," << s << "> ";
+		G	<< "$(virtual)size_t $(fname)_size() const$(vimpl);\n";
+		if (f->hasMessageType())
+			G << "$(virtual)$(typestr)* $(field_add)()$(vimpl);\n";
+		else if (simpletype)
+			G << "$(virtual)void $(field_add)($(typestr) v)$(vimpl);\n";
 		else
-			G << "std::vector<$(typestr)> ";
+			G << "$(virtual)void $(field_add)(const $(typestr) &v)$(vimpl);\n";
+		if (v && ((type == ft_string) || (type == ft_bytes) || ((type & ft_filter) == ft_msg))) {
+			G <<	"virtual void $(field_add)(const void *, size_t) = 0;\n";
+		}
+	}
+	if ((q != q_required) || v)
+		G << "$(virtual)void $(field_clear)()$(vimpl);\n";
+	if ((q == q_repeated) && v)
+		G << "virtual const std::vector<$(typestr)> &$(field_get)() const = 0;\n";
+	if (q_repeated == q)
+		G << "$(virtual)$(fullrtype)$(field_get)(unsigned x) const$(vimpl);\n";
+	else
+		G << "$(virtual)$(fullrtype)$(field_get)() const$(vimpl);\n";
+	if ((q_repeated != q) && ((type == ft_bytes) || (type == ft_string) || ((type & ft_filter) == ft_msg)))
+		G <<	"$(virtual)void $(field_set)(const void *data, size_t s)$(vimpl);\n";
+	if (!v || (q_repeated != q)) {// ||  ((type != ft_bytes) && (type != ft_string))) {
+		// set
+		G << "$(virtual)void $(field_set)";
+		if (q_repeated == q)
+			G << "(unsigned x, $(fullrtype)v)$(vimpl);\n";
+		else
+			G << "($(rtype) v)$(vimpl);\n";
+	}
+	if (!v) {
+		// mutable
 		if (target->getOption("MutableType") == "pointer")
-			G << '*';
+			G << "$(virtual)$(ptype)$(field_mutable)";
 		else if (target->getOption("MutableType") == "reference")
-			G << '&';
+			G << "$(virtual)$(typestr) &$(field_mutable)";
 		else
 			abort();
-		G << "$(field_mutable)();\n";
+		if (q_repeated == q)
+			G << "(unsigned x)$(vimpl);\n";
+		else
+			G << "()$(vimpl);\n";
+		if (q_repeated == q) {
+			G << "$(virtual)";
+			if (unsigned s = f->getArraySize())
+				G << "array<$(typestr)," << s << "> ";
+			else
+				G << "std::vector<$(typestr)> ";
+			if (target->getOption("MutableType") == "pointer")
+				G << '*';
+			else if (target->getOption("MutableType") == "reference")
+				G << '&';
+			else
+				abort();
+			G << "$(field_mutable)()$(vimpl);\n";
+		}
+	} else {
+		G << "virtual bool $(fname)_empty() const = 0;\n";
 	}
+	if (v && PrintOut && ((type & ft_filter) == ft_msg))
+		G << "virtual void $(fname)_$(toASCII)($(streamtype) &o, const std::string &p) const = 0;\n";
 	G << '\n';
 	G.setField(0);
 }
@@ -862,43 +888,74 @@ void CppGenerator::writeEnumDefs(Generator &G, Enum *en)
 
 void CppGenerator::writeMembers(Generator &G, Message *m, bool def_not_init)
 {
-	const string &sorting = m->getOption("SortMembers");
-	if ((sorting != "id") && (sorting != "type"))
+	string sorting = m->getOption("SortMembers");
+	if ((sorting != "id") && (sorting != "size") && (sorting != "type") && (sorting != "name") && (sorting != "unsorted")) {
 		error("Invalid argument '%s' for option SortMember. Valid values are: id, type",sorting.c_str());
-	unsigned nf = m->numFields();
-	if (sorting == "id") {
-		bool first = true;
-		for (unsigned i = 0; i != nf; ++i) {
-			Field *f = m->getField(i);
-			if (f)
-				first = writeMember(G,f,def_not_init,first);
-		}
-		return;
+		sorting = "id";
 	}
-	assert(sorting == "type");
-	unsigned size = 32;
 	bool first = true;
-	do {
-		size >>= 1;
-		for (unsigned i = 0; i != nf; ++i) {
-			Field *f = m->getField(i);
-			if ((f == 0) || (!f->isRepeated()))
-				continue;
-			if (f->getMemberSize() == size)
+	const std::map<unsigned,Field *> &fields = m->getFields();
+	if (sorting == "unsorted") {
+		const vector<unsigned> &seq = m->getFieldSeq();
+		for (auto i = seq.begin(), e = seq.end(); i != e; ++i) {
+			Field *f = m->getFieldId(*i);
+			assert(f);
+			first = writeMember(G,f,def_not_init,first);
+		}
+	} else if (sorting == "id") {
+		for (auto i : fields) {
+			if (Field *f = i.second)
 				first = writeMember(G,f,def_not_init,first);
 		}
-	} while (size);
-	size = 32;
-	do {
-		size >>= 1;
-		for (unsigned i = 0; i != nf; ++i) {
-			Field *f = m->getField(i);
-			if ((f == 0) || (f->isRepeated()))
-				continue;
-			if (f->getMemberSize() == size)
-				first = writeMember(G,f,def_not_init,first);
+	} else if (sorting == "size") {
+		unsigned size = 32;
+		do {
+			for (auto i : fields) {
+				Field *f = i.second; 
+				if ((f == 0) || (!f->isRepeated()))
+					continue;
+				if (f->getMemberSize() == size)
+					first = writeMember(G,f,def_not_init,first);
+			}
+			size >>= 1;
+		} while (size);
+		size = 32;
+		do {
+			for (auto i : fields) {
+				Field *f = i.second; 
+				if ((f == 0) || (f->isRepeated()))
+					continue;
+				if (f->getMemberSize() == size)
+					first = writeMember(G,f,def_not_init,first);
+			}
+			size >>= 1;
+		} while (size);
+	} else if (sorting == "type") {
+		set<string> tns;
+		for (auto i : fields) {
+			if (Field *f = i.second)
+				tns.insert(f->getTypeName());
 		}
-	} while (size);
+		for (auto ti = tns.begin(), te = tns.end(); ti != te; ++ti) {
+			const string &tn = *ti;
+			for (auto i : fields) {
+				Field *f = i.second; 
+				if ((f == 0) || (tn != f->getTypeName()))
+					continue;
+				first = writeMember(G,f,def_not_init,first);
+			}
+		}
+	} else if (sorting == "name") {
+		map<string,Field*> names;
+		for (auto i : fields) {
+			Field *f = i.second; 
+			if (f)
+				names.insert(make_pair(f->getName(),f));
+		}
+		for (auto ni = names.begin(), ne = names.end(); ni != ne; ++ni)
+			first = writeMember(G,ni->second,def_not_init,first);
+	} else
+		abort();
 }
 
 
@@ -921,10 +978,12 @@ void CppGenerator::writeClass(Generator &G, Message *m)
 	G <<	"\n"
 	 	"{\n"
 		"public:\n"
-		"$(msg_name)();\n\n"
-		"bool operator != (const $(msg_name) &r) const;\n"
-		"bool operator == (const $(msg_name) &r) const;\n"
-		"void $(msg_clear)();\n"
+		"$(msg_name)();\n\n";
+	if (target->getFlag("withUnequal"))
+		G << "bool operator != (const $(msg_name) &r) const;\n";
+	if (target->getFlag("withEqual"))
+		G << "bool operator == (const $(msg_name) &r) const;\n";
+	G <<	"void $(msg_clear)();\n"
 		"size_t $calcSize() const;\n";
 	if (G.hasValue("getMaxSize"))
 		G << "size_t $getMaxSize() const;\n";
@@ -961,8 +1020,8 @@ void CppGenerator::writeClass(Generator &G, Message *m)
 		}
 		G.setMessage(m);
 	}
-	for (unsigned i = 0, e = m->numFields(); i != e; ++i)
-		writeHeaderDecls(G,m->getField(i));
+	for (auto i : m->getFields())
+		writeHeaderDecls(G,i.second);
 	G <<	"\n"
 		"protected:\n";
 	writeMembers(G,m,true);
@@ -988,34 +1047,11 @@ void CppGenerator::writeClass(Generator &G, Message *m)
 
 void CppGenerator::writeHas(Generator &G, Field *f)
 {
-	quant_t q = f->getQuantifier();
-	if (q == q_required)
+	if (f->getQuantifier() != q_optional)
 		return;
-	//uint32_t t = f->getType();
 	G <<	"$(inline)bool $(prefix)$(msg_name)::$(field_has)() const\n"
 		"{\n"
-		"return ";
-	switch (q) {
-	case q_unspecified:
-	case q_optional:
-		writeGetValid(G,f);
-		G << ";\n}\n\n";
-		break;
-	case q_required:
-		abort();
-		/*
-		if ((t == ft_bytes) || (t == ft_string))
-			G << "!m_$(fname).empty();\n}\n\n";
-		else if (t == ft_cptr)
-			G << "0 != m_$(fname)[0];\n}\n\n";
-		else
-			G << "true;\n}\n\n";
-		*/
-		break;
-	case q_repeated:
-		G << "!m_$(fname).empty();\n}\n\n";
-		break;
-	}
+		"return " << getValid(f) << ";\n}\n\n";
 }
 
 
@@ -1024,7 +1060,7 @@ void CppGenerator::writeSize(Generator &G, Field *f)
 	if (f->getQuantifier() == q_repeated) {
 		G <<	"$(inline)size_t $(prefix)$(msg_name)::$(fname)_size() const\n"
 			"{\n"
-			"return m_$(fname).size();\n"
+			"return $(field_size);\n"
 			"}\n\n";
 	}
 }
@@ -1032,6 +1068,8 @@ void CppGenerator::writeSize(Generator &G, Field *f)
 
 void CppGenerator::writeFunctions(Generator &G, Field *f)
 {
+	if (f->isVirtual())
+		return;
 	G.setField(f);
 	if (!inlineHas)
 		writeHas(G,f);
@@ -1049,6 +1087,8 @@ void CppGenerator::writeFunctions(Generator &G, Field *f)
 
 void CppGenerator::writeInlines(Generator &G, Field *f)
 {
+	if (f->isVirtual())
+		return;
 	G.setField(f);
 	if (inlineGet)
 		writeGet(G,f);
@@ -1078,8 +1118,8 @@ void CppGenerator::writeInlines(Generator &G, Message *m)
 	}
 	if (inlineMaxSize)
 		writeMaxSize(G,m);
-	for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-		Field *f = m->getField(i);
+	for (auto i : m->getFields()) {
+		Field *f = i.second;
 		if ((f != 0) && (f->isUsed()))
 			writeInlines(G,f);
 	}
@@ -1102,6 +1142,8 @@ void CppGenerator::writeHeader(const string &bn)
 	msg("generating %s...",fn.c_str());
 	fstream out;
 	out.open(fn.c_str(),fstream::out);
+	if (!out)
+		fatal("unable to create output file %s",fn.c_str());
 	string ucfn;
 	mangle_filename(ucfn,bn);
 	writeInfos(out);
@@ -1226,12 +1268,12 @@ void CppGenerator::writeGet(Generator &G, Field *f)
 {
 	uint8_t q = f->getQuantifier();
 	if (q != q_repeated) {
-		G <<	"$(inline)$(fullrtype) $(prefix)$(msg_name)::$(field_get)() const\n"
+		G <<	"$(inline)$(fullrtype)$(prefix)$(msg_name)::$(field_get)() const\n"
 			"{\n"
 			"return m_$(fname);\n"
 			"}\n\n";
 	} else {
-		G <<	"$(inline)$(fullrtype) $(prefix)$(msg_name)::$(field_get)(unsigned x) const\n"
+		G <<	"$(inline)$(fullrtype)$(prefix)$(msg_name)::$(field_get)(unsigned x) const\n"
 			"{\n"
 			"return m_$(fname)[x];\n"
 			"}\n\n";
@@ -1280,7 +1322,7 @@ void CppGenerator::writeMutable(Generator &G, Field *f)
 		G.setVariable("index","[x]");
 		G <<	"$(prefix)$(msg_name)::$(field_mutable)(unsigned x)\n"
 			"{\n"
-			"if (x >= m_$(fname).size())\n"
+			"if (x >= $(field_size))\n"
 			"m_$(fname).resize(x+1);\n";
 	} else
 		abort();
@@ -1342,7 +1384,7 @@ void CppGenerator::writeSet(Generator &G, Field *f)
 				"{\n"
 				"m_$(fname).assign((const char *)data,s);\n"
 				"}\n\n";
-		G <<	"$(inline)void $(prefix)$(msg_name)::$(field_set)($(fullrtype) v)\n"
+		G <<	"$(inline)void $(prefix)$(msg_name)::$(field_set)($(fullrtype)v)\n"
 			"{\n"
 			"m_$(fname) = v;\n"
 			"}\n\n";
@@ -1350,7 +1392,7 @@ void CppGenerator::writeSet(Generator &G, Field *f)
 		if (f->hasMessageType())
 			G	<< "$(inline)$(fulltype) *$(prefix)$(msg_name)::$(field_add)()\n"
 				   "{\n"
-				   "m_$(fname).resize(m_$(fname).size()+1);\n"
+				   "m_$(fname).resize($(field_size)+1);\n"
 				   "return &m_$(fname).back();\n"
 				   "}\n\n";
 		else if (f->hasSimpleType())
@@ -1366,7 +1408,7 @@ void CppGenerator::writeSet(Generator &G, Field *f)
 		G <<	"$(inline)void $(prefix)$(msg_name)::$(field_set)(unsigned x, $(fullrtype)v)\n"
 			"{\n";
 		if (Asserts)
-			G <<	"assert(x < m_$(fname).size());\n";
+			G <<	"assert(x < $(field_size));\n";
 		G <<	"m_$(fname)[x] = v;\n"
 			"}\n\n";
 	} else
@@ -1416,11 +1458,14 @@ void CppGenerator::writeCalcSize(Generator &G, Field *f)
 		tstr = buf;
 	}
 	if (quan == q_repeated) {
+		bool v = f->isVirtual();
 		if (f->hasMessageType()) {
 			G <<	"// repeated message $(fname)\n"
-				"for (size_t x = 0, y = m_$(fname).size(); x < y; ++x) {\n"
-				"size_t s = m_$(fname)[x].$calcSize();\n"
-				;
+				"for (size_t x = 0, y = $(field_size); x < y; ++x) {\n";
+			if (v)
+				G <<	"size_t s = $(field_get)(x).$(calcSize)();\n";
+			else
+				G <<	"size_t s = m_$(fname)[x].$calcSize();\n";
 			if (PaddedMsgSize)
 				G << "r += sizeof(varint_t)*8/7+1;\n";
 			else
@@ -1430,11 +1475,15 @@ void CppGenerator::writeCalcSize(Generator &G, Field *f)
 			G.setField(0);
 			return;
 		}
-		G << "if (!m_$(fname).empty()) {\n";
+		if (v)
+			G << "if (!$(fname)_empty()) {\n";
+		else
+			G << "if (!m_$(fname).empty()) {\n";
 		if (f->isPacked()) {
 		// dynamic encoding cannot be used for packed arrays
 			uint32_t t = type;
 			unsigned shift;
+			G.setVariable("index","x");
 			if ((type & ft_filter) == ft_enum) {
 				wiretype_t ee = Enum::id2enum(type)->getEncoding();
 				if (ee != wt_dynamic)
@@ -1466,8 +1515,8 @@ void CppGenerator::writeCalcSize(Generator &G, Field *f)
 			case ft_sint64:
 				G <<	"// $(fname): packed repeated $(typestr)\n"
 					"size_t $(fname)_dl = 0;\n"
-					"for (size_t x = 0, y = m_$(fname).size(); x < y; ++x)\n"
-					"$(fname)_dl += $(wiresize_s)((int64_t)m_$(fname)[x]);\n"
+					"for (size_t x = 0, y = $(field_size); x < y; ++x)\n"
+					"$(fname)_dl += $(wiresize_s)((int64_t)$(field_value));\n"
 					"r += $(fname)_dl + $(wiresize_s)($(fname)_dl) /* data length */" << tstr << ";\n";
 				G.setField(0);
 				G <<	"}\n";	// end of if (!m_(fname).empty())
@@ -1481,8 +1530,8 @@ void CppGenerator::writeCalcSize(Generator &G, Field *f)
 			case ft_uint64:
 				G <<	"// $(fname): packed repeated $(typestr)\n"
 					"size_t $(fname)_dl = 0;\n"
-					"for (size_t x = 0, y = m_$(fname).size(); x < y; ++x)\n"
-					"$(fname)_dl += $(wiresize_u)((varint_t)m_$(fname)[x]);\n"
+					"for (size_t x = 0, y = $(field_size); x < y; ++x)\n"
+					"$(fname)_dl += $(wiresize_u)((varint_t)$(field_value));\n"
 					"r += $(fname)_dl + $(wiresize_u)($(fname)_dl) /* data length */" << tstr << ";\n";
 				G.setField(0);
 				G <<	"}\n";	// end of if (!m_(fname).empty())
@@ -1494,8 +1543,8 @@ void CppGenerator::writeCalcSize(Generator &G, Field *f)
 			case ft_int64:
 				G <<	"// $(fname): packed repeated $(typestr)\n"
 					"size_t $(fname)_dl = 0;\n"
-					"for (size_t x = 0, y = m_$(fname).size(); x < y; ++x)\n"
-					"$(fname)_dl += $(wiresize_x)(m_$(fname)[x]);\n"
+					"for (size_t x = 0, y = $(field_size); x < y; ++x)\n"
+					"$(fname)_dl += $(wiresize_x)($field_value);\n"
 					"r += $(fname)_dl + $(wiresize_x)($(fname)_dl) /* data length */" << tstr << ";\n";
 				G.setField(0);
 				G <<	"}\n";	// end of if (!m_(fname).empty())
@@ -1503,14 +1552,14 @@ void CppGenerator::writeCalcSize(Generator &G, Field *f)
 			}
 			if (shift == 0) {
 				G <<	"// $(fname): repeated packed $(typestr), with fixed element size of one byte\n"
-					"size_t $(fname)_dl = m_$(fname).size();\n"
+					"size_t $(fname)_dl = $(field_size);\n"
 					"r += $(fname)_dl + $(wiresize_u)($(fname)_dl)" << tstr << ";\n";
 				G.setField(0);
 				G <<	"}\n";	// end of if (!m_(fname).empty())
 				return;
 			} else if (shift > 0) {
 				G <<	"// $(fname): repeated packed $(typestr), with fixed element size\n"
-					"size_t $(fname)_dl = m_$(fname).size() << " << shift << ";\n"
+					"size_t $(fname)_dl = $(field_size) << " << shift << ";\n"
 					"r += $(fname)_dl + $(wiresize_u)($(fname)_dl)" << tstr << ";\n";
 				G.setField(0);
 				G <<	"}\n";	// end of if (!m_(fname).empty())
@@ -1518,49 +1567,51 @@ void CppGenerator::writeCalcSize(Generator &G, Field *f)
 			}
 			abort();
 		}
+		G.setVariable("index","x");
 		if (f->hasFixedSize()) {
 			assert(!f->isPacked());
 			G <<	"// $(fname): non-packed, fixed size elements\n"
-				"r += m_$(fname).size() * " << f->getFixedSize() << ";\t// including tag\n";
+				"r += $(field_size) * " << f->getFixedSize() << ";\t// including tag\n";
 		} else if (f->hasEnumType())
 			G <<	"// $(fname): repeated enum $(typestr)\n"
-				"for (size_t x = 0, y = m_$(fname).size(); x < y; ++x)\n"
-				"r += $(wiresize_u)(m_$(fname)[x]);\n"
-				"r += m_$(fname).size() * $(tagsize);\t// tags\n";
+				"for (size_t x = 0, y = $(field_size); x < y; ++x)\n"
+				"r += $(wiresize_u)($field_value);\n"
+				"r += $(field_size) * $(tagsize);\t// tags\n";
 		else if (type == ft_cptr)
 			G <<	"// $(fname): repeated $(typestr)\n"
-				"for (size_t x = 0, y = m_$(fname).size(); x < y; ++x) {\n"
-				"	size_t $(fname)_s = m_$(fname)[x] ? (strlen(m_$(fname)[x]) + 1) : 1;\n"
+				"for (size_t x = 0, y = $(field_size); x < y; ++x) {\n"
+				"	size_t $(fname)_s = $(field_value) ? (strlen($field_value) + 1) : 1;\n"
 				"	r += $(fname)_s + $(wiresize_u)($(fname)_s)" << tstr << ";\n"
 				"}\n";
 		else if ((type == ft_bytes) || (type == ft_string))
 			G <<	"// $(fname): repeated $(typestr)\n"
-				"for (size_t x = 0, y = m_$(fname).size(); x < y; ++x) {\n"
-				"size_t s = m_$(fname)[x].size();\n"
+				"for (size_t x = 0, y = $(field_size); x < y; ++x) {\n"
+				"size_t s = $(field_value).size();\n"
 				"r += $(wiresize_u)(s);\n"
 				"r += s" << tstr << ";\n"
 				"}\n";
 		else if ((type == ft_sint8) || (type == ft_sint16) || (type == ft_sint32) || (type == ft_sint64))
 			G <<	"// $(fname): " << packed << "repeated $(typestr)\n"
 				"size_t $(fname)_dl = 0;\n"
-				"for (size_t x = 0, y = m_$(fname).size(); x < y; ++x)\n"
-				"$(fname)_dl += $(wiresize_s)((int64_t)m_$(fname)[x])" << tstr << ";\n"
+				"for (size_t x = 0, y = $(field_size); x < y; ++x)\n"
+				"$(fname)_dl += $(wiresize_s)((int64_t)$(field_value))" << tstr << ";\n"
 				"r += $(fname)_dl;\n";
 		else if ((type == ft_int8) || (type == ft_int16) || (type == ft_int32) || (type == ft_int64))
 			G <<	"// $(fname): " << packed << "repeated $(typestr)\n"
 				"size_t $(fname)_dl = 0;\n"
-				"for (size_t x = 0, y = m_$(fname).size(); x < y; ++x)\n"
-				"$(fname)_dl += $(wiresize_x)(m_$(fname)[x])" << tstr << ";\n"
+				"for (size_t x = 0, y = $(field_size); x < y; ++x)\n"
+				"$(fname)_dl += $(wiresize_x)($field_value)" << tstr << ";\n"
 				"r += $(fname)_dl;\n";
 		else if ((type == ft_uint8) || (type == ft_uint16) || (type == ft_uint32) || (type == ft_uint64)
 			|| ((type & ft_filter) == ft_enum))
 			G <<	"// $(fname): " << packed << "repeated $(typestr)\n"
 				"size_t $(fname)_dl = 0;\n"
-				"for (size_t x = 0, y = m_$(fname).size(); x < y; ++x)\n"
-				"$(fname)_dl += $(wiresize_u)((varint_t)m_$(fname)[x])" << tstr << ";\n"
+				"for (size_t x = 0, y = $(field_size); x < y; ++x)\n"
+				"$(fname)_dl += $(wiresize_u)((varint_t)$(field_value))" << tstr << ";\n"
 				"r += $(fname)_dl;\n";
 		else
 			abort();
+		G.clearVariable("index");
 		G.setField(0);
 		G	<< "}\n";	// end of if (!m_(fname).empty())
 		return;
@@ -1574,7 +1625,10 @@ void CppGenerator::writeCalcSize(Generator &G, Field *f)
 			G << "if ($(field_has)()) {\n";
 	}
 	if ((type & ft_filter) == ft_msg) {
-		if (PaddedMsgSize)
+		if (f->isVirtual())
+			G <<	"size_t $(fname)_s = $(field_get)().$calcSize();\n"
+				"r += $(fname)_s + $(wiresize_u)($(fname)_s)" << tstr << ";\n";
+		else if (PaddedMsgSize)
 			G <<	"size_t $(fname)_s = m_$(fname).$calcSize();\n"
 				"r += $(fname)_s + sizeof(varint_t)*8/7+1" << tstr << ";\n";
 		else
@@ -1587,19 +1641,19 @@ void CppGenerator::writeCalcSize(Generator &G, Field *f)
 	case ft_int16:
 	case ft_int32:
 	case ft_int64:
-		G << "r += $(wiresize_x)((varint_t)m_$(fname))" << tstr << ";\n";
+		G << "r += $(wiresize_x)((varint_t)$(field_value))" << tstr << ";\n";
 		break;
 	case ft_uint8:
 	case ft_uint16:
 	case ft_uint32:
 	case ft_uint64:
-		G << "r += $(wiresize_u)((varint_t)m_$(fname))" << tstr << ";\n";
+		G << "r += $(wiresize_u)((varint_t)$(field_value))" << tstr << ";\n";
 		break;
 	case ft_sint8:
 	case ft_sint16:
 	case ft_sint32:
 	case ft_sint64:
-		G << "r += $(wiresize_s)((varint_t)m_$(fname))" << tstr << ";\n";
+		G << "r += $(wiresize_s)((varint_t)$(field_value))" << tstr << ";\n";
 		break;
 	case ft_bool:
 	case ft_fixed8:
@@ -1626,14 +1680,14 @@ void CppGenerator::writeCalcSize(Generator &G, Field *f)
 		break;
 	case ft_cptr:
 		if (quan == q_required)
-			G <<	"size_t $(fname)_s = m_$(fname) ? (strlen(m_$(fname)) + 1) : 1;\n";
+			G <<	"size_t $(fname)_s = $(field_value) ? (strlen($field_value) + 1) : 1;\n";
 		else
-			G <<	"size_t $(fname)_s = m_$(fname) ? (strlen(m_$(fname)) + 1) : 0;\n";
+			G <<	"size_t $(fname)_s = $(field_value) ? (strlen($field_value) + 1) : 0;\n";
 		G <<	"r += $(fname)_s + $(wiresize_u)($(fname)_s)" << tstr << ";\n";
 		break;
 	case ft_bytes:
 	case ft_string:
-		G <<	"size_t $(fname)_s = m_$(fname).size();\n"
+		G <<	"size_t $(fname)_s = $(field_value).size();\n"
 			"r += $(fname)_s + $(wiresize_u)($(fname)_s)" << tstr << ";\n";
 		break;
 	default:
@@ -1650,8 +1704,8 @@ void CppGenerator::writeCalcSize(Generator &G, Message *m)
 	G	<< "size_t $(prefix)$(msg_name)::$calcSize() const\n"
 		<< "{\n";
 	size_t n = 0;
-	for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-		Field *f = m->getField(i);
+	for (auto i : m->getFields()) {
+		Field *f = i.second;
 		if (f == 0)
 			continue;
 		if (f->getQuantifier() == 1) {
@@ -1672,8 +1726,8 @@ void CppGenerator::writeCalcSize(Generator &G, Message *m)
 		}
 	}
 	G << "size_t r = " << n << ";\t// required size, default is fixed length\n";
-	for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-		Field *f = m->getField(i);
+	for (auto i : m->getFields()) {
+		Field *f = i.second;
 		if (f == 0)
 			continue;
 		if (!(f->hasFixedSize() && (f->getQuantifier() == 1)) && f->isUsed())
@@ -1690,7 +1744,7 @@ void CppGenerator::decode8bit(Generator &G, Field *f)
 {
 	G <<	"if (a >= e)\n"
 		"	$handle_error;\n";
-	G.field_fill("*a++");
+	G.fillField("*a++");
 }
 
 
@@ -1701,10 +1755,10 @@ void CppGenerator::decode16bit(Generator &G, Field *f)
 	switch (f->getTypeClass()) {
 	case ft_uint16:
 	case ft_enum:
-		G.field_fill("read_u16(a)");
+		G.fillField("read_u16(a)");
 		break;
 	default:
-		G.field_fill("($typestr) read_u16(a)");
+		G.fillField("($typestr) read_u16(a)");
 	}
 	G <<	"a += 2;\n";
 }
@@ -1716,14 +1770,14 @@ void CppGenerator::decode32bit(Generator &G, Field *f)
 		"	$handle_error;\n";
 	switch (f->getTypeClass()) {
 	case ft_float:
-		G.field_fill("read_float(a)");
+		G.fillField("read_float(a)");
 		break;
 	case ft_uint32:
 	case ft_enum:
-		G.field_fill("read_u32(a)");
+		G.fillField("read_u32(a)");
 		break;
 	default:
-		G.field_fill("($typestr) read_u32(a)");
+		G.fillField("($typestr) read_u32(a)");
 		break;
 	}
 	G <<	"a += 4;\n";
@@ -1736,14 +1790,14 @@ void CppGenerator::decode64bit(Generator &G, Field *f)
 		"	$handle_error;\n";
 	switch (f->getTypeClass()) {
 	case ft_double:
-		G.field_fill("read_double(a)");
+		G.fillField("read_double(a)");
 		break;
 	case ft_enum:
 	case ft_uint32:
-		G.field_fill("read_u64(a)");
+		G.fillField("read_u64(a)");
 		break;
 	default:
-		G.field_fill("($typestr) read_u64(a)");
+		G.fillField("($typestr) read_u64(a)");
 		break;
 	}
 	G <<	"a += 8;\n";
@@ -1758,7 +1812,7 @@ void CppGenerator::decodeVarint(Generator &G, Field *f)
 		"if (n <= 0)\n"
 		"	$handle_error;\n"
 		"a += n;\n";
-	G.field_fill("v");
+	G.fillField("v");
 	G <<	"}\n";
 }
 
@@ -1771,7 +1825,7 @@ void CppGenerator::decodeSVarint(Generator &G, Field *f)
 		"if (n <= 0)\n"
 		"	$handle_error;\n"
 		"a += n;\n";
-	G.field_fill("varint_sint(v)");
+	G.fillField("varint_sint(v)");
 	G <<	"}\n";
 }
 
@@ -1784,10 +1838,10 @@ void CppGenerator::decodeMessage(Generator &G, Field *f)
 		"a += n;\n"
 		"if ((n <= 0) || ((a+v) > e))\n"
 		"	$handle_error;\n";
-	if (f->getQuantifier() == q_repeated)
+	if ((f->getQuantifier() == q_repeated) && !f->isVirtual())
 		G << "$(m_field).emplace_back();\n";
 	G <<	"if (v != 0) {\n";
-	G.field_fill("(const uint8_t*)a,v");
+	G.fillField("(const uint8_t*)a,v");
 	G <<	"if (n != (ssize_t)v)\n"
 		"	$handle_error;\n"
 		"a += v;\n"
@@ -1807,7 +1861,7 @@ void CppGenerator::decodeByteArray(Generator &G, Field *f)
 		"a += n;\n"
 		"if ((n <= 0) || ((a+v) > e))\n"
 		"	$handle_error;\n";
-	G.field_fill("(const char*)a,v");
+	G.fillField("(const char*)a,v");
 	G <<	"a += v;\n"
 		"}\n";
 	/*	string: 	field.assign
@@ -1874,6 +1928,7 @@ void CppGenerator::writeFromMemory(Generator &G, Field *f)
 		case ft_bytes:
 		case ft_string:
 		case ft_cptr:
+		default:
 			abort();
 			break;
 		case ft_unsigned:
@@ -1888,6 +1943,7 @@ void CppGenerator::writeFromMemory(Generator &G, Field *f)
 			decodeVarint(G,f);
 			break;
 		case ft_signed:
+		case ft_sint8:
 		case ft_sint16:
 		case ft_sint32:
 		case ft_sint64:
@@ -1896,7 +1952,6 @@ void CppGenerator::writeFromMemory(Generator &G, Field *f)
 		case ft_bool:
 		case ft_int8:
 		case ft_uint8:
-		case ft_sint8:
 		case ft_fixed8:
 		case ft_sfixed8:
 			decode8bit(G,f);
@@ -1949,7 +2004,7 @@ void CppGenerator::writeFromMemory(Generator &G, Field *f)
 			"if ((n <= 0) || (a+v > e))\n"
 			"	$handle_error;\n"
 			"if ((v > 0) && (a[v-1] == 0))\n";
-		G.field_fill("(const char*)a");
+		G.fillField("(const char*)a");
 		if (vbit != -1)
 			writeSetValid(G,vbit);
 		G <<	"a += v;\n"
@@ -2027,7 +2082,7 @@ void CppGenerator::writeFromMemory(Generator &G, Field *f)
 
 void CppGenerator::writeTagToMemory(Generator &G, Field *f)
 {
-	G << "// '$(fname)': id=$(field_id), encoding=$(field_enc), tag=$(field_tag) - " << optmode << "\n";
+	G << "// '$(fname)': id=$(field_id), encoding=$(field_enc), tag=$(field_tag)\n";
 	if (optmode == optspeed) {
 		unsigned id = f->getId();
 		uint32_t encoding = f->getEncoding();
@@ -2126,8 +2181,8 @@ void CppGenerator::writeMaxSize(Generator &G, Message *m)
 	if (!G.hasValue("getMaxSize"))
 		return;
 	int64_t maxsize = 0;
-	for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-		Field *f = m->getField(i);
+	for (auto i : m->getFields()) {
+		Field *f = i.second;
 		if ((f == 0) || (!f->isUsed()))
 			continue;
 		int64_t s = f->getMaxSize();
@@ -2152,7 +2207,6 @@ void CppGenerator::writeToMemory(Generator &G, Field *f)
 	uint32_t type = f->getType();
 	uint8_t quan = f->getQuantifier();
 	uint32_t encoding = f->getEncoding();
-	G.addVariable("index","");
 	switch (quan) {
 	case q_optional:
 		if (optmode == optreview) {
@@ -2167,58 +2221,63 @@ void CppGenerator::writeToMemory(Generator &G, Field *f)
 	case q_repeated:
 		if (f->isPacked() && f->hasSimpleType()) {
 			// packed encoding: tag,length,data
-			G <<	"if (size_t $(fname)_ne = m_$(fname).size()) {\n";
+			G <<	"if (size_t $(fname)_ne = $(field_size)) {\n";
 			G.setVariableHex("field_tag",f->getId()<<3|2);
+			G.addVariable("index","x");
 			writeTagToMemory(G,f);
 			if (((type&ft_filter) == ft_enum) ||  (type == ft_uint16) || (type == ft_uint32) || (type == ft_uint64) || (type == ft_int64)) {
 				G <<	"ssize_t $(fname)_ws = 0;\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x)\n"
-					"	$(fname)_ws += $(wiresize_u)(m_$(fname)[x]);\n"
+					"	$(fname)_ws += $(wiresize_u)($(field_value));\n"
 					"n = write_varint(a,e-a,$(fname)_ws);\n"
 					"a += n;\n"
 					"if ((n <= 0) || ($(fname)_ws > (e-a)))\n"
 					"	$handle_error;\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x)\n"
-					"	a += write_varint(a,e-a,m_$(fname)[x]);\n";
+					"	a += write_varint(a,e-a,$(field_value));\n";
 			} else if ((type == ft_int8) || (type == ft_int16) || (type == ft_int32)) {
 				// negative numbers with varint_t < 64bit need padding
 				G <<	"ssize_t $(fname)_ws = 0;\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x)\n"
-					"	$(fname)_ws += $(wiresize_u)(m_$(fname)[x]);\n"
+					"	$(fname)_ws += $(wiresize_u)($(field_value));\n"
 					"n = write_varint(a,e-a,$(fname)_ws);\n"
 					"a += n;\n"
 					"if ((n <= 0) || ($(fname)_ws > (e-a)))\n"
 					"	$handle_error;\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x)\n";
 				if (VarIntBits < 64)
-					G<< "	a += write_xvarint(a,e-a,m_$(fname)[x]);\n";
+					G<< "	a += write_xvarint(a,e-a,$(field_value));\n";
 				else
-					G<< "	a += write_varint(a,e-a,m_$(fname)[x]);\n";
+					G<< "	a += write_varint(a,e-a,$(field_value));\n";
 			} else if ((type == ft_sint8) || (type == ft_sint16) || (type == ft_sint32) || (type == ft_sint64)) {
 				G <<	"ssize_t $(fname)_ws = 0;\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x)\n"
-					"	$(fname)_ws += $(wiresize_s)(m_$(fname)[x]);\n"
+					"	$(fname)_ws += $(wiresize_s)($(field_value));\n"
 					"n = write_varint(a,e-a,$(fname)_ws);\n"
 					"a += n;\n"
 					"if ((n <= 0) || ($(fname)_ws > (e-a)))\n"
 					"	$handle_error;\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x)\n"
-					"	a += write_varint(a,e-a,sint_varint(m_$(fname)[x]));\n";
+					"	a += write_varint(a,e-a,sint_varint($(field_value)));\n";
 			} else if ((type == ft_bool) || (type == ft_fixed8) ||  (type == ft_sfixed8) || (type == ft_uint8)) {
-				G <<	"ssize_t $(fname)_ws = $(fname)_ne * sizeof($(typestr));\n"
+				G <<	"ssize_t $(fname)_ws = $(fname)_ne * sizeof($typestr);\n"
+					"n = write_varint(a,e-a,$(fname)_ws);\n"
+					"a += n;\n"
+					"if ((n <= 0) || ($(fname)_ws > (e-a)))\n"
+					"	$handle_error;\n";
+				if (f->isVirtual())
+					G <<	"for (size_t x = 0; x != $(fname)_ne; ++x)\n"
+						"*a++ = $(field_value);\n";
+				else
+					G <<	"memcpy(a,$(field_values),$(fname)_ws);\n";
+				G <<	"a += $(fname)_ws;\n";
+			} else if ((Endian == little_endian) && f->hasFixedSize() && !f->isVirtual()) {
+				G <<	"ssize_t $(fname)_ws = $(fname)_ne * sizeof($typestr);\n"
 					"n = write_varint(a,e-a,$(fname)_ws);\n"
 					"a += n;\n"
 					"if ((n <= 0) || ($(fname)_ws > (e-a)))\n"
 					"	$handle_error;\n"
-					"memcpy(a,m_$(fname).data(),$(fname)_ws);\n"
-					"a += $(fname)_ws;\n";
-			} else if ((Endian == little_endian) && f->hasFixedSize()) {
-				G <<	"ssize_t $(fname)_ws = $(fname)_ne * sizeof($(typestr));\n"
-					"n = write_varint(a,e-a,$(fname)_ws);\n"
-					"a += n;\n"
-					"if ((n <= 0) || ($(fname)_ws > (e-a)))\n"
-					"	$handle_error;\n"
-					"memcpy(a,m_$(fname).data(),$(fname)_ws);\n"
+					"memcpy(a,$(field_values),$(fname)_ws);\n"
 					"a += $(fname)_ws;\n";
 			} else if ((type == ft_fixed16) || (type == ft_sfixed16)) {
 				G <<	"ssize_t $(fname)_ws = $(fname)_ne << 1;\n"
@@ -2227,7 +2286,7 @@ void CppGenerator::writeToMemory(Generator &G, Field *f)
 					"if ((n <= 0) || ($(fname)_ws > (e-a)))\n"
 					"	$handle_error;\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x, a+=2)\n"
-					"	write_u16(a,*(uint16_t*)&m_$(fname)[x]);\n";
+					"	write_u16(a,$(field_value));\n";
 			} else if ((type == ft_fixed32) || (type == ft_sfixed32)) {
 				G <<	"ssize_t $(fname)_ws = $(fname)_ne << 2;\n"
 					"n = write_varint(a,e-a,$(fname)_ws);\n"
@@ -2235,7 +2294,7 @@ void CppGenerator::writeToMemory(Generator &G, Field *f)
 					"if ((n <= 0) || ($(fname)_ws > (e-a)))\n"
 					"	$handle_error;\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x, a+=4)\n"
-					"	write_u32(a,m_$(fname)[x]);\n";
+					"	write_u32(a,$(field_value));\n";
 			} else if (type == ft_float) {
 				G <<	"ssize_t $(fname)_ws = $(fname)_ne << 2;\n"
 					"n = write_varint(a,e-a,$(fname)_ws);\n"
@@ -2243,7 +2302,7 @@ void CppGenerator::writeToMemory(Generator &G, Field *f)
 					"if ((n <= 0) || ($(fname)_ws > (e-a)))\n"
 					"	$handle_error;\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x, a+=4)\n"
-					"	write_u32(a,mangle_float(m_$(fname)[x]));\n";
+					"	write_u32(a,mangle_float($(field_value)));\n";
 			} else if ((type == ft_fixed64) || (type == ft_sfixed64)) {
 				G <<	"ssize_t $(fname)_ws = $(fname)_ne << 3;\n"
 					"n = write_varint(a,e-a,$(fname)_ws);\n"
@@ -2251,7 +2310,7 @@ void CppGenerator::writeToMemory(Generator &G, Field *f)
 					"if ((n <= 0) || ($(fname)_ws > (e-a)))\n"
 					"	$handle_error;\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x, a+=8)\n"
-					"	write_u64(a,m_$(fname)[x]);\n";
+					"	write_u64(a,$(field_value));\n";
 			} else if (type == ft_double) {
 				G <<	"ssize_t $(fname)_ws = $(fname)_ne << 3;\n"
 					"n = write_varint(a,e-a,$(fname)_ws);\n"
@@ -2259,7 +2318,7 @@ void CppGenerator::writeToMemory(Generator &G, Field *f)
 					"if ((n <= 0) || ($(fname)_ws > (e-a)))\n"
 					"	$handle_error;\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x, a+=8)\n"
-					"	write_u64(a,mangle_double(m_$(fname)[x]));\n";
+					"	write_u64(a,mangle_double($(field_value)));\n";
 			} else
 				abort();
 			G	<< "}\n";
@@ -2267,8 +2326,8 @@ void CppGenerator::writeToMemory(Generator &G, Field *f)
 			G.clearVariable("index");
 			return;
 		}
-		G <<	"for (size_t x = 0, y = m_$(fname).size(); x != y; ++x) {\n";
-		G.setVariable("index","[x]");
+		G <<	"for (size_t x = 0, y = $(field_size); x != y; ++x) {\n";
+		G.setVariable("index","x");
 		break;
 	case q_required:
 		break;
@@ -2276,26 +2335,24 @@ void CppGenerator::writeToMemory(Generator &G, Field *f)
 		abort();
 	}
 	writeTagToMemory(G,f);
-	if (encoding == wt_lenpfx) {
-		if ((type == ft_string) || (type == ft_bytes) || (type == ft_cptr))
-			encoding = 0x12;	// string or byte array
-	}
+	if ((type & ft_filter) == ft_msg)
+		encoding = wt_msg;
 	switch (encoding) {
 	case wt_varint:	// varint
 		if ((type == ft_sint8) || (type == ft_sint16) || (type == ft_sint32) || (type == ft_sint64))
-			G <<	"n = write_varint(a,e-a,sint_varint(m_$(fname)$(index)));\n"
+			G <<	"n = write_varint(a,e-a,sint_varint($(field_value)));\n"
 				"if (n <= 0)\n"
 				"	$handle_error;\n"
 				"a += n;\n";
 		else if ((VarIntBits < 64) && ((type == ft_int8) || (type == ft_int16) || (type == ft_int32)))
 			// these types may need padding when varint_t is
 			// < 64bit to be compatible with 64bit systems
-			G <<	"n = write_xvarint(a,e-a,m_$(fname)$(index));\n"
+			G <<	"n = write_xvarint(a,e-a,$(field_value));\n"
 				"if (n <= 0)\n"
 				"	$handle_error;\n"
 				"a += n;\n";
 		else
-			G <<	"n = write_varint(a,e-a,m_$(fname)$(index));\n"
+			G <<	"n = write_varint(a,e-a,$(field_value));\n"
 				"if (n <= 0)\n"
 				"	$handle_error;\n"
 				"a += n;\n";
@@ -2305,61 +2362,61 @@ void CppGenerator::writeToMemory(Generator &G, Field *f)
 			"	$handle_error;\n";
 		if (type == ft_double) {
 			if ((Endian == little_endian) && (optmode == optspeed)) {
-				G <<	"*(double*)a = m_$(fname)$(index);\n";
+				G <<	"*(double*)a = $(field_value);\n";
 			} else {
-				G <<	"write_u64(a,mangle_double(m_$(fname)$(index)));\n";
+				G <<	"write_u64(a,mangle_double($(field_value)));\n";
 			}
 		} else {
 			if ((Endian == little_endian) && (optmode == optspeed)) {
-				G <<	"*(uint64_t*)a = m_$(fname)$(index);\n";
+				G <<	"*(uint64_t*)a = $(field_value);\n";
 			} else {
-				G <<	"write_u64(a,(uint64_t)m_$(fname)$(index));\n";
+				G <<	"write_u64(a,(uint64_t)$(field_value));\n";
 			}
 		}
 		G <<	"a += 8;\n";
 		break;
-	case wt_lenpfx: 	// length delimited message
+	case wt_8bit:	// 8bit value
+		G <<	"if (a >= e)\n"
+			"	$handle_error;\n"
+			"*a++ = $(field_value);\n";
+		break;
+	case wt_16bit:
+		G <<	"if ((e-a) < 2)\n"
+			"	$handle_error;\n";
+		G <<	"write_u16(a,$(field_value));\n";
+		G <<	"a += 2;\n";
+		break;
+	case wt_msg: 	// length delimited message
 		if (PaddedMsgSize) {
 			G <<	"if ((e-a) < (ssize_t)(sizeof(varint_t)*8/7+1))\n"
 				"	$handle_error;\n"
-				"n = m_$(fname)$(index).$toMemory(a+(sizeof(varint_t)*8/7+1),e-a-(sizeof(varint_t)*8/7+1));\n"
+				"n = $(field_value).$toMemory(a+(sizeof(varint_t)*8/7+1),e-a-(sizeof(varint_t)*8/7+1));\n"
 				"if (n < 0)\n"	// == 0 is ok, could be empty message
 				"	$handle_error;\n"
 				"place_varint(a,n);\n"
 				"a += sizeof(varint_t)*8/7+1;\n"
 				"a += n;\n";
 		} else {
-			G <<	"ssize_t $(fname)_ws = m_$(fname)$(index).$calcSize();\n"
+			G <<	"ssize_t $(fname)_ws = $(field_value).$calcSize();\n"
 				"n = write_varint(a,e-a,$(fname)_ws);\n"
 				"a += n;\n"
 				"if ((n <= 0) || ($(fname)_ws > (e-a)))\n"
 				"	$handle_error;\n"
-				"n = m_$(fname)$(index).$toMemory(a,e-a);\n"
+				"n = $(field_value).$toMemory(a,e-a);\n"
 				"a += n;\n";
 			if (Asserts)
 				G << "assert(n == $(fname)_ws);\n";
 		}
 		break;
-	case wt_8bit:	// 8bit value
-		G <<	"if (a >= e)\n"
-			"	$handle_error;\n"
-			"*a++ = m_$(fname)$(index);\n";
-		break;
-	case wt_16bit:
-		G <<	"if ((e-a) < 2)\n"
-			"	$handle_error;\n";
-		G <<	"write_u16(a,m_$(fname)$(index));\n";
-		G <<	"a += 2;\n";
-		break;
-	case 0x12:	// length delimited byte array or string
+	case wt_lenpfx:	// length delimited byte array or string
 		if (type == ft_cptr) 
-			G <<	"if (m_$(fname)$(index)) {\n"
-				"	ssize_t $(fname)_s = strlen(m_$(fname)$(index)) + 1;\n"
+			G <<	"if ($(field_value)) {\n"
+				"	ssize_t $(fname)_s = strlen($field_value) + 1;\n"
 				"	n = write_varint(a,e-a,$(fname)_s);\n"
 				"	a += n;\n"
 				"	if ((n <= 0) || ((e-a) < $(fname)_s))\n"
 				"		$handle_error;\n"
-				"	memcpy(a,m_$(fname)$(index),$(fname)_s);\n"
+				"	memcpy(a,$(field_value),$(fname)_s);\n"
 				"	a += $(fname)_s;\n"
 				"} else {\n"
 				"	// transmit empty string of lenght 1\n"
@@ -2369,21 +2426,21 @@ void CppGenerator::writeToMemory(Generator &G, Field *f)
 				"	*a++ = 0;\n"
 				"}\n";
 		else
-			G <<	"ssize_t $(fname)_s = m_$(fname)$(index).size();\n"
+			G <<	"ssize_t $(fname)_s = $(field_value).size();\n"
 				"n = write_varint(a,e-a,$(fname)_s);\n"
 				"a += n;\n"
 				"if ((n <= 0) || ((e-a) < $(fname)_s))\n"
 				"	$handle_error;\n"
-				"memcpy(a,m_$(fname)$(index).data(),$(fname)_s);\n"
+				"memcpy(a,$(field_value).data(),$(fname)_s);\n"
 				"a += $(fname)_s;\n";
 		break;
 	case wt_32bit:	// 32bit value
 		G <<	"if ((e-a) < 4)\n"
 			"	$handle_error;\n";
 		if (type == ft_float) {
-			G <<	"write_u32(a,mangle_float(m_$(fname)$(index)));\n";
+			G <<	"write_u32(a,mangle_float($(field_value)));\n";
 		} else {
-			G <<	"write_u32(a,(uint32_t)m_$(fname)$(index));\n";
+			G <<	"write_u32(a,(uint32_t)$(field_value));\n";
 		}
 		G <<	"a += 4;\n";
 		break;
@@ -2405,7 +2462,6 @@ void CppGenerator::writeToX(Generator &G, Field *f)
 	uint32_t type = f->getType();
 	uint8_t quan = f->getQuantifier();
 	uint32_t encoding = f->getEncoding();
-	G.addVariable("index","");
 	switch (quan) {
 	case q_optional:
 		if (optmode == optspeed) {
@@ -2418,52 +2474,61 @@ void CppGenerator::writeToX(Generator &G, Field *f)
 	case q_repeated:
 		if (f->isPacked() && f->hasSimpleType()) {
 			// packed encoding: tag,length,data
-			G <<	"if (size_t $(fname)_ne = m_$(fname).size()) {\n";
+			G <<	"if (size_t $(fname)_ne = $(field_size)) {\n";
 			G.setVariableHex("field_tag",f->getId()<<3|2);
+			G.addVariable("index","x");
 			writeTagToX(G,f);
 			if (((type&ft_filter) == ft_enum) || (type == ft_int64) ||  (type == ft_uint8) ||  (type == ft_uint16) || (type == ft_uint32) || (type == ft_uint64)) {
 				G <<	"size_t $(fname)_ws = 0;\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x)\n"
-					"$(fname)_ws += $(wiresize_u)(m_$(fname)[x]);\n"
+					"$(fname)_ws += $(wiresize_u)($(field_value));\n"
 					"$write_varint($(fname)_ws);\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x)\n"
-					"$write_varint(m_$(fname)[x]);\n";
+					"$write_varint($(field_value));\n";
 			} else if ((type == ft_int8) || (type == ft_int16) || (type == ft_int32)) {
 				G <<	"size_t $(fname)_ws = 0;\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x)\n"
-					"$(fname)_ws += $(wiresize_x)(m_$(fname)[x]);\n"
+					"$(fname)_ws += $(wiresize_x)($(field_value));\n"
 					"$write_varint($(fname)_ws);\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x)\n";
 				if (VarIntBits < 64)
-					G << "	$write_xvarint(m_$(fname)[x]);\n";
+					G << "	$write_xvarint($(field_value));\n";
 				else
-					G << "	$write_varint(m_$(fname)[x]);\n";
+					G << "	$write_varint($(field_value));\n";
 			} else if ((type == ft_sint8) || (type == ft_sint16) || (type == ft_sint32) || (type == ft_sint64)) {
 				G <<	"size_t $(fname)_ws = 0;\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x)\n"
-					"$(fname)_ws += $(wiresize_s)(m_$(fname)[x]);\n"
+					"$(fname)_ws += $(wiresize_s)($(field_value));\n"
 					"$write_varint($(fname)_ws);\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x)\n"
-					"$write_varint(sint_varint(m_$(fname)[x]));\n";
+					"$write_varint(sint_varint($(field_value)));\n";
 			} else if ((type == ft_bool) || (type == ft_fixed8) || (type == ft_sfixed8)) {
 				G <<	"$write_varint($(fname)_ne);\n"
-					"$write_bytes((const uint8_t *)m_$(fname).data(),$(fname)_ne);\n";
+					"$write_bytes((const uint8_t *)$(field_values),$(fname)_ne);\n";
 			} else if ((Endian == little_endian) && ((type == ft_fixed16) || (type == ft_fixed32) || (type == ft_fixed64) || (type == ft_float) || (type == ft_double))) {
 				G <<	"size_t $(fname)_ws = $(fname)_ne * sizeof($(typestr));\n"
 					"$write_varint($(fname)_ws);\n"
-					"$write_bytes((const uint8_t *)m_$(fname).data(),$(fname)_ws);\n";
+					"$write_bytes((const uint8_t *)$(field_values),$(fname)_ws);\n";
 			} else if ((type == ft_fixed16) || (type == ft_sfixed16)) {
 				G <<	"$write_varint($(fname)_ne << 1);\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x)\n"
-					"$(u16_wire(*(uint16_t*)&m_$(fname)[x]));\n";
-			} else if ((type == ft_fixed32) || (type == ft_sfixed32) || (type == ft_float)) {
+					"$(u16_wire((uint16_t)$(field_value)));\n";
+			} else if ((type == ft_fixed32) || (type == ft_sfixed32)) {
 				G <<	"$write_varint($(fname)_ne << 2);\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x)\n"
-					"$(u32_wire(*(uint32_t*)&m_$(fname)[x]));\n";
-			} else if ((type == ft_fixed64) || (type == ft_sfixed64) || (type == ft_double)) {
+					"$(u32_wire((uint32_t)$(field_value)));\n";
+			} else if ((type == ft_fixed64) || (type == ft_sfixed64)) {
 				G <<	"$write_varint($(fname)_ne << 3);\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x)\n"
-					"$(u64_wire(*(uint64_t*)&m_$(fname)[x]));\n";
+					"$(u64_wire((uint64_t)$(field_value)));\n";
+			} else if (type == ft_float) {
+				G <<	"$write_varint($(fname)_ne << 2);\n"
+					"for (size_t x = 0; x != $(fname)_ne; ++x)\n"
+					"$(u32_wire(mangle_float($(field_value))));\n";
+			} else if (type == ft_double) {
+				G <<	"$write_varint($(fname)_ne << 3);\n"
+					"for (size_t x = 0; x != $(fname)_ne; ++x)\n"
+					"$(u64_wire(mangle_double($(field_value))));\n";
 			}
 			else
 				abort();
@@ -2472,8 +2537,8 @@ void CppGenerator::writeToX(Generator &G, Field *f)
 			G.clearVariable("index");
 			return;
 		}
-		G <<	"for (size_t x = 0, y = m_$(fname).size(); x != y; ++x) {\n";
-		G.setVariable("index","[x]");
+		G <<	"for (size_t x = 0, y = $(field_size); x != y; ++x) {\n";
+		G.setVariable("index","x");
 		break;
 	case q_required:
 		break;
@@ -2481,41 +2546,36 @@ void CppGenerator::writeToX(Generator &G, Field *f)
 		abort();
 	}
 	writeTagToX(G,f);
-	if (encoding == wt_lenpfx) {
-		if ((type == ft_string) || (type == ft_bytes) || (type == ft_cptr))
-			encoding = wt_msg;	// string or byte array
-	}
 	switch (encoding) {
 	case wt_varint:	// varint
 		if ((type == ft_sint8) || (type == ft_sint16) || (type == ft_sint32) || (type == ft_sint64))
-			G <<	"$write_varint(sint_varint(m_$(fname)$(index)));\n";
+			G <<	"$write_varint(sint_varint($(field_value)));\n";
 		else if ((VarIntBits < 64) && ((type == ft_int8) || (type == ft_int16) || (type == ft_int32)))
-			G <<	"$write_xvarint(m_$(fname)$(index));\n";
+			G <<	"$write_xvarint($(field_value));\n";
 		else
-			G <<	"$write_varint(m_$(fname)$(index));\n";
+			G <<	"$write_varint($(field_value));\n";
 		break;
 	case wt_64bit:	// 64bit value
 		if (type == ft_double) {
-			G <<	"$(u64_wire(mangle_double(m_$(fname)$(index))));\n";
+			G <<	"$(u64_wire(mangle_double($(field_value))));\n";
 		} else
-			G <<	"$(u64_wire((uint64_t)m_$(fname)$(index)));\n";
-		break;
-	case wt_lenpfx: 	// length delimited message
-		G <<	"$write_varint(m_$(fname)$(index).$calcSize());\n"
-			"m_$(fname)$(index).$(toX)($putarg);\n";
+			G <<	"$(u64_wire((uint64_t)$(field_value)));\n";
 		break;
 	case wt_8bit:	// 8bit value
-		G <<	"$wireput(m_$(fname)$(index));\n";
+		G <<	"$wireput($(field_value));\n";
 		break;
 	case wt_16bit:
-		G <<	"$(u16_wire(m_$(fname)$(index)));\n";
+		G <<	"$(u16_wire($(field_value)));\n";
 		break;
-	case wt_msg:	// length delimited byte array or string
-		if (type == ft_cptr) {
-			G <<	"if (m_$(fname)$(index)) {\n"
-				"	size_t $(fname)_s = strlen(m_$(fname)$(index)) + 1;\n"
+	case wt_lenpfx:	// length delimited message, byte array or string
+		if ((type & ft_filter) == ft_msg) {
+			G <<	"$write_varint($(field_value).$calcSize());\n"
+				"$(field_value).$(toX)($putarg);\n";
+		} else if (type == ft_cptr) {
+			G <<	"if ($(field_value)) {\n"
+				"	size_t $(fname)_s = strlen($(field_value)) + 1;\n"
 			 	"	$write_varint($(fname)_s);\n"
-				"	uint8_t *$(fname)_d = (uint8_t*) m_$(fname)$(index);\n"
+				"	uint8_t *$(fname)_d = (uint8_t*) $(field_value);\n"
 				"	do {\n"
 				"	$wireput(*$(fname)_d++);\n"
 				"	} while (--$(fname)_s);\n"
@@ -2525,16 +2585,16 @@ void CppGenerator::writeToX(Generator &G, Field *f)
 				"	$wireput(0);\n"
 				"}\n";
 		} else {
-			G <<	"size_t $(fname)_s = m_$(fname)$(index).size();\n"
+			G <<	"size_t $(fname)_s = $(field_value).size();\n"
 			 	"$write_varint($(fname)_s);\n"
-				"$write_bytes((const uint8_t*) m_$(fname)$(index).data(),$(fname)_s);\n";
+				"$write_bytes((const uint8_t*) $(field_value).data(),$(fname)_s);\n";
 		}
 		break;
 	case wt_32bit:	// 32bit value
 		if (type == ft_float) {
-			G <<	"$(u32_wire(mangle_float(m_$(fname)$(index))));\n";
+			G <<	"$(u32_wire(mangle_float($(field_value))));\n";
 		} else {
-			G <<	"$(u32_wire((uint32_t)m_$(fname)$(index)));\n";
+			G <<	"$(u32_wire((uint32_t)$(field_value)));\n";
 		}
 		break;
 	default:
@@ -2568,8 +2628,8 @@ void CppGenerator::writeFromMemory(Generator &G, Message *m)
 		"	$handle_error;\n"
 		"switch (fid) {\n";
 	bool hasNullId = false;
-	for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-		Field *f = m->getField(i);
+	for (auto i : m->getFields()) {
+		Field *f = i.second;
 		if (f == 0)
 			continue;
 		if (!f->isUsed()) {
@@ -2586,8 +2646,8 @@ void CppGenerator::writeFromMemory(Generator &G, Message *m)
 	if (target->getOption("UnknownField") == "assert") {
 		// need to skip known but unused fields to avoid asserts
 		bool unused = false;
-		for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-			Field *f = m->getField(i);
+		for (auto i : m->getFields()) {
+			Field *f = i.second;
 			if ((f == 0) || (f->isUsed()))
 				continue;
 			unused = true;
@@ -2655,9 +2715,10 @@ void CppGenerator::writeToMemory(Generator &G, Message *m)
 		G << "assert(s >= 0);\n";
 	G <<	"uint8_t *a = b, *e = b + s;\n";
 	bool needN = false;
+	auto fields = m->getFields();
 	if (optmode == optspeed) {
-		for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-			Field *f = m->getField(i);
+		for (auto i : fields) {
+			Field *f = i.second;
 			if ((f == 0) || (!f->isUsed()))
 				continue;
 			if (f->isRepeated() || !f->hasFixedSize() || (f->getTagSize() > 1)) {
@@ -2666,8 +2727,8 @@ void CppGenerator::writeToMemory(Generator &G, Message *m)
 			}
 		}
 	} else if (optmode == optsize) {
-		for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-			Field *f = m->getField(i);
+		for (auto i : fields) {
+			Field *f = i.second;
 			if ((f == 0) || (!f->isUsed()))
 				continue;
 			if (f->isRepeated() || !f->hasFixedSize() || (f->getTagSize() > 2)) {
@@ -2680,10 +2741,8 @@ void CppGenerator::writeToMemory(Generator &G, Message *m)
 	}
 	if (needN)
 		G <<	"signed n;\n";
-	//else
-		//G <<	"// temporary signed n is not needed\n";
-	for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-		Field *f = m->getField(i);
+	for (auto i : fields) {
+		Field *f = i.second;
 		if ((f == 0) || (!f->isUsed()))
 			continue;
 		writeToMemory(G,f);
@@ -2713,33 +2772,32 @@ void CppGenerator::writeToJson(Generator &G, Field *f, unsigned comma, bool last
 	const char *writevalue = 0;
 	if (f->isEnum())
 		writevalue = "json.put('\"');\n"
-			"json << $(strfun)(m_$(fname)$(index));\n"
+			"json << $(strfun)($(field_value));\n"
 			"json.put('\"');\n";
 	else if (type == ft_bool)
-		writevalue = "json << (m_$(fname)$(index) ? \"true\" : \"false\");\n";
+		writevalue = "json << ($(field_value) ? \"true\" : \"false\");\n";
 	else if (f->isNumeric())
 		if ((type == ft_float) || (type == ft_double))
-			writevalue = "to_dblstr(json,m_$(fname)$(index));\n";
+			writevalue = "to_dblstr(json,$(field_value));\n";
 		else
-			writevalue = "to_decstr(json,m_$(fname)$(index));\n";
+			writevalue = "to_decstr(json,$(field_value));\n";
 	else if (f->isString())
 		switch (f->getType()) {
 		case ft_bytes:
 		case ft_string:
-			writevalue = "json_string(json,m_$(fname)$(index));\n";
+			writevalue = "json_string(json,$(field_value));\n";
 			break;
 		case ft_cptr:
-			writevalue = "json_cstr(json,m_$(fname)$(index));\n";
+			writevalue = "json_cstr(json,$(field_value));\n";
 			break;
 		default:
 			abort();
 		}
 	else if (f->isMessage())
-		writevalue = "m_$(fname)$(index).$(toJSON)(json,indLvl);\n";
+		writevalue = "$(field_value).$(toJSON)(json,indLvl);\n";
 	else
 		abort();
 
-	G.setVariable("index","");
 	G.setVariable("sep",comma ? "," : "");
 	switch (quan) {
 		break;
@@ -2766,8 +2824,8 @@ void CppGenerator::writeToJson(Generator &G, Field *f, unsigned comma, bool last
 		G <<	writevalue;
 		break;
 	case q_repeated:
-		G.setVariable("index","[i]");
-		G <<	"if (size_t n = m_$(fname).size()) {\n";
+		G.setVariable("index","i");
+		G <<	"if (size_t n = $(field_size)) {\n";
 		if (comma == 1)
 			G <<	"if (needComma)\n";
 		if (comma > 0)
@@ -2788,11 +2846,11 @@ void CppGenerator::writeToJson(Generator &G, Field *f, unsigned comma, bool last
 		if ((comma < 2) && !last)
 			G << "needComma = true;\n";
 		G <<	"}\n";
+		G.clearVariable("index");
 		break;
 	default:
 		abort();
 	}
-	G.clearVariable("index");
 	G.clearVariable("sep");
 }
 
@@ -2803,8 +2861,9 @@ void CppGenerator::writeToJson(Generator &G, Message *m)
 	// than one field is used in the message
 	bool needCommaFlag = false;
 	unsigned numUsed = 0;
-	for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-		Field *f = m->getField(i);
+	const map<unsigned,Field *> &fields = m->getFields();
+	for (auto i : fields) {
+		Field *f = i.second;
 		if ((f == 0) || (!f->isUsed()))
 			continue;
 		++numUsed;
@@ -2824,12 +2883,13 @@ void CppGenerator::writeToJson(Generator &G, Message *m)
 		;
 
 	unsigned comma = 0;	// 0: none, 1: testflag, 2: always
-	for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-		Field *f = m->getField(i);
+	for (auto i = fields.begin(), e = fields.end(); i != e;) {
+		Field *f = i->second;
+		++i;
 		if ((f == 0) || (!f->isUsed()))
 			continue;
 		G.setField(f);
-		writeToJson(G,f,comma,i == (e-1));
+		writeToJson(G,f,comma,i == e);
 		G.setField(0);
 		quant_t quan = f->getQuantifier();
 		switch (quan) {
@@ -2863,8 +2923,8 @@ void CppGenerator::writeToX(Generator &G, Message *m)
 		"{\n";
 	if (Debug)
 		G << "std::cout << \"$(prefix)$(msg_name)::$(toX)($(putparam))\\n\";\n";
-	for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-		Field *f = m->getField(i);
+	for (auto i : m->getFields()) {
+		Field *f = i.second;
 		if ((f == 0) || (!f->isUsed()))
 			continue;
 		writeToX(G,f);
@@ -2885,18 +2945,21 @@ void CppGenerator::writeClear(Generator &G, Message *m)
 {
 	G <<	"void $(prefix)$(msg_name)::$(msg_clear)()\n"
 		"{\n";
-	for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-		Field *f = m->getField(i);
+	for (auto i : m->getFields()) {
+		Field *f = i.second;
 		if ((f == 0) || (!f->isUsed()))
 			continue;
-		G.setVariable("fname",f->getName());
+		G.setField(f);
 		uint8_t q = f->getQuantifier();
-		if ((q == q_repeated) || (!f->hasSimpleType()))
+		if (f->isVirtual()) {
+			G << "$(field_clear)();\n";
+		} else if ((q == q_repeated) || (!f->hasSimpleType()) || f->isVirtual())
 			G << "m_$(fname).$(msg_clear)();\n";
 		else if (const char *def = f->getDefaultValue())
 			G << "m_$(fname) = " << def << ";\n";
 		else
 			G << "m_$(fname) = 0;\n";
+		G.setField(0);
 	}
 	G.clearVariable("fname");
 	unsigned nv = m->getNumValid();
@@ -2914,58 +2977,127 @@ void CppGenerator::writeClear(Generator &G, Message *m)
 }
 
 
+void CppGenerator::writeUnequal(Generator &G, Message *m)
+{
+	G <<	"bool $(prefix)$(msg_name)::operator != (const $(prefix)$(msg_name) &r) const\n"
+		"{\n";
+	for (auto i : m->getFields()) {
+		Field *f = i.second;
+		if ((f == 0) || (!f->isUsed()))
+			continue;
+		G.setField(f);
+		quant_t q = f->getQuantifier();
+		if (ft_cptr == f->getType()) {
+			if (q == q_repeated) {
+				G <<	"if ($(field_size) != r.$(field_size))\n"
+					"	return true;\n"
+					"for (size_t x = 0, y = $(field_size); x != y; ++x) {\n";
+				G.setVariable("index","x");
+			} else
+				G.setVariable("index","");
+			G <<	"if ($(field_value) != r.$(field_value)) {\n"
+				"	if (($(field_value) == 0) || (r.$(field_value) == 0))\n"
+				"		return true;\n"
+				"	if (strcmp($(field_value),r.$(field_value)))\n"
+				"		return true;\n"
+				"}\n";
+			if (q == q_repeated)
+				G << "}\n";
+			G.clearVariable("index");
+			G.setField(0);
+			continue;
+		}
+		switch (q) {
+		case q_required:
+		case q_repeated:
+			if (f->isVirtual()) {
+				G.setVariable("index","");
+				G <<	"if ($(field_value) != r.$(field_value))\n"
+					"return true;\n";
+			} else {
+				G <<	"if (m_$(fname) != r.m_$(fname))\n"
+					"return true;\n";
+			}
+			break;
+		case q_optional:
+			G <<	"if ($(field_has)() ^ r.$(field_has)())\n"
+				"return true;\n"
+				"if ($(field_has)() && ($(field_value) != r.$(field_value)))\n"
+				"return true;\n";
+			break;
+		default:
+			abort();
+		}
+		G.setField(0);
+	}
+	G <<	"return false;\n"
+		"}\n\n\n";
+
+}
+
+
+void CppGenerator::writeEqual(Generator &G, Message *m)
+{
+	G <<	"bool $(prefix)$(msg_name)::operator == (const $(prefix)$(msg_name) &r) const\n"
+		"{\n";
+	for (auto i : m->getFields()) {
+		Field *f = i.second;
+		if ((f == 0) || (!f->isUsed()))
+			continue;
+		G.setField(f);
+		quant_t q = f->getQuantifier();
+		if (f->isVirtual()) {
+			G <<	"if ($(field_value)() != r.$(field_value)())\n"
+				"	return false;\n";
+			continue;
+		}
+		if (ft_cptr == f->getType()) {
+			if (q == q_repeated) {
+				G <<	"if ($(field_size) != r.$(field_size))\n"
+					"	return false;\n"
+					"for (size_t x = 0, y = $(field_size); x != y; ++x) {\n";
+				G.setVariable("index","x");
+			} else
+				G.setVariable("index","");
+			G <<	"if ($(field_value) != r.$(field_value)) {\n"
+				"	if (($(field_value) == 0) || (r.$(field_value) == 0))\n"
+				"		return false;\n"
+				"	if (strcmp($(field_value),r.m_$(field_vlaue)))\n"
+				"		return false;\n"
+				"}\n";
+			if (q == q_repeated)
+				G << "}\n";
+			G.clearVariable("index");
+			G.setField(0);
+			continue;
+		}
+		switch (q) {
+		case q_required:
+		case q_repeated:
+			G <<	"if (!(m_$(fname) == r.m_$(fname)))\n"
+				"return false;\n";
+			break;
+		case q_optional:
+			G <<	"if ($(field_has)() ^ r.$(field_has)())\n"
+				"return false;\n"
+				"if ($(field_has)() && (!(m_$(fname) == r.m_$(fname))))\n"
+				"return false;\n";
+			break;
+		default:
+			abort();
+		}
+		G.setField(0);
+	}
+	G <<	"return true;\n"
+		"}\n\n\n";
+}
+
+
 void CppGenerator::writeCmp(Generator &G, Message *m)
 {
 	bool wUE = target->getFlag("withUnequal");
-	if (wUE) {
-		G <<	"bool $(prefix)$(msg_name)::operator != (const $(prefix)$(msg_name) &r) const\n"
-			"{\n";
-		for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-			Field *f = m->getField(i);
-			if ((f == 0) || (!f->isUsed()))
-				continue;
-			G.setField(f);
-			quant_t q = f->getQuantifier();
-			if (ft_cptr == f->getType()) {
-				if (q == q_repeated) {
-					G <<	"if (m_$(fname).size() != r.m_$(fname).size())\n"
-						"	return true;\n"
-						"for (size_t x = 0, y = m_$(fname).size(); x != y; ++x) {\n";
-					G.setVariable("index","[x]");
-				} else
-					G.setVariable("index","");
-				G <<	"if (m_$(fname)$(index) != r.m_$(fname)$(index)) {\n"
-					"	if ((m_$(fname)$(index) == 0) || (r.m_$(fname)$(index) == 0))\n"
-					"		return true;\n"
-					"	if (strcmp(m_$(fname)$(index),r.m_$(fname)$(index)))\n"
-					"		return true;\n"
-					"}\n";
-				if (q == q_repeated)
-					G << "}\n";
-				G.clearVariable("index");
-				G.setField(0);
-				continue;
-			}
-			switch (q) {
-			case q_required:
-			case q_repeated:
-				G <<	"if (m_$(fname) != r.m_$(fname))\n"
-					"return true;\n";
-				break;
-			case q_optional:
-				G <<	"if ($(field_has)() ^ r.$(field_has)())\n"
-					"return true;\n"
-					"if ($(field_has)() && (m_$(fname) != r.m_$(fname)))\n"
-					"return true;\n";
-				break;
-			default:
-				abort();
-			}
-			G.setField(0);
-		}
-		G <<	"return false;\n"
-			"}\n\n\n";
-	}
+	if (wUE)
+		writeUnequal(G,m);
 
 	if (target->getFlag("withEqual")) {
 		if (wUE) {
@@ -2973,65 +3105,9 @@ void CppGenerator::writeCmp(Generator &G, Message *m)
 				"{\n"
 				"return !((*this) != r);\n"
 				"}\n\n\n";
-			return;
+		} else {
+			writeEqual(G,m);
 		}
-		G <<	"bool $(prefix)$(msg_name)::operator == (const $(prefix)$(msg_name) &r) const\n"
-			"{\n";
-		for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-			Field *f = m->getField(i);
-			if ((f == 0) || (!f->isUsed()))
-				continue;
-			G.setField(f);
-			quant_t q = f->getQuantifier();
-			if (ft_cptr == f->getType()) {
-				if (q == q_repeated) {
-					G <<	"if (m_$(fname).size() != r.m_$(fname).size())\n"
-						"	return false;\n"
-						"for (size_t x = 0, y = m_$(fname).size(); x != y; ++x) {\n";
-					G.setVariable("index","[x]");
-				} else
-					G.setVariable("index","");
-				G <<	"if (m_$(fname)$(index) != r.m_$(fname)$(index)) {\n"
-					"	if ((m_$(fname)$(index) == 0) || (r.m_$(fname)$(index) == 0))\n"
-					"		return false;\n"
-					"	if (strcmp(m_$(fname)$(index),r.m_$(fname)$(index)))\n"
-					"		return false;\n"
-					"}\n";
-				if (q == q_repeated)
-					G << "}\n";
-				G.clearVariable("index");
-				G.setField(0);
-				continue;
-			}
-			switch (q) {
-			case q_required:
-			case q_repeated:
-				if (wUE)
-					G <<	"if (m_$(fname) != r.m_$(fname))\n"
-						"return false;\n";
-				else
-					G <<	"if (!(m_$(fname) == r.m_$(fname)))\n"
-						"return false;\n";
-				break;
-			case q_optional:
-				if (wUE)
-					G <<	"if ($(field_has)() ^ r.$(field_has)())\n"
-						"return false;\n"
-						"if ($(field_has)() && (m_$(fname) != r.m_$(fname)))\n"
-						"return false;\n";
-				else
-					G <<	"if ($(field_has)() ^ r.$(field_has)())\n"
-						"return false;\n"
-						"if ($(field_has)() && (!(m_$(fname) == r.m_$(fname))))\n"
-						"return false;\n";
-				break;
-			default:
-				abort();
-			}
-			G.setField(0);
-		}
-		G <<	"return true;\n"
-			"}\n\n\n";
 	}
 }
 
@@ -3041,7 +3117,7 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 	G.setField(f);
 	uint8_t quan = f->getQuantifier();
 	uint32_t type = f->getType();
-	G.addVariable("index","");
+	//G.addVariable("index","");
 	switch (quan) {
 	case q_optional:
 		if ((type & ft_filter) == ft_msg)
@@ -3053,23 +3129,30 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 		G << "o << p << \"\\t$(fname) = \"";
 		break;
 	case q_repeated:
-		G << "for (size_t i = 0, e = m_$(fname).size(); i != e; ++i) {\n";
+		G << "for (size_t i = 0, e = $(field_size); i != e; ++i) {\n";
 		G << "o << p << \"\\t$(fname)[\" << i << \"] = \"";
-		G.setVariable("index","[i]");
+		G.setVariable("index","i");
 		break;
 	default:
 		abort();
 	}
-	switch (type) {
+	if (f->isVirtual()) {
+		if (f->isMessage()) {
+			G <<	";\n"
+				"$(fname)_$(toASCII)(o,p);\n"
+			       	"o << \";\\n\";\n";
+		} else
+			G << " << $(field_value) << \";\\n\";\n";
+	} else switch (type) {
 	case ft_uint8:
 	case ft_fixed8:
-		G << " << (unsigned) m_$(fname)$(index) << \";\\n\";\n";
+		G << " << (unsigned) $(field_value) << \";\\n\";\n";
 		break;
 
 	case ft_int8:
 	case ft_sint8:
 	case ft_sfixed8:
-		G << " << (signed) m_$(fname)$(index) << \";\\n\";\n";
+		G << " << (signed) $(field_value) << \";\\n\";\n";
 		break;
 
 	case ft_int32:
@@ -3089,35 +3172,35 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 	case ft_fixed64:
 	case ft_sfixed64:
 	case ft_double:
-		G << " << m_$(fname)$(index) << \";\\n\";\n";
+		G << " << $(field_value) << \";\\n\";\n";
 		break;
 
 	case ft_bytes:
-		G << " << HexBytes(m_$(fname)$(index).data(),m_$(fname)$(index).size(),p+\"\\t\\t\") << \";\\n\";\n";
+		G << " << HexBytes($(field_value).data(),$(field_value).size(),p+\"\\t\\t\") << \";\\n\";\n";
 		break;
 	case ft_string:
-		G << " << C_ASCII(m_$(fname)$(index).c_str(),p+\"\\t\\t\") << \";\\n\";\n";
+		G << " << C_ASCII($(field_value).c_str(),p+\"\\t\\t\") << \";\\n\";\n";
 		break;
 	case ft_cptr:
-		G << " << C_ASCII(m_$(fname)$(index),p+\"\\t\\t\") << \";\\n\";\n";
+		G << " << C_ASCII($(field_value),p+\"\\t\\t\") << \";\\n\";\n";
 		break;
 	case ft_bool:
-		G << " << (m_$(fname)$(index) ? \"true\" : \"false\") << \";\\n\";\n";
+		G << " << ($(field_value) ? \"true\" : \"false\") << \";\\n\";\n";
 		break;
 
 	default:
 		if ((type & ft_filter) == ft_msg) {
 			G << ";\n";
 			if (PrintOut)
-				G << "m_$(fname)$(index).$(toASCII)(o,p+'\\t');\n";
+				G << "$(field_value).$(toASCII)(o,p+'\\t');\n";
 		} else if ((type & ft_filter) == ft_enum) {
 			Enum *e = Enum::id2enum(type);
 			assert(e);
 			const string &strfun = e->getStringFunction();
 			if (strfun.empty())
-				G << " << m_$(fname)$(index) << \";\\n\";\n";
+				G << " << $(field_value) << \";\\n\";\n";
 			else
-				G << " << " << strfun << "(m_$(fname)$(index)) << \";\\n\";\n";
+				G << " << " << strfun << "($(field_value)) << \";\\n\";\n";
 		} else
 			abort();
 	}
@@ -3135,8 +3218,8 @@ void CppGenerator::writePrint(Generator &G, Message *m)
 	G <<	"void $(prefix)$(msg_name)::$(toASCII)($(streamtype) &o, const std::string &p) const\n"
 		"{\n"
 		"o << \"message $(msg_name) {\\n\";\n";
-	for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-		Field *f = m->getField(i);
+	for (auto i : m->getFields()) {
+		Field *f = i.second;
 		if ((f == 0) || (!f->isUsed()))
 			continue;
 		writePrint(G,f);
@@ -3198,8 +3281,8 @@ void CppGenerator::writeFunctions(Generator &G, Message *m)
 	if (needCalcSize)
 		writeCalcSize(G,m);
 	
-	for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-		if (Field *f = m->getField(i))
+	for (auto i : m->getFields()) {
+		if (Field *f = i.second)
 			if (f->isUsed())
 				writeFunctions(G,f);
 	}
@@ -3408,6 +3491,8 @@ void CppGenerator::writeFromMemory_early(Generator &G, Field *f)
 		case ft_unsigned:
 		case ft_int:
 		case ft_enum:
+		case ft_int8:
+		case ft_uint8:
 		case ft_int16:
 		case ft_uint16:
 		case ft_int32:
@@ -3417,15 +3502,13 @@ void CppGenerator::writeFromMemory_early(Generator &G, Field *f)
 			decodeVarint(G,f);
 			break;
 		case ft_signed:
+		case ft_sint8:
 		case ft_sint16:
 		case ft_sint32:
 		case ft_sint64:
 			decodeSVarint(G,f);
 			break;
 		case ft_bool:
-		case ft_int8:
-		case ft_uint8:
-		case ft_sint8:
 		case ft_fixed8:
 		case ft_sfixed8:
 			decode8bit(G,f);
@@ -3464,7 +3547,7 @@ void CppGenerator::writeFromMemory_early(Generator &G, Field *f)
 			G << "$(m_field).emplace_back();\n";
 		G <<	"if (ud.vi != 0) {\n"
 			"int n;\n";
-		G.field_fill("(const uint8_t*)a,ud.vi");
+		G.fillField("(const uint8_t*)a,ud.vi");
 		G <<	"if (n != (ssize_t)ud.vi)\n"
 			"	$handle_error;\n"
 			"a += ud.vi;\n"
@@ -3478,7 +3561,7 @@ void CppGenerator::writeFromMemory_early(Generator &G, Field *f)
 		G <<	"case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding byte[]\n"
 			"{\n"
 			"if (ud.vi > 0) {\n";
-		G.field_fill("(const char*)a,ud.vi");
+		G.fillField("(const char*)a,ud.vi");
 		if (vbit != -1)
 			writeSetValid(G,vbit);
 		G <<	"a += ud.vi;\n"
@@ -3488,7 +3571,7 @@ void CppGenerator::writeFromMemory_early(Generator &G, Field *f)
 		G <<	"case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding byte[]\n"
 			"{\n"
 			"if ((ud.vi > 0) && (a[ud.vi-1] == 0))\n";
-		G.field_fill("(const char*)a");
+		G.fillField("(const char*)a");
 		if (vbit != -1)
 			writeSetValid(G,vbit);
 		G <<	"a += ud.vi;\n"
@@ -3497,6 +3580,8 @@ void CppGenerator::writeFromMemory_early(Generator &G, Field *f)
 	case ft_unsigned:
 	case ft_int:
 	case ft_enum:
+	case ft_int8:
+	case ft_uint8:
 	case ft_int16:
 	case ft_uint16:
 	case ft_int32:
@@ -3505,55 +3590,56 @@ void CppGenerator::writeFromMemory_early(Generator &G, Field *f)
 	case ft_uint64:
 		G.setVariableHex("field_tag",(int64_t)id<<3|wt_varint);
 		G << "case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding varint\n";
-		G.field_fill("($(typestr))ud.u$varintbits");
+		G.fillField("($(typestr))ud.u$varintbits");
 		break;
 	case ft_signed:
 		G << "case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding signed varint\n";
-		G.field_fill("varint_sint(ud.u$intsize)");
+		G.fillField("varint_sint(ud.u$intsize)");
+		break;
+	case ft_sint8:
+		G << "case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding signed varint\n";
+		G.fillField("varint_sint(ud.u8)");
 		break;
 	case ft_sint16:
 		G << "case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding signed varint\n";
-		G.field_fill("varint_sint(ud.u16)");
+		G.fillField("varint_sint(ud.u16)");
 		break;
 	case ft_sint32:
 		G << "case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding signed varint\n";
-		G.field_fill("varint_sint(ud.u32)");
+		G.fillField("varint_sint(ud.u32)");
 		break;
 	case ft_sint64:
 		G << "case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding signed varint\n";
-		G.field_fill("varint_sint(ud.u64)");
+		G.fillField("varint_sint(ud.u64)");
 		break;
 	case ft_bool:
-	case ft_int8:
-	case ft_uint8:
-	case ft_sint8:
 	case ft_fixed8:
 	case ft_sfixed8:
 		G << "case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding 8bit\n";
-		G.field_fill("ud.u8");
+		G.fillField("ud.u8");
 		break;
 	case ft_fixed16:
 	case ft_sfixed16:
 		G << "case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding 16bit\n";
-		G.field_fill("ud.u16");
+		G.fillField("ud.u16");
 		break;
 	case ft_fixed32:
 	case ft_sfixed32:
 		G << "case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding 32bit\n";
-		G.field_fill("ud.u32");
+		G.fillField("ud.u32");
 		break;
 	case ft_float:
 		G << "case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding 32bit\n";
-		G.field_fill("ud.f");
+		G.fillField("ud.f");
 		break;
 	case ft_fixed64:
 	case ft_sfixed64:
 		G << "case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding 64bit\n";
-		G.field_fill("ud.u64");
+		G.fillField("ud.u64");
 		break;
 	case ft_double:
 		G << "case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding 64bit\n";
-		G.field_fill("ud.d");
+		G.fillField("ud.d");
 		break;
 	}
 	G << "break;\n";
@@ -3596,17 +3682,13 @@ void CppGenerator::writeFromMemory_early(Generator &G, Message *m)
 		"		$handle_error;\n"
 		"	a += fn;\n"
 		"	break;\n"
-		;
-	if (VarIntBits == 64)
-		G <<
 		"case 0x1: // 64-bit\n"
 		"	if (a+8 > e)\n"
 		"		$handle_error;\n"
 		"	ud.u64 = read_u64(a);\n"
 		"	a += 8;\n"
 		"	break;\n"
-		;
-	G <<	"case 0x3: // 8-bit\n"
+		"case 0x3: // 8-bit\n"
 		"	if (a+1 > e)\n"
 		"		$handle_error;\n"
 		"	ud.u64 = 0;\n"
@@ -3619,9 +3701,6 @@ void CppGenerator::writeFromMemory_early(Generator &G, Message *m)
 		"	ud.u16 = read_u16(a);\n"
 		"	a += 2;\n"
 		"	break;\n"
-		;
-	if (VarIntBits >= 32)
-		G <<
 		"case 0x5: // 32-bit\n"
 		"	if (a+4 > e)\n"
 		"		$handle_error;\n"
@@ -3629,16 +3708,15 @@ void CppGenerator::writeFromMemory_early(Generator &G, Message *m)
 		"	ud.u32 = read_u32(a);\n"
 		"	a += 4;\n"
 		"	break;\n"
-		;
-	G <<	"default:\n"
+		"default:\n"
 		"	$handle_error;\n"
 		"}\n"
 		"switch (fid) {\n"
 		;
 
 	bool hasNullId = false;
-	for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-		Field *f = m->getField(i);
+	for (auto i : m->getFields()) {
+		Field *f = i.second;
 		if (f == 0)
 			continue;
 		if (!f->isUsed()) {
@@ -3654,8 +3732,8 @@ void CppGenerator::writeFromMemory_early(Generator &G, Message *m)
 	}
 	if (target->getOption("UnknownField") == "assert") {
 		// need to skip known but unused fields to avoid asserts
-		for (unsigned i = 0, e = m->numFields(); i != e; ++i) {
-			Field *f = m->getField(i);
+		for (auto i : m->getFields()) {
+			Field *f = i.second;
 			if ((f == 0) || (f->isUsed()))
 				continue;
 			G.setField(f);

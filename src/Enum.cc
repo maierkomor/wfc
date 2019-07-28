@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2019, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -21,6 +21,7 @@
 #include "Enum.h"
 #include "Field.h"
 #include "log.h"
+#include "keywords.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,7 +34,7 @@ static map<string,unsigned> EnumName2Id;
 static vector<Enum *> Enums;
 
 
-Enum::Enum(const char *str,unsigned l)
+Enum::Enum(const char *str, unsigned l)
 : basename(str,l)
 , name(basename)
 , fullname(name)
@@ -43,7 +44,11 @@ Enum::Enum(const char *str,unsigned l)
 , vmax(0)
 , coding(enum_coding_varint)
 , allow_alias(false)
-{ }
+{
+	if (isKeyword(name.c_str()))
+		error("keyword '%s' cannot be used as identifier for enum",name.c_str());
+
+}
 
 
 Enum::Enum(const string &n)
@@ -56,7 +61,9 @@ Enum::Enum(const string &n)
 , vmax(0)
 , coding(enum_coding_varint)
 , allow_alias(false)
-{ }
+{
+
+}
 
 
 Enum *Enum::create(const char *str, unsigned l)

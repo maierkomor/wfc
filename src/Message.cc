@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2019, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -21,6 +21,7 @@
 #include "Message.h"
 #include "Enum.h"
 #include "log.h"
+#include "keywords.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -40,22 +41,24 @@ Message::Message(const char *n, unsigned l, bool o)
 , m_msgid(0)
 , m_maxfid(0)
 , m_numvalid(0)
-, m_validtype(0)
-, oneOf(o)
+, m_used(false)
+, m_vdata(false)
 {
+	if (o)
+		error("oneof is unsupported");
 	setName(n,l);
 	ParsingMessage = string(n,l);
-//	diag("message %s",name.c_str());
+//	diag("message %s",m_name.c_str());
 }
 
 
 Message::~Message()
 {
-	for (auto i(fields.begin()), e(fields.end()); i != e; ++i)
+	for (auto i(m_fields.begin()), e(m_fields.end()); i != e; ++i)
+		delete i->second;
+	for (auto i(m_enums.begin()), e(m_enums.end()); i != e; ++i)
 		delete *i;
-	for (auto i(enums.begin()), e(enums.end()); i != e; ++i)
-		delete *i;
-	for (auto i(msgs.begin()), e(msgs.end()); i != e; ++i)
+	for (auto i(m_msgs.begin()), e(m_msgs.end()); i != e; ++i)
 		delete *i;
 
 }
@@ -63,27 +66,36 @@ Message::~Message()
 
 void Message::addMessage(Message *m)
 {
-	msgs.push_back(m);
+	m_msgs.push_back(m);
 	m->setParent(this);
 }
 
 
 Field *Message::getField(const char *n) const
 {
-	for (auto i(fields.begin()), e(fields.end()); i != e; ++i) {
-		if (*i == 0)
-			continue;
-		if (0 == strcmp(n, (*i)->getName()))
-			return *i;
+	for (auto i(m_fields.begin()), e(m_fields.end()); i != e; ++i) {
+		Field *f = i->second;
+		if ((f != 0) && (0 == strcmp(n, f->getName())))
+			return i->second;
 	}
 	return 0;
 }
 
+
+Field *Message::getFieldId(unsigned n) const
+{
+	auto i = m_fields.find(n);
+	if (i == m_fields.end())
+		return 0;
+	return i->second;
+}
+
+
 unsigned Message::getMaxSize() const
 {
 	size_t n = 0;
-	for (auto i(fields.begin()), e(fields.end()); i != e; ++i) {
-		Field *f = *i;
+	for (auto i(m_fields.begin()), e(m_fields.end()); i != e; ++i) {
+		Field *f = i->second;
 		if (f == 0)
 			continue;
 		unsigned fs = f->getMaxSize();
@@ -97,8 +109,8 @@ unsigned Message::getMaxSize() const
 
 Message *Message::getMessage(const char *n) const
 {
-	for (auto i(msgs.begin()), e(msgs.end()); i != e; ++i)
-		if ((*i)->name == n)
+	for (auto i(m_msgs.begin()), e(m_msgs.end()); i != e; ++i)
+		if ((*i)->m_name == n)
 			return *i;
 	return 0;
 }
@@ -112,17 +124,33 @@ void Message::setParent(Message *m)
 
 void Message::setNamePrefix(const string &p)
 {
-	name = p + basename;
-	fullname = name;
-	//diag("message %s: name set to '%s', fullname %s",basename.c_str(),prefix.c_str(),fullname.c_str());
+	m_name = p + m_basename;
+	m_fullname = m_name;
+	//diag("message %s: m_name set to '%s', m_fullname %s",m_basename.c_str(),m_prefix.c_str(),m_fullname.c_str());
+}
+
+
+void Message::setOption(const std::string &option, const std::string &value)
+{
+#ifdef BETA_FEATURES
+	if (option == "members") {
+		if (value == "virtual")
+			m_vdata = true;
+		else if (value == "regular")
+			m_vdata = false;
+		else
+			error("invalid value '%s' for option 'virtual'",value.c_str());
+	} else
+#endif
+		error("invaid option '%s'",option.c_str());
 }
 
 
 void Message::setPrefix(const string &p)
 {
-	prefix = p;
-	fullname = p + basename;
-	//diag("message %s: prefix set to '%s', name '%s', fullname '%s'",basename.c_str(),prefix.c_str(),name.c_str(),fullname.c_str());
+	m_prefix = p;
+	m_fullname = p + m_basename;
+	//diag("message %s: m_prefix set to '%s', m_name '%s', m_fullname '%s'",m_basename.c_str(),m_prefix.c_str(),m_name.c_str(),m_fullname.c_str());
 }
 
 
@@ -131,14 +159,19 @@ void Message::setNumValid(unsigned n)
 {
 	assert(m_numvalid == 0);
 	m_numvalid = n;
-	if ((n <= 8) || (n > 64))
-		m_validtype = "uint8_t";
-	else if (n <= 16)
-		m_validtype = "uint16_t";
-	else if (n <= 32)
-		m_validtype = "uint32_t";
+}
+
+
+const char *Message::getValidType() const
+{
+	if ((m_numvalid <= 8) || (m_numvalid > 64))
+		return "uint8_t";
+	else if (m_numvalid <= 16)
+		return "uint16_t";
+	else if (m_numvalid <= 32)
+		return "uint32_t";
 	else
-		m_validtype = "uint64_t";
+		return "uint64_t";
 }
 
 
@@ -153,38 +186,38 @@ void Message::addField(Field *f)
 {
 	assert(f);
 	f->setParent(this);
-	const char *name = f->getName();
+	if (m_vdata)
+		f->setVirtual(true);
+	const char *m_name = f->getName();
 	unsigned id = f->getId();
-	for (auto i(fields.begin()), e(fields.end()); i != e; ++i) {
-		Field *f2 = *i;
+	for (auto i(m_fields.begin()), e(m_fields.end()); i != e; ++i) {
+		Field *f2 = i->second;
 		if (f2 == 0)
 			continue;
-		if (0 == strcmp(name,f2->getName()))
-			error("duplicate field name '%s' (ids: %u and %u)",name,id,f2->getId());
+		if (0 == strcmp(m_name,f2->getName()))
+			error("duplicate field m_name '%s' (ids: %u and %u)",m_name,id,f2->getId());
 	}
 //	diag("adding field %s with id %u, type %x",f->getName(),id,f->getType());
-	if (id >= fields.size())
-		fields.resize(id+1);
-	if (fields[id] != 0) {
+	if (!m_fields.insert(make_pair(id,f)).second) {
 		error("duplicate id %d for field %s",id,f->getName());
-		return;
+		delete f;
 	}
-	fields[id] = f;
 	if (id > m_maxfid)
 		m_maxfid = id;
+	m_fieldseq.push_back(id);
 }
 
 
 Enum *Message::getEnum(unsigned i) const
 {
-	assert(i < enums.size());
-	return enums[i];
+	assert(i < m_enums.size());
+	return m_enums[i];
 }
 
 
 Enum *Message::getEnum(const char *n) const
 {
-	for (auto i(enums.begin()), e(enums.end()); i != e; ++i) {
+	for (auto i(m_enums.begin()), e(m_enums.end()); i != e; ++i) {
 		Enum *en = *i;
 		if (en->getName() == n)
 			return en;
@@ -195,14 +228,14 @@ Enum *Message::getEnum(const char *n) const
 
 unsigned Message::resolveId(const char *n, unsigned l)
 {
-	string name(n,l);
-//	diag("resolveId('%s')",name.c_str());
-	auto i(MessageName2Id.find(name));
+	string m_name(n,l);
+//	diag("resolveId('%s')",m_name.c_str());
+	auto i(MessageName2Id.find(m_name));
 	if (i != MessageName2Id.end()) {
-//		diag("resolveId('%s') = %u",name.c_str(),i->second);
+//		diag("resolveId('%s') = %u",m_name.c_str(),i->second);
 		return i->second;
 	}
-//	diag("resolveId('%s') = 0",name.c_str());
+//	diag("resolveId('%s') = 0",m_name.c_str());
 	return 0;
 }
 
@@ -220,20 +253,22 @@ void Message::setName(const char *n, unsigned l)
 	assert(m_msgid == 0);
 	m_msgid = Messages.size() | ft_msg;
 	Messages.push_back(this);
-	name = string(n,l);
-	basename = name;
-	fullname = name;
-	auto x = MessageName2Id.insert(make_pair(name,m_msgid));
+	m_name = string(n,l);
+	if (isKeyword(m_name.c_str()))
+		error("keyword '%s' cannot be used as identifier for messsage",m_name.c_str());
+	m_basename = m_name;
+	m_fullname = m_name;
+	auto x = MessageName2Id.insert(make_pair(m_name,m_msgid));
 	if (!x.second)
 		fatal("message %s already defined",n);
-//	diag("message %s has id %i",name.c_str(),id);
+//	diag("message %s has id %i",m_name.c_str(),id);
 }
 
 
 bool Message::usesVectors() const
 {
-	for (auto i(fields.begin()), e(fields.end()); i != e; ++i) {
-		Field *f = *i;
+	for (auto i(m_fields.begin()), e(m_fields.end()); i != e; ++i) {
+		Field *f = i->second;
 		if (f == 0)
 			continue;
 		if ((f->getQuantifier() == 2) && (f->getArraySize() == 0))
@@ -265,13 +300,13 @@ bool Message::getFlag(const char *o) const
 string Message::findROstring() const
 {
 	string ret;
-	for (auto i(fields.begin()), e(fields.end()); i != e; ++i) {
-		Field *f = *i;
+	for (auto i(m_fields.begin()), e(m_fields.end()); i != e; ++i) {
+		Field *f = i->second;
 		if ((f == 0) || !f->isUsed())
 			continue;
 		uint32_t tid = f->getType();
 		if (tid == ft_cptr)
-			return fullname + '/' + f->getName();
+			return m_fullname + '/' + f->getName();
 		if ((tid & ft_filter) == ft_msg) {
 			Message *sm = Message::id2msg(tid);
 			ret = sm->findROstring();
@@ -285,8 +320,8 @@ string Message::findROstring() const
 
 bool Message::hasFixedSize() const
 {
-	for (auto i(fields.begin()), e(fields.end()); i != e; ++i) {
-		Field *f = *i;
+	for (auto i(m_fields.begin()), e(m_fields.end()); i != e; ++i) {
+		Field *f = i->second;
 		if ((f == 0) || !f->isUsed())
 			continue;
 		if (q_required != f->getQuantifier())
@@ -301,8 +336,8 @@ bool Message::hasFixedSize() const
 size_t Message::getFixedSize() const
 {
 	size_t s = 0;
-	for (auto i(fields.begin()), e(fields.end()); i != e; ++i) {
-		Field *f = *i;
+	for (auto i(m_fields.begin()), e(m_fields.end()); i != e; ++i) {
+		Field *f = i->second;
 		if ((f == 0) || !f->isUsed())
 			continue;
 		assert(f->hasFixedSize());
@@ -314,10 +349,10 @@ size_t Message::getFixedSize() const
 
 void Message::setUsed(bool u)
 {
-	used = u;
+	m_used = u;
 	if (u) {
-		for (size_t i = 0, n = numFields(); i != n; ++i) {
-			Field *f = getField(i);
+		for (auto i(m_fields.begin()), e(m_fields.end()); i != e; ++i) {
+			Field *f = i->second;
 			if ((f == 0) || (!f->isUsed()))
 				continue;
 			unsigned type = f->getType();
@@ -328,8 +363,8 @@ void Message::setUsed(bool u)
 				sm->setUsed(true);
 		}
 	} else {
-		for (size_t i = 0, n = msgs.size(); i != n; ++i) {
-			msgs[i]->setUsed(false);
+		for (size_t i = 0, n = m_msgs.size(); i != n; ++i) {
+			m_msgs[i]->setUsed(false);
 		}
 	}
 }

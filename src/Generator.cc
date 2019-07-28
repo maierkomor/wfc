@@ -386,12 +386,30 @@ const char *Generator::getTypeName(uint32_t type) const
 */
 
 
-void Generator::field_fill(const string &arg)
+void Generator::fillField(const string &arg)
 {
 	const Field *f = m_field;
 	assert(f);
 	uint32_t tid = f->getTypeClass();
+	bool vmember = f->isVirtual();
 
+	if (vmember) {
+		const char *cast = "";
+		if (tid == ft_enum)
+			cast = "($typestr)";
+		switch (f->getQuantifier()) {
+		case q_optional:
+		case q_required:
+			(*this) << "$(field_set)(" << cast << arg << ");\n";
+			break;
+		case q_repeated:
+			(*this) << "add_$(fname)(" << cast << arg << ");\n";
+			break;
+		default:
+			abort();
+		}
+		return;
+	}
 	switch (f->getQuantifier()) {
 	case q_optional:
 		switch (tid) {
@@ -496,10 +514,10 @@ void Generator::field_fill(const string &arg)
 			(*this) << "n = $(m_field).back().$(fromMemory)(" << arg << ");\n";
 			break;
 		case ft_bytes:
-			(*this) << "$(m_field).push_back($(bytestype)(" << arg << "));\n";
+			(*this) << "$(m_field).emplace_back(" << arg << ");\n";
 			break;
 		case ft_string:
-			(*this) << "$(m_field).push_back($(stringtype)(" << arg << "));\n";
+			(*this) << "$(m_field).emplace_back(" << arg << ");\n";
 			break;
 		case ft_unsigned:
 		case ft_int:
@@ -552,42 +570,38 @@ void Generator::setField(const Field *f)
 		addVariable("fname",fname);
 		addVariable("m_field","m_"+fname);	// member reference
 		addVariable("p_field","&m_"+fname);	// member pointer
-		switch (f->getQuantifier()) {
-		case q_required:
-			if ((tid == ft_string) || (tid == ft_bytes))
-				addVariable("field_push","m_"+fname+".assign");	// added member pointer
-			else
-				addVariable("field_push","m_"+fname+".set");
-			break;
-		case q_optional:
-			if ((tid == ft_string) || (tid == ft_bytes))
-				addVariable("field_push","m_"+fname+".assign");	// added member pointer
-			else
-				addVariable("field_push","m_"+fname+".set");
-			break;
-		case q_repeated:
-			if ((tid == ft_string) || (tid == ft_bytes))
-				addVariable("field_push","m_"+fname+".assign");	// added member pointer
-			else
-				addVariable("field_push","m_"+fname+".push_back");
-			break;
-		default:
-			abort();
-		}
+		quant_t q = f->getQuantifier();
 		setVariable("bytestype",f->getOption("bytestype"));
-		setVariable("stringtype",f->getOption("stringtype"));
+		const string &st = f->getOption("stringtype");
+		if (st == "pointer")
+			setVariable("stringtype","char *");
+		else
+			setVariable("stringtype",st);
 		addVariable("field_add",m_options->AddPrefix() + fname);
 		addVariable("field_has",m_options->HasPrefix() + fname);
 		addVariable("field_get",m_options->GetPrefix() + fname);
 		addVariable("field_set",m_options->SetPrefix() + fname);
 		addVariable("field_clear",m_options->ClearPrefix() + fname);
 		addVariable("field_mutable",m_options->MutablePrefix() + fname);
-		/*
-		if (m_message->getNumValid() <= VarIntBits)
-			addVariable("field_valid","p_validbits |= (($(validtype))1U << $(vbit));\n");
+		bool v = f->isVirtual();
+		if (v && q == q_repeated) {
+			addVariable("field_value",m_options->GetPrefix()+fname+"($index)");
+			addVariable("field_size",fname+"_size()");
+		} else if (v) {
+			addVariable("field_value",m_options->GetPrefix()+fname+"()");
+			if ((tid == ft_string) || (tid == ft_bytes))
+				addVariable("field_size",fname+"_size()");
+		} else if (q == q_repeated) {
+			addVariable("field_value","m_"+fname+"[$index]");
+			addVariable("field_size","m_"+fname+".size()");
+		} else {
+			addVariable("field_value","m_"+fname);
+		}
+		if (v)
+			addVariable("field_values","$(field_get)().data()");
 		else
-			addVairable("field_valid","p_validbits[$(vbit/8)] |= (($(validtype))1U << ($(vbit)&0x7));\n");
-			*/
+			addVariable("field_values","m_$(fname).data()");
+
 		char tmp[64];
 		unsigned id = f->getId();
 		sprintf(tmp,"%u",id);
@@ -666,16 +680,19 @@ void Generator::setField(const Field *f)
 		clearVariable("fullrtype");
 		clearVariable("ptype");
 		clearVariable("vbit");
-		clearVariable("field_push");
 		clearVariable("field_add");
-		clearVariable("field_has");
-		clearVariable("field_get");
-		clearVariable("field_set");
 		clearVariable("field_clear");
-		clearVariable("field_mutable");
-		clearVariable("field_id");
 		clearVariable("field_enc");
+		clearVariable("field_get");
+		clearVariable("field_has");
+		clearVariable("field_id");
+		clearVariable("field_mutable");
+		clearVariable("field_push");
+		clearVariable("field_set");
+		clearVariable("field_size");
 		clearVariable("field_tag");
+		clearVariable("field_value");
+		clearVariable("field_values");
 		clearVariable("tagsize");
 		setVariable("bytestype",m_options->getOption("bytestype"));
 		setVariable("stringtype",m_options->getOption("stringtype"));

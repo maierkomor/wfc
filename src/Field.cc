@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2019, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -23,6 +23,7 @@
 #include "KVPair.h"
 #include "Options.h"
 #include "log.h"
+#include "keywords.h"
 #include <cassert>
 #include <stdlib.h>
 #include "wirefuncs.h"
@@ -31,77 +32,6 @@
 using namespace std;
 
 string ParsingMessage;
-
-static const char *KeywordsA[] = {
-	"alignas",
-	"alignof",
-	"and",
-	"asm",
-	"auto",
-	"break",
-	"case",
-	"catch",
-	"char",
-	"class",
-	"const",
-	"const_cast",
-	"constexpr",
-	"continue",
-	"decltype",
-	"default",
-	"delete",
-	"do",
-	"double",
-	"dynamic_cast",
-	"else",
-	"explicit",
-	"extern",
-	"false",
-	"float",
-	"for",
-	"friend",
-	"goto",
-	"if",
-	"inline",
-	"long",
-	"mutable",
-	"namespace",
-	"new",
-	"nullptr",
-	"or",
-	"private",
-	"protected",
-	"public",
-	"register",
-	"reinterpret_cast",
-	"restrict",
-	"return",
-	"short",
-	"sizeof",
-	"static",
-	"static_assert",
-	"static_cast",
-	"struct",
-	"switch",
-	"template",
-	"this",
-	"throw",
-	"true",
-	"typedef",
-	"typeid",
-	"typename",
-	"union",
-	"using",
-	"virtual",
-	"void",
-	"volatile",
-	"while",
-	"xor",
-};
-
-
-static set<string> Keywords;
-
 
 Field::Field(const char *n, unsigned l, quant_t q, uint32_t t, long long i)
 : parent(0)
@@ -116,6 +46,7 @@ Field::Field(const char *n, unsigned l, quant_t q, uint32_t t, long long i)
 , quan(q)
 , packed(false)
 , used(true)
+, vmember(false)
 {
 	options = new Options((string)"field:"+n,Options::getFieldDefaults());
 	assert(q != q_unspecified);
@@ -123,12 +54,8 @@ Field::Field(const char *n, unsigned l, quant_t q, uint32_t t, long long i)
 		warn("In message %s: field %s has invalid id %lld: id should be positive integer",ParsingMessage.c_str(),name.c_str(),i);
 	else if (i < 0)
 		fatal("In message %s: field %s has invalid id %lld: id must not be negative integer",ParsingMessage.c_str(),name.c_str(),i);
-	if (Keywords.empty()) {
-		for (size_t i = 0; i < sizeof(KeywordsA)/sizeof(KeywordsA[0]); ++i)
-			Keywords.insert(KeywordsA[i]);
-	}
-	if (Keywords.find(name) != Keywords.end())
-		error("invalid identifier %s",name.c_str());
+	if (isKeyword(name.c_str()))
+		error("identifier %s is a keyword",name.c_str());
 }
 
 
@@ -184,6 +111,8 @@ bool Field::hasSimpleType() const
 
 unsigned Field::getMemberSize() const
 {
+	if (isVirtual())
+		return 0;
 	switch (type & ft_filter) {
 	case ft_msg:
 		return 0;
@@ -852,6 +781,15 @@ void Field::setOption(const string &option, const string &value)
 {
 	if (option == "default") {
 		defvalue = value;
+#ifdef BETA_FEATURES
+	} else if (option == "virtual") {
+		if (value == "true")
+			vmember = true;
+		else if (value == "false")
+			vmember = false;
+		else
+			error("invalid value '%s' for option virtual",value.c_str());
+#endif
 	} else if (option == "unset") {
 		invvalue = value;
 	} else if (option == "packed") {
@@ -930,6 +868,8 @@ bool Field::needsValidbit() const
 bool Field::setValidBit(int v)
 {
 	assert(valid_bit == -3);
+	if (isVirtual())
+		return false;
 	if (quan != q_optional) {
 		valid_bit = -1;
 		return false;

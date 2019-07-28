@@ -95,10 +95,10 @@ message TestBench
 	repeated generic_enum GenericEnumV = 0x2c;
 	repeated generic_enum GenericEnumPV = 0x2d;
 
-	optional fixed8 SI8 = 0x30;
-	optional fixed16 SI16 = 0x31 [default=6];
-	optional fixed32 SI32 = 0x32;
-	optional fixed64 SI64 = 0x33;
+	optional fixed8 FS8 = 0x30;
+	optional fixed16 FS16 = 0x31 [default=6];
+	optional fixed32 FS32 = 0x32;
+	optional fixed64 FS64 = 0x33;
 
 	optional fixed32 OF32 = 0x40;
 	optional float OFloat = 0x41;
@@ -127,4 +127,12 @@ message TestBench
 	optional KVPair kvpair1 = 0x60;
 	repeated KVPair kvpairs = 0x61;
 
+	int8 I8 = 0x70;
+	int16 I16 = 0x71;
+	int32 I32 = 0x72;
+	int64 I64 = 0x73;
+	sint8 SI8 = 0x74;
+	sint16 SI16 = 0x75;
+	sint32 SI32 = 0x76;
+	sint64 SI64 = 0x77;
 }

@@ -39,16 +39,6 @@
 
 #include <iostream>
 
-#define STRINGIFY(s) #s
-#define TOSTRING(s) STRINGIFY(s)
-#ifndef VERSION
-#	if defined HGREV && HGREV > 0
-#		define VERSION "hg-" TOSTRING(HGREV)
-#	else
-#		define VERSION "X" LATEST "-based"
-#	endif
-#endif
-
 using namespace std;
 
 extern void decodeFile(const char *fn);
@@ -253,10 +243,26 @@ int main(int argc, char *argv[])
 	setInstallDir(argv[0]);
 	Options options("commandline",Options::getDefaults());
 	bool yydebug = false, hadPostProcess = false, genLib = false;
-	int opt;
 	const char *target = 0;
 	const char *outname = 0;	// output basename to use instead of input file name
-	while (-1 != (opt = getopt(argc,argv,"d:f:hI:lm:O:o:p:st:Vvx:y"))) {
+	char *fn = 0;
+#if defined __MINGW32__ || defined __MINGW64__
+#define PCORRECT "+"
+#else
+#define PCORRECT
+	setenv("POSIXLY_CORRECT","1",1);
+#endif
+	while (optind < argc) {
+		int opt = getopt(argc,argv,PCORRECT "d:f:hI:lm:O:o:p:st:Vvx:y");
+		if (opt == -1) {
+			if (optind == argc) 
+				break;
+			if (fn)
+				fatal("multiple input files");
+			fn = strdup(argv[optind]);
+			++optind;
+			continue;
+		}
 		switch (opt) {
 		case 'd':
 			decodeFile(optarg);
@@ -332,11 +338,10 @@ int main(int argc, char *argv[])
 	else
 		Lib.addBuf(TemplateLib,"<internal>");
 	ProtoDriver drv(yydebug);
-	char *fn = argv[optind];
 	if (fn == 0) {
 		if (genLib) {
 			CodeGenerator c(0,&options);
-			c.writeLib(outname );
+			c.writeLib(outname);
 			exit(hadError() ? EXIT_FAILURE : EXIT_SUCCESS);
 		}
 		if (hadPostProcess)

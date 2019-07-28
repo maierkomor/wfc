@@ -589,7 +589,6 @@ ac_default_prefix=/usr/local
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 DEBUG
-RELEASE
 BETA
 HG
 DIFF
@@ -3318,8 +3317,6 @@ else
 	echo GNU bison version 3.x required
 	exit 1
 fi
-
-RELEASE=1905
 
 
 

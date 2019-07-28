@@ -27,6 +27,11 @@ int main(int argc, const char *argv[])
 	f.set_f64(0);
 	f.set_sf64(0);
 	runcheck(f);
+	f.set_sf8(-1);
+	f.set_sf16(-1);
+	f.set_sf32(-1);
+	f.set_sf64(-1);
+	runcheck(f);
 	f.set_f8(UINT8_MAX);
 	f.set_sf8(INT8_MAX);
 	f.set_f16(UINT16_MAX);

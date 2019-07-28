@@ -1,8 +1,10 @@
 #include "hostscope.h"
 #include "runcheck.h"
 
+#include <errno.h>
 #include <sstream>
 #include <stdio.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 

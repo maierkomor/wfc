@@ -159,8 +159,9 @@ static void writeMessage(fstream &out, Message *m, unsigned ind)
 		out << '\n';
 		writeMessage(out,m->getMessage(i),ind);
 	}
-	for (unsigned i = 0, nf = m->numFields(); i < nf; ++i)
-		writeField(out,m->getField(i),ind);
+	const map<unsigned,Field *> &fields = m->getFields();
+	for (auto i = fields.begin(), e = fields.end(); i != e; ++i)
+		writeField(out,i->second,ind);
 	--ind;
 	out << indent(ind) << "</Message>\n";
 }

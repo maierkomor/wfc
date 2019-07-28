@@ -118,6 +118,11 @@ static bool init_module()
 	ValidOptions["ErrorHandling"].insert("throw");
 	ValidOptions["UnknownField"].insert("assert");
 	ValidOptions["UnknownField"].insert("skip");
+	ValidOptions["SortMembers"].insert("name");
+	ValidOptions["SortMembers"].insert("id");
+	ValidOptions["SortMembers"].insert("type");
+	ValidOptions["SortMembers"].insert("size");
+	ValidOptions["SortMembers"].insert("unsorted");
 
 	ValidOptions["endian"].insert("unknown");
 	ValidOptions["endian"].insert("little");
@@ -284,6 +289,7 @@ void Options::initFieldDefaults()
 	m_BinOptions["devel"] = false;
 	m_BinOptions["packed"] = false;
 	m_BinOptions["used"] = true;
+	m_BinOptions["virtual"] = false;
 }
 
 
@@ -387,7 +393,7 @@ void Options::printDefines(ostream &out) const
 			"#endif\n\n";
 		break;
 	}
-	out << "#define WFC_ENDIAN     " << Endian() << " // " << getOption("endian") << '\n';
+	out << "#define WFC_ENDIAN     " << Endian() << " // " << getOption("endian") << " endian\n";
 	if (getFlag("SubClasses"))
 		out << "#define SUBCLASSES 1\n";
 	if (isId("toMemory"))

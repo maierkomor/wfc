@@ -30,22 +30,12 @@ MKDIR		= @MKDIR@
 INSTALL		= @INSTALL@
 PREFIX		= @prefix@
 
-RELEASE		= @RELEASE@
 BETA		= @BETA@
 
-HGID		=$(shell if [ -d .hg ]; then hg id --id; else echo "none"; fi)
-HGN		=$(shell if [ -d .hg ]; then hg id -n; else echo "none"; fi)
-DVERSION	=$(shell date +%y%m)
-BUILDY		=$(shell date +%y)
-BUILDM		=$(shell date +%-m)
-TAG		=$(shell if [ -d .hg ]; then hg log -r . -T {latesttag}; else echo "unknown"; fi)
-TAGDELTA	=$(shell if [ -d .hg ]; then hg log -r . -T {changessincelatesttag}; else echo "0"; fi)
-VERSION		=\"R$(DVERSION),ID:$(HGID)\"
-RELVER		=$(TAG).$(TAGDELTA)
 SHAREFILES	=$(shell hg st --all share | awk '/^[CAM]/{print $$2}')
 INCFILES	=$(shell hg st --all include | awk '/^[CAM]/{print $$2}')
 INCDIRS		=
-DEFS		=-DRELEASE=$(RELEASE) $(BETA)
+DEFS		= $(BETA)
 CFLAGS		= $(DEFS) $(INCDIRS)
 CXXFLAGS	= $(DEFS) $(INCDIRS)
 LIBS		= 
@@ -62,36 +52,39 @@ dist:
 	$(MAKE) tar
 
 
+prepare: bin
+
+
 debug:DEFS	+=-DDEBUG -DYYDEBUG=1 
 debug:CFLAGS	+= -g -Wall
 debug:CXXFLAGS	+=-std=c++11 -g -Wall
-debug:LIBS	+=-ldl -lpthread
+debug:LIBS	+=-lpthread
 debug:OBJDIR	=../obj-g
-debug: bin
+debug: prepare
 	+$(MAKE) -C src -e ../bin/wfc
 
 release:CFLAGS	+=-O2
 release:CXXFLAGS+=-std=c++11 -O2
-release:LIBS	+=-ldl -lpthread
+release:LIBS	+=-lpthread
 release:LDFLAGS	+=-Wl,-s
 release:OBJDIR	=../obj-r
-release: bin
+release: prepare
 	+$(MAKE) -C src -e ../bin/wfc
 
 clang:CC	=clang
 clang:CXX	=clang++
 clang:CFLAGS	+=-O2
 clang:CXXFLAGS	+=-std=c++11 -O2
-clang:LIBS	+=-ldl -lpthread
+clang:LIBS	+=-lpthread
 clang:OBJDIR	=../obj-c
-clang: bin
+clang: prepare
 	+$(MAKE) -C src -e ../bin/wfc
 
 tcov:CFLAGS	+= -fprofile-arcs -ftest-coverage
 tcov:CXXFLAGS	+= -fprofile-arcs -ftest-coverage
-tcov:LIBS	+=-ldl -lpthread
+tcov:LIBS	+=-lpthread
 tcov:OBJDIR	=../obj-t
-tcov: bin
+tcov: prepare
 	+$(MAKE) -C src -e ../bin/wfc
 
 mingw:CC	=i686-w64-mingw32-gcc
@@ -101,7 +94,7 @@ mingw:INCDIRS	=-I/opt/mingw/include/botan-2
 mingw:LDFLAGS	=-static -static-libgcc -static-libstdc++ -Wl,-Bstatic,--nxcompat,--dynamicbase,--export-all-symbols,-s
 mingw:LIBS	=-liphlpapi -lws2_32 #-lwsock32
 mingw:OBJDIR	=../obj-m32
-mingw: bin
+mingw: prepare
 	+$(MAKE) -C src -e ../bin/wfc.exe
 
 mingw64:CC	=x86_64-w64-mingw32-gcc
@@ -111,7 +104,7 @@ mingw64:INCDIRS	=-I/opt/mingw64/include/botan-2
 mingw64:LDFLAGS	=-static -static-libgcc -static-libstdc++ -Wl,-Bstatic,--nxcompat -Wl,--dynamicbase,--export-all-symbols,-s
 mingw64:LIBS	=-liphlpapi -lws2_32 #-lwsock32
 mingw64:OBJDIR	=../obj-m64
-mingw64: bin
+mingw64: prepare
 	+$(MAKE) -C src -e ../bin/wfc.exe
 
 # job server will not be used by testsuite this way
@@ -121,6 +114,8 @@ test:
 
 bin:
 	mkdir bin
+
+always:
 
 clean:
 	-rm -r obj-g obj-r obj-m obj-c obj-t src/.depend
@@ -140,8 +135,10 @@ install:
 	-$(MKDIR) -p $(PREFIX)/bin
 	if [ -x bin/wfc ]; then $(INSTALL) bin/wfc $(PREFIX)/bin; elif [ -x bin/wfc.exe ]; then $(INSTALL) bin/wfc.exe $(PREFIX)/bin; else echo "build binary before installing"; exit 1; fi
 	-$(MKDIR) -p $(PREFIX)/share
-	$(INSTALL) share/* $(PREFIX)/share
+	$(INSTALL) -m0644 share/* $(PREFIX)/share
 	-$(MKDIR) -p $(PREFIX)/include
-	$(INSTALL) include/* $(PREFIX)/include
+	$(INSTALL) -m0644 include/* $(PREFIX)/include
 	-$(MKDIR) -p $(PREFIX)/doc
-	-$(INSTALL) doc/wfc.pdf $(PREFIX)/doc
+	-$(INSTALL) -m0644 doc/wfc.pdf $(PREFIX)/doc
+	-$(MKDIR) -p $(PREFIX)/man/man1
+	-$(INSTALL) -m0644 doc/wfc.1 $(PREFIX)/man/man1

@@ -21,10 +21,6 @@ INCDIRS		=
 LFLAGS		= -F -R --bison-locations
 YFLAGS		= -Lc++
 
-HGID		=$(shell if [ -d ../.hg ]; then hg id --id; else echo "none"; fi)
-HGN		=$(shell if [ -d ../.hg ]; then hg id -n; else echo "none"; fi)
-VERSION		=$(shell if [ -d ../.hg ]; then echo "R$(RELEASE) (hg:$(HGN)/$(HGID))"; else echo R$(RELEASE); fi)
-
 YSRC		= xproto.y
 LSRC		= xproto.l
 CSRC		= 
@@ -33,7 +29,7 @@ CXXSRC		= $(YSRC:.y=.cc) $(LSRC:.l=_tok.cc) Message.cc PBFile.cc \
 		Generator.cc CodeGenerator.cc CppGenerator.cc \
 		Evaluator.cc CodeLibrary.cc io.cc FoldCompounds.cc \
 		Indenter.cc XmlGenerator.cc CodeTemplate.cc Decoder.cc \
-		template_lib.cc wirefuncs.cc
+		template_lib.cc wirefuncs.cc keywords.cc
 CCTSRC		=$(shell if [ -d ../.hg ]; then hg st -a -c -m -n ../share; else ls -1 ../share/*.cc*; fi)
 
 BINDIR		= ../bin
@@ -47,11 +43,6 @@ DEPS		= $(CXXSRC:%.cc=$(OBJDIR)/%.d) $(CSRC:%.c=$(OBJDIR)/%.d)
 .PHONY:tests always
 
 default: $(BINDIR)/wfc
-
-settings:
-	echo HGID=$(HGID)
-	echo LOGVERSION=$(LOGVERSION)
-	echo VERSION=$(VERSION)
 
 template_lib.cc: genlib.sh
 	CCTSRC="$(CCTSRC)" bash genlib.sh
@@ -84,21 +75,13 @@ $(BINDIR)/wfc: $(BINDIR) $(OBJDIR) $(CXXOBJ) $(COBJ)
 $(BINDIR)/wfc.exe: $(BINDIR) $(OBJDIR) $(CXXOBJ) $(COBJ)
 	$(CXX) $(LDFLAGS) $(CXXFLAGS) $(CXXOBJ) $(COBJ) -Xlinker -Map=../wfc.exe.map -o $@ $(LIBS)
 
-dist:
-	$(MAKE) clean
-	$(MAKE) mingw
-	$(MAKE) clean
-	$(MAKE) release
-	tar zcvf wfc-$(VERSION).tgz $(BINDIR)/wfc $(BINDIR)/wfc.exe `hg st -nc share lib`
-
 %.cc %.h: %.proto
 	./wfc $<
 
 always:
 
 version.h: always
-	echo '#define VERSION "$(VERSION)"' > version.new
-	$(DIFF) version.h version.new > /dev/null && rm version.new || mv version.new version.h
+	bash mkversion.sh
 
 all: prerequisites tests
 
@@ -112,7 +95,7 @@ clean:
 	-$(RM) template_lib.cc template_lib.h xproto_tok.cc xproto.cc $(CXXOBJ) $(COBJ) reftest wfc core $(DEPS)
 
 distclean: clean
-	$(RM) $(BINDIR)/wfc $(BINDIR)/wfc.exe src/version.h
+	$(RM) $(BINDIR)/wfc $(BINDIR)/wfc.exe
 
 
 .depend: $(OBJDIR) | template_lib.cc version.h $(DEPS)

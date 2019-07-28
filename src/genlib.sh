@@ -26,6 +26,15 @@ if [ -f template_lib.cc.new ]; then
 	rm template_lib.cc.new
 fi
 
+if [ "$CCTSRC" == "" ]; then
+	cd src
+	if [ -d ../.hg ]; then
+		CCTSRC=`hg st -a -c -m -n ../share`
+	else
+		CCTSRC=`ls -1 ../share/*.cc*`
+	fi
+fi
+
 echo '#include "template_lib.h"' > template_lib.cc.new
 echo >> template_lib.cc.new
 echo "char TemplateLib[] = {" >> template_lib.cc.new

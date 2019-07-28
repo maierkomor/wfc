@@ -1,3 +1,22 @@
+/*
+ *  Copyright (C) 2017-2019, Thomas Maier-Komor
+ *
+ *  This source file belongs to Wire-Format-Compiler.
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #ifndef RUNCHECK_H
 #define RUNCHECK_H
 
@@ -65,7 +84,7 @@ const char *testcnt();
 void hexdump(uint8_t *a, size_t s);
 
 template <class Message>
-void fail(const Message *l, const Message *r = 0)
+void fail(const char *msg, const Message *l, const Message *r = 0)
 {
 #ifdef HAVE_TO_ASCII
 	std::cout << "l:\n";
@@ -81,6 +100,7 @@ void fail(const Message *l, const Message *r = 0)
 	assert(fd != -1);
 	int n = write(fd,Wire.data(),Wire.size());
 	assert(n >= 0);
+	std::cout << "failure in " << msg << endl;
 	abort();
 }
 
@@ -116,13 +136,13 @@ void runcheck(const Message &tb)
 	++NumToMem;
 	m = tb.toMemory(buf,s*2);
 	if (m != s)
-		fail(&tb);
+		fail("toMemory",&tb);
 	Message fw;
 	++NumFromMem;
 	fw.fromMemory(buf,s);
 	if (tb != fw) {
 		hexdump(buf,s);
-		fail(&tb,&fw);
+		fail("fromMemory",&tb,&fw);
 	}
 
 #ifdef HAVE_TO_SINK
@@ -140,7 +160,7 @@ void runcheck(const Message &tb)
 	++NumFromMem;
 	fw.fromMemory(buf,ucb.getSize());
 	if (tb != fw)
-		fail(&tb,&fw);
+		fail("tb == fw",&tb,&fw);
 #endif
 	
 
@@ -148,7 +168,7 @@ void runcheck(const Message &tb)
 	std::string str;
 	tb.toString(str);
 	if (s != (ssize_t)str.size())
-		fail(&tb);
+		fail("to_str size",&tb);
 	fw.clear();
 	++NumFromMem;
 	fw.fromMemory(str.data(),str.size());
@@ -156,7 +176,7 @@ void runcheck(const Message &tb)
 	assert((tb != fw) == (fw != tb));
 	if (tb != fw) {
 		hexdump(buf,s);
-		fail(&tb,&fw);
+		fail("str tb==fw",&tb,&fw);
 	}
 #endif
 
@@ -180,14 +200,14 @@ void runcheck(const Message &tb)
 	fw.fromMemory(Wire.data(),Wire.size());
 	if (tb != fw) {
 		hexdump(buf,s);
-		fail(&tb,&fw);
+		fail("fromMem",&tb,&fw);
 	}
 
 #ifdef HAVE_TO_STRING
 	if (Wire.size() != str.size())
-		fail(&tb);
+		fail("wirecmp",&tb);
 	if (0 != memcmp(Wire.data(),str.data(),Wire.size()))
-		fail(&tb);
+		fail("memcmp",&tb);
 #endif
 
 #ifdef HAVE_TO_ASCII
@@ -197,7 +217,7 @@ void runcheck(const Message &tb)
 	++NumToASCII;
 	fw.toASCII(ss1);
 	if (ss0.str() != ss1.str())
-		fail(&tb);
+		fail("ascii",&tb);
 #endif
 
 	free(buf);

@@ -1,0 +1,37 @@
+/*
+ * this example shows a sample system configuration with different
+ * options for different targets
+ */
+
+option embedded {
+	toWire="";
+	toASCII="";
+	toJSON="";
+	toString="";
+	intsize = 32;
+	varintbits = 32;
+	optimize = size;
+	stringtype = C;
+	sortmembers=size;
+}
+
+option embedded_dyn : embedded {
+	header=<astring.h>;
+	stringtype = astring;
+}
+
+option pc {
+	optimize = speed;
+}
+
+message Config
+{
+	string     hostname   = 1;
+	unsigned   baudrate   = 2;
+	string     wifi_ssid  = 3;
+	string     wifi_pass  = 4;
+	bool       station    = 5;
+	fixed32    ipv4       = 6;
+	fixed8     netmask    = 7;
+	fixed32    gateway    = 8;
+}

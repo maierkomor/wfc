@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 	TestBench tb,tb2;
 	tb2.clear();
 	if (tb != tb2)
-		fail(&tb,&tb2);
+		fail("clear",&tb,&tb2);
 	runcheck(tb);
 
 	tb.set_VI32(123456);
@@ -106,21 +106,45 @@ int main(int argc, char *argv[])
 	runcheck(tb);
 
 	for (size_t i = 0; i < sizeof(ValuesS8)/sizeof(ValuesS8[0]); ++i) {
+		tb.set_FS8(ValuesS8[i]);
+		runcheck(tb);
+	}
+
+	for (size_t i = 0; i < sizeof(ValuesS16)/sizeof(ValuesS16[0]); ++i) {
+		tb.set_FS16(ValuesS16[i]);
+		runcheck(tb);
+	}
+
+	for (size_t i = 0; i < sizeof(ValuesS32)/sizeof(ValuesS32[0]); ++i) {
+		tb.set_FS32(ValuesS32[i]);
+		runcheck(tb);
+	}
+
+	for (size_t i = 0; i < sizeof(ValuesS64)/sizeof(ValuesS64[0]); ++i) {
+		tb.set_FS64(ValuesS64[i]);
+		runcheck(tb);
+	}
+
+	for (size_t i = 0; i < sizeof(ValuesS8)/sizeof(ValuesS8[0]); ++i) {
+		tb.set_I8(ValuesS8[i]);
 		tb.set_SI8(ValuesS8[i]);
 		runcheck(tb);
 	}
 
 	for (size_t i = 0; i < sizeof(ValuesS16)/sizeof(ValuesS16[0]); ++i) {
+		tb.set_I16(ValuesS16[i]);
 		tb.set_SI16(ValuesS16[i]);
 		runcheck(tb);
 	}
 
 	for (size_t i = 0; i < sizeof(ValuesS32)/sizeof(ValuesS32[0]); ++i) {
+		tb.set_I32(ValuesS32[i]);
 		tb.set_SI32(ValuesS32[i]);
 		runcheck(tb);
 	}
 
 	for (size_t i = 0; i < sizeof(ValuesS64)/sizeof(ValuesS64[0]); ++i) {
+		tb.set_I64(ValuesS64[i]);
 		tb.set_SI64(ValuesS64[i]);
 		runcheck(tb);
 	}
@@ -175,7 +199,7 @@ int main(int argc, char *argv[])
 	assert(!tb.has_SCO());
 	tb.set_SCO("optional string class");
 	if (!tb.has_SCO())
-		fail(&tb);
+		fail("has_SCO",&tb);
 	tb.clear_SCO();
 	assert(!tb.has_SCO());
 	tb.set_SCO("optional string class");

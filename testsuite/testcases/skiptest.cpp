@@ -77,7 +77,7 @@ int main(int argc, char **argv)
 	M.clear_s_1();
 
 	if (M != SM)
-		fail(&M,&SM);
+		fail("M==SM",&M,&SM);
 
 	printf("%s: %s\n",argv[0],testcnt());
 }

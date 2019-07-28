@@ -8,7 +8,7 @@
 #include <math.h>
 #ifdef __MINGW32__
 #include <float.h>
-#else
+#elif defined __linux__
 #include <values.h>
 #endif
 
@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 
 	tb.clear();
 	if (tb != fw)
-		fail(&tb,&fw);
+		fail("clear",&tb,&fw);
 
 	tb.set_s1e("s1e");
 	assert(tb.has_s1e());

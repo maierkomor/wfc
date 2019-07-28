@@ -65,7 +65,6 @@ else
 	exit 1
 fi
 
-AC_SUBST(RELEASE,m4_esyscmd(date +%y%m|tr '\n' ' '))
 AC_SUBST(DEBUG)
 AC_SUBST(CC)
 AC_SUBST(CXX)

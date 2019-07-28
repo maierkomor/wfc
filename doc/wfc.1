@@ -1,0 +1,122 @@
+.TH "wfc" "1" "R1906" "Thomas Maier-Komor" "console utility"
+.SH "NAME"
+WFC \- wire format compiler
+.SH "SYNTAX"
+.LP 
+wfc [\fIoptions\fP] <file>
+.SH "DESCRIPTION"
+.LP 
+WFC translates protocol descriptions to C++ source files. The generated
+header files provide class descriptions for serializing and
+deserializing data accoring to the protocol description.
+
+WFC syntax has been derived from protocol buffers, but provides
+optimizations for embedded systems.
+.SH "OPTIONS"
+.LP 
+\fB\-i\fR <\fIfilename\fP>
+Use \fIfilename\fP as input instead of the standard input (needs to be
+given for multi volume support). If \fIfilename\fP is \-, input is read
+from standard input.
+.br
+\fB\-m\fR <\fImessage\fP>
+Generate code starting with message \fImessage\fP. Depending messages
+will be generated if necessary.
+.br
+\fB\-t\fR <\fItarget\fP>
+Use option set \fItarget\fP as specified in the source file to generate
+the code.
+.br
+\fB\-l\fR
+Genrate wfc library only. This is useful if you want to share the
+library among multiple source files.
+.br
+\fB\-v\fR
+Operate in verbose mode.
+.br
+\fB\-s\fR
+Generate subclasses instead of mangled class names.
+.br
+.SH "DEFAULT VALUES"
+The default values for following options can be overridden on the
+command line or in the .wfc source file.
+.br
+\fIErrorHandling\fP: valid values are assert, cancel, throw; default is
+cancel
+.br
+\fIOptimize\fP: valid values are review, size, speed; default is review
+.br
+\fIUnkownField\fP: valid values are assert, skip; default is skip
+.br
+\fIwfclib\fP: valid values are static, inline, extern; default is static
+.br
+\fIMutableType\fP: valid values are pointer, reference; default is pointer
+.br
+\fIendian\fP: valid values are unknown, little, big; default is unknown.
+Use little endian optimization only for targets that are able to perform
+an unaligned access.
+.br
+\fIwithEqual\fP: valid values are true, false; default is true. If this
+option is enabled the operator == will be generated.
+.br
+\fIwithUnequal\fP: valid values are true, false; default is true. If this
+option is enabled the operator != will be generated.
+.br
+
+.SH "GENERAL OPTIONS"
+.br
+\fIVarIntBits\fP: Number of bits to use for variable length integer
+types. Default is 64, set to 32 or 16 on machines with smaller native
+types, if the value range of all fields allows it.
+.br
+\fIheader\fP: include a header file in the generated code. This option
+can be used multiple times.
+
+.SH "FIELD OPTIONS"
+Options that are applicable to elements of messages.
+.br
+\fIused\fP: valid values are true, false; default is true. If this
+option is set to false, no code will be generated for handling this
+field.
+.br
+\fIinline\fP: Comma separated lists of methods to inline. Defaults
+depend on Optimization level. Valid arguments are get, set, has.
+.br
+\fIstringtype\fP: Data type to use for strings. Default is std::string.
+Set to "C" to use C string (const char *).
+.br
+\fIarraysize\fP: Integer value of number of elements to allocate for a
+repeated type. If set to 0 (default), a std::vector will be used
+instead. Use if maximum number of elements is known, if you want to
+avoid impact of std::vector.
+
+
+.SH "EXAMPLES"
+.LP 
+To generate header and c++ source files accoring to a wfc protocol
+description, just run:
+.LP 
+wfc <sourcefile>.wfc
+.LP 
+See the examples subdirectory for complete examples of protocol
+descriptions.
+.LP 
+.SH "AUTHORS"
+.LP 
+Thomas Maier\-Komor <thomas@maier\-komor.de>
+.SH "DONATIONS"
+.LP
+If you like this software, and use it for production purposes in your
+company, please consider making a donation to support this work. 
+You can donate directly via PayPal to the author's e-mail address
+(thomas@maier\-komor.de).
+.SH "HOMEPAGE"
+.LP
+http://www.maier\-komor.de/wfc.html
+.SH "LICENSE"
+.LP
+This software is published under GNU General Public License V3. See file
+LICENSE for details.
+.SH "SEE ALSO"
+.LP 
+protoc(1)

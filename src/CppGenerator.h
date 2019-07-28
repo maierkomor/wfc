@@ -61,6 +61,8 @@ class CppGenerator : public CodeGeneratorImpl
 	//void writeInlineHelpers(Generator &);
 
 	void writeCmp(Generator &G, Message *m);
+	void writeEqual(Generator &G, Message *m);
+	void writeUnequal(Generator &G, Message *m);
 	void writeHas(Generator &, Field *f);
 	void writeMaxSize(Generator &, Message *m);
 	void writeSize(Generator &, Field *f);

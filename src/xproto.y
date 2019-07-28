@@ -1,6 +1,6 @@
 %{
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2019, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -249,6 +249,8 @@ Field_P	: FieldSpec_P SEMI
 MessageBody_P
 	: MESSAGE IDENTIFIER LBRACE
 	{ $$ = new Message($2.str,$2.len); }
+	| MessageBody_P OPTION IDENTIFIER EQUAL OptionArg_P SEMI
+	{ $$ = $1; $$->setOption(string($3.str,$3.len),string($5.str,$5.len)); }
 	| ONEOF IDENTIFIER LBRACE
 	{ $$ = new Message($2.str,$2.len,true); }
 	| MessageBody_P Field_P

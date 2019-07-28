@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2019, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -20,6 +20,7 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
+#include <map>
 #include <string>
 #include <vector>
 #include <stdint.h>
@@ -33,16 +34,16 @@ class Message
 {
 	public:
 	Message()
-	: name()
-	, basename()
-	, prefix()
+	: m_name()
+	, m_basename()
+	, m_prefix()
 	, m_parent(0)
 	, m_options(0)
 	, m_msgid(0)
 	, m_maxfid(0)
 	, m_numvalid(0)
-	, oneOf(false)
-	, used(false)
+	, m_used(false)
+	, m_vdata(false)
 	{ }
 	
 	explicit Message(const char *, unsigned, bool = false);
@@ -56,6 +57,8 @@ class Message
 	void addField(Field *f);
 	void addMessage(Message *m);
 	Message *getMessage(const char *n) const;
+	const char *getValidType() const;
+	void setOption(const std::string &option, const std::string &value);
 	void setParent(Message *m);
 	void setName(const char *n, unsigned l);
 	unsigned getId() const;
@@ -64,7 +67,7 @@ class Message
 	Enum *getEnum(const char *e) const;
 
 	const std::string &getName() const
-	{ return name; }
+	{ return m_name; }
 
 	void setNamePrefix(const std::string &p);
 	void setPrefix(const std::string &p);
@@ -73,27 +76,34 @@ class Message
 	{ m_options = o; }
 
 	const std::string &getPrefix() const
-	{ return prefix; }
+	{ return m_prefix; }
 	
 	const std::string &getBasename() const
-	{ return basename; }
+	{ return m_basename; }
 
 	const std::string &getFullname() const
-	{ return fullname; }
+	{ return m_fullname; }
 
 	size_t numFields() const
-	{ return fields.size(); }
+	{ return m_fields.size(); }
 
-	Field *getField(unsigned n) const
-	{ return fields[n]; }
+	//Field *getField(unsigned n) const
+	//{ return m_fields[n]; }
 
+	Field *getFieldId(unsigned n) const;
 	Field *getField(const char *n) const;
 
+	const std::map<unsigned,Field *> &getFields() const
+	{ return m_fields; }
+
+	const std::vector<unsigned> getFieldSeq() const
+	{ return m_fieldseq; }
+
 	size_t numMessages() const
-	{ return msgs.size(); }
+	{ return m_msgs.size(); }
 
 	Message *getMessage(unsigned i) const
-	{ return msgs[i]; }
+	{ return m_msgs[i]; }
 
 	unsigned getNumValid() const
 	{ return m_numvalid; }
@@ -101,22 +111,16 @@ class Message
 	Message *getParent() const
 	{ return m_parent; }
 
-	const char *getValidType() const
-	{ return m_validtype; }
-
 	void addEnum(Enum *e)
-	{ enums.push_back(e); }
+	{ m_enums.push_back(e); }
 
 	unsigned numEnums() const
-	{ return enums.size(); }
-
-	bool isOneOf() const
-	{ return oneOf; }
+	{ return m_enums.size(); }
 
 	void setUsed(bool u);
 
 	bool isUsed() const
-	{ return used; }
+	{ return m_used; }
 
 	std::string findROstring() const;
 
@@ -132,15 +136,15 @@ class Message
 	Message(const Message &);
 	Message &operator = (const Message &);
 
-	std::string name, basename, prefix, fullname;
+	std::string m_name, m_basename, m_prefix, m_fullname;
 	Message *m_parent;
 	Options *m_options;
 	unsigned m_msgid, m_maxfid, m_numvalid;
-	const char *m_validtype;
-	std::vector<Field*> fields;
-	std::vector<Message*> msgs;
-	std::vector<Enum*> enums;
-	bool oneOf, used;
+	std::map<unsigned,Field*> m_fields;
+	std::vector<Message*> m_msgs;
+	std::vector<Enum*> m_enums;
+	std::vector<unsigned> m_fieldseq;
+	bool m_used, m_vdata;
 };
 
 #endif

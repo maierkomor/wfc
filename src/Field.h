@@ -144,6 +144,12 @@ class Field
 	bool isUsed() const
 	{ return used; }
 
+	bool isVirtual() const
+	{ return vmember; }
+
+	void setVirtual(bool v)
+	{ vmember = v; }
+
 	bool hasFixedSize() const;
 	int64_t getMaxSize() const;
 	unsigned getMemberSize() const;
@@ -196,7 +202,7 @@ class Field
 	// >=0: bit0, ...
 	int valid_bit;
 	quant_t quan;
-	bool packed,used;
+	bool packed,used,vmember;
 };
 
 
