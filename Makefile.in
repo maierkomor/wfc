@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017-2019, Thomas Maier-Komor
+#  Copyright (C) 2017-2020, Thomas Maier-Komor
 #
 #  This file belongs to Wire-Format-Compiler.
 #
@@ -123,7 +123,6 @@ clean:
 distclean: clean
 	-$(RM) bin/wfc bin/wfc.exe
 	-$(MAKE) -C tests clean
-	-$(RM) -R obj 
 
 docs:
 	$(MAKE) -C doc

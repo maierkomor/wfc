@@ -1,0 +1,19 @@
+// Sorting the members of a message may have an impact on object size.
+// But there might be also other reasons for sorting them, like readability.
+// Per default the sorting sticks to the ids of the message fields.
+// But WFC additionally offers the following sorting variants:
+// - id (integer id of the member)
+// - name (alphanumeric sort of the member names)
+// - size (decending member size)
+// - type (cluster same types together)
+// - unsorted (i.e. order of apperance in source .wfc)
+
+message A
+{
+	int i0 = 1;
+	string s0 = 2;
+	fixed16 fx16 = 3;
+	float f0 = 4;
+	bytes b0 = 5;
+	double d0 = 6;
+}

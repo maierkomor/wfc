@@ -1,0 +1,32 @@
+option header = <astring.h>;
+option header = <cstring.h>;
+option header = <fstring.h>;
+
+message StringVariants
+{
+	// default implementation
+	// uses std::string
+	string s1 = 1;
+
+	// C-string implementation
+	// - char pointer without memory managment
+	string s2 = 2 [ stringtype = "C" ];
+	
+	// custom string class AString
+	// - lightweight string class with memory managment
+	// - needs $WFC_ROOT/include/astring.h
+	string s3 = 3 [ stringtype = AString ];
+
+	// custom string clase FString
+	// - pre-allocated fixed length string
+	// - give string length a template parameter
+	// - needs $WFC_ROOT/include/fstring.h
+	// - template instantiations must be double quoted
+	string s4 = 4 [ stringtype = "FString<32>" ];
+
+	// custom string class CString
+	// - C-string without memory management
+	// - length of C-string can be set
+	// - support for AVR Programspace strings
+	string s5 = 5 [ stringtype = CString ];
+}

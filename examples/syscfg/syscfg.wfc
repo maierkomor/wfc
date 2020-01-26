@@ -6,7 +6,6 @@
 option embedded {
 	toWire="";
 	toASCII="";
-	toJSON="";
 	toString="";
 	intsize = 32;
 	varintbits = 32;
@@ -17,10 +16,19 @@ option embedded {
 
 option embedded_dyn : embedded {
 	header=<astring.h>;
-	stringtype = astring;
+	stringtype = AString;
+}
+
+option embedded_fix : embedded {
+	header=<fstring.h>;
+	/Config/hostname : stringtype = "FString<16>";
+	/Config/wifi_ssid: stringtype = "FString<32>";
+	/Config/wifi_pass: stringtype = "FString<32>";
 }
 
 option pc {
+	toASCII = toASCII;
+	endian = little;
 	optimize = speed;
 }
 

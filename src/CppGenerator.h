@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -60,42 +60,44 @@ class CppGenerator : public CodeGeneratorImpl
 	void writeInlineHelpers(Generator &, std::vector<unsigned> &);
 	//void writeInlineHelpers(Generator &);
 
+	bool writeMember(Generator &, Field *,bool,bool = false);
+	void writeCalcSize(Generator &out, Field *f);
+	void writeCalcSize(Generator &out, Message *m);
+	void writeClear(Generator &out, Field *f);
+	void writeClear(Generator &out, Message *m);
 	void writeCmp(Generator &G, Message *m);
+	void writeConstructor(Generator &G, Message *m);
 	void writeEqual(Generator &G, Message *m);
-	void writeUnequal(Generator &G, Message *m);
+	void writeFromMemory_early(Generator &out, Field *f);
+	void writeFromMemory_early(Generator &out, Message *m);
+	void writeFromMemory(Generator &out, Field *f);
+	void writeFromMemory(Generator &out, Message *m);
+	void writeFunctions(Generator &G, Message *m);
+	void writeFunctions(Generator &out, Field *f);
+	void writeGet(Generator &out, Field *f);
 	void writeHas(Generator &, Field *f);
-	void writeMaxSize(Generator &, Message *m);
-	void writeSize(Generator &, Field *f);
+	void writeHeaderDecls(Generator &, Field *);
 	void writeInlines(Generator &out, Field *f);
 	void writeInlines(Generator &out, Message *m);
-	void writeHeaderDecls(Generator &, Field *);
-	bool writeMember(Generator &, Field *,bool,bool = false);
+	void writeMaxSize(Generator &, Message *m);
 	void writeMembers(Generator &G, Message *m,bool);
-	void writeGet(Generator &out, Field *f);
 	void writeMutable(Generator &out, Field *f);
-	void writeSet(Generator &out, Field *f);
-	void writeCalcSize(Generator &out, Field *f);
-	void writeClear(Generator &out, Field *f);
-	void writeTagToMemory(Generator &out, Field *f);
-	void writeTagToX(Generator &out, Field *f);
-	void writeToMemory(Generator &out, Field *f);
-	void writeToX(Generator &out, Field *f);
-	void writeToJson(Generator &out, Field *f, unsigned comma, bool last);
 	void writePrint(Generator &out, Field *f);
 	void writePrint(Generator &out, Message *m);
 	void writeReaders(Generator &G, optmode_t optmode);
-	void writeFromMemory(Generator &out, Field *f);
-	void writeFromMemory_early(Generator &out, Field *f);
-	void writeFunctions(Generator &out, Field *f);
-	void writeCalcSize(Generator &out, Message *m);
-	void writeClear(Generator &out, Message *m);
-	void writeFromMemory(Generator &out, Message *m);
-	void writeFromMemory_early(Generator &out, Message *m);
-	void writeToMemory(Generator &out, Message *m);
-	void writeToX(Generator &out, Message *m);
+	void writeSet(Generator &out, Field *f);
+	void writeSize(Generator &, Field *f);
+	void writeStaticMember(Generator &G, Field *f, const char *n);
+	void writeStaticMembers(Generator &G, Message *m);
+	void writeTagToMemory(Generator &out, Field *f);
+	void writeTagToX(Generator &out, Field *f);
+	void writeToJson(Generator &out, Field *f, char fsep);
 	void writeToJson(Generator &out, Message *m);
-	void writeConstructor(Generator &G, Message *m);
-	void writeFunctions(Generator &G, Message *m);
+	void writeToMemory(Generator &out, Field *f);
+	void writeToMemory(Generator &out, Message *m);
+	void writeToX(Generator &out, Field *f);
+	void writeToX(Generator &out, Message *m);
+	void writeUnequal(Generator &G, Message *m);
 
 	std::string getValid(Field *f, bool invalid = false);
 	const char *setValid(int vbit, unsigned numvalid);
@@ -122,8 +124,8 @@ class CppGenerator : public CodeGeneratorImpl
 	     Asserts, Debug, PrintOut, SubClasses, Checks, PaddedMsgSize, SinkToTemplate,
 	     WithJson, EarlyDecode,
 	     inlineClear, inlineHas, inlineGet, inlineMaxSize, inlineSet, inlineSize,
-	     hasU16, hasU32, hasU64, hasFloat, hasDouble, hasInt, hasSInt, hasUInt, hasCStr,
-	     hasLenPfx, hasUnused, needJsonString, needCalcSize, needSendVarSInt;
+	     hasVarInt, hasU16, hasU32, hasU64, hasFloat, hasDouble, hasInt, hasSInt, hasUInt, hasCStr,
+	     hasString, hasLenPfx, hasUnused, needJsonString, needCalcSize, needSendVarSInt;
 	unsigned VarIntBits, WireputArg;
 	std::string ErrorHandling, license;
 };

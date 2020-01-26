@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2019, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -24,10 +24,13 @@
 #include <string>
 #include <vector>
 #include <stdint.h>
+#include "Options.h"
 
 class Enum;
 class Field;
 class Options;
+
+typedef enum { sort_unset, sort_id, sort_name, sort_size, sort_type, sort_none } msg_sorting_t;
 
 
 class Message
@@ -43,7 +46,8 @@ class Message
 	, m_maxfid(0)
 	, m_numvalid(0)
 	, m_used(false)
-	, m_vdata(false)
+	, m_storage(mem_regular)
+	, m_sorting(sort_unset)
 	{ }
 	
 	explicit Message(const char *, unsigned, bool = false);
@@ -58,7 +62,7 @@ class Message
 	void addMessage(Message *m);
 	Message *getMessage(const char *n) const;
 	const char *getValidType() const;
-	void setOption(const std::string &option, const std::string &value);
+	void setOption(const char *o, const char *v);
 	void setParent(Message *m);
 	void setName(const char *n, unsigned l);
 	unsigned getId() const;
@@ -72,8 +76,7 @@ class Message
 	void setNamePrefix(const std::string &p);
 	void setPrefix(const std::string &p);
 
-	void setOptions(Options *o)
-	{ m_options = o; }
+	void setOptions(Options *o);
 
 	const std::string &getPrefix() const
 	{ return m_prefix; }
@@ -117,10 +120,16 @@ class Message
 	unsigned numEnums() const
 	{ return m_enums.size(); }
 
+	msg_sorting_t getSorting() const
+	{ return m_sorting; }
+
 	void setUsed(bool u);
 
 	bool isUsed() const
 	{ return m_used; }
+
+	mem_inst_t getStorage() const
+	{ return m_storage; }
 
 	std::string findROstring() const;
 
@@ -144,7 +153,9 @@ class Message
 	std::vector<Message*> m_msgs;
 	std::vector<Enum*> m_enums;
 	std::vector<unsigned> m_fieldseq;
-	bool m_used, m_vdata;
+	bool m_used;
+	mem_inst_t m_storage;
+	msg_sorting_t m_sorting;
 };
 
 #endif

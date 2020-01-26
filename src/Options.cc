@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2019, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -43,6 +43,7 @@ static Options *Defaults = 0, *FieldDefaults = 0;
 
 static bool init_module()
 {
+	BinOptionList["comments"] = "generate comments";
 	BinOptionList["debug"] = "generate debugging/logging interface";
 	BinOptionList["asserts"] = "include asserts";
 
@@ -54,8 +55,8 @@ static bool init_module()
 	BinOptionList["withEqual"] = "generate operator == for object comparison";
 	BinOptionList["withUnequal"] = "generate operator != for object comparison";
 	TextOptionList["endian"] = "target endian to use (unknown,little,big)";
-	TextOptionList["stringtype"] = "string implementation variant: std::string (default), '<C>' (for const char *), <typename>";
-	TextOptionList["bytestype"] = "implementation variant for fields of type 'bytes': std::string (default), <typename>";
+	TextOptionList["stringtype"] = "implementation type for 'string': std::string (default), C (const char *), <typename>";
+	TextOptionList["bytestype"] = "implementation type for 'bytes': std::string (default), <typename>";
 	TextOptionList["arraysize"] = "use array of size <arraysize> instead of vector for repeated fields";
 	TextOptionList["UnknownField"] = "skip/assert unknown fields while parsing (default: skip)";
 	TextOptionList["namespace"] = "namespace of generated code (default: <none>)";
@@ -75,20 +76,23 @@ static bool init_module()
 	TextOptionList["MutablePrefix"] = "prefix to use for mutable methods";
 	TextOptionList["SetPrefix"] = "prefix to use for set methods";
 	TextOptionList["toSink"] = "name of function for serializing with sink interface; \"\" to omit generation";
+#ifdef BETA_FEATURES
+	TextOptionList["storage"] = "storage type of message fields";
+#endif
 
 	TextOptionList["VarIntBits"] = "data type for varint_t (default: 64)";
 	ValidOptions["VarIntBits"].insert("64");
 	ValidOptions["VarIntBits"].insert("32");
 	ValidOptions["VarIntBits"].insert("16");
 	TextOptionList["intsize"] = "number of bits of default integer types (field option)";
-	ValidOptions["intsize"].insert("64");
-	ValidOptions["intsize"].insert("32");
-	ValidOptions["intsize"].insert("16");
+	ValidOptions["IntSize"].insert("64");
+	ValidOptions["IntSize"].insert("32");
+	ValidOptions["IntSize"].insert("16");
 
 	TextOptionList["Optimize"] = "optimization target (review,speed,size)";
-	TextOptionList["Optimize_for"] = "alias for Optimize kept for compatibility reasons";
+	TextOptionList["Optimize_for"] = "alias for option 'Optimize' kept for compatibility reasons";
 	TextOptionList["wireput"] = "function for puting data on the wire";
-	TextOptionList["SortMembers"] = "sort member variables by: id (default), type";
+	TextOptionList["SortMembers"] = "sort member variables by: id (default), name, type, size, unsorted";
 	TextOptionList["ErrorHandling"] = "error handling concept: assert, cancel (default), throw";
 	TextOptionList["wiresize"] = "library function to use as 'wiresize' function";
 	TextOptionList["header"] = "#include header file <file.h> or \"file.h\" in generated .h file";
@@ -113,6 +117,8 @@ static bool init_module()
 
 	ValidOptions["MutableType"].insert("pointer");
 	ValidOptions["MutableType"].insert("reference");
+	ValidOptions["MutableType"].insert("*");
+	ValidOptions["MutableType"].insert("&");
 	ValidOptions["ErrorHandling"].insert("assert");
 	ValidOptions["ErrorHandling"].insert("cancel");
 	ValidOptions["ErrorHandling"].insert("throw");
@@ -123,6 +129,7 @@ static bool init_module()
 	ValidOptions["SortMembers"].insert("type");
 	ValidOptions["SortMembers"].insert("size");
 	ValidOptions["SortMembers"].insert("unsorted");
+	ValidOptions["SortMembers"].insert("none");
 
 	ValidOptions["endian"].insert("unknown");
 	ValidOptions["endian"].insert("little");
@@ -134,6 +141,9 @@ static bool init_module()
 	ValidOptions["Terminator"].insert("ff");
 	ValidOptions["Terminator"].insert("0xff");
 
+	ValidOptions["storage"].insert("regular");
+	ValidOptions["storage"].insert("static");
+	ValidOptions["storage"].insert("virtual");
 	ValidOptions["Optimize"].insert("review");
 	ValidOptions["Optimize"].insert("size");
 	ValidOptions["Optimize"].insert("speed");
@@ -210,10 +220,10 @@ void Options::initDefaults()
 	m_TextOptions["stringtype"] = "std::string";
 	m_TextOptions["bytestype"] = "std::string";
 	m_TextOptions["syntax"] = "xprotov1";
-	m_TextOptions["intsize"] = "64";	// default size if no size is given (i.e. int, unsigned, signed)
+	m_TextOptions["IntSize"] = "64";	// default size if no size is given (i.e. int, unsigned, signed)
 	m_TextOptions["UnknownField"] = "skip";
 	m_TextOptions["namespace"] = "";
-	m_TextOptions["toASCII"] = "toASCII";
+	m_TextOptions["toASCII"] = "";
 	m_TextOptions["toMemory"] = "toMemory";
 	m_TextOptions["toSink"] = "";
 	m_TextOptions["toString"] = "toString";
@@ -263,6 +273,7 @@ void Options::initDefaults()
 
 	m_BinOptions["SubClasses"] = false;
 	m_BinOptions["asserts"] = true;
+	m_BinOptions["comments"] = true;
 	m_BinOptions["debug"] = false;
 	m_BinOptions["genlib"] = true;
 	m_BinOptions["withEqual"] = false;
@@ -282,14 +293,13 @@ void Options::initFieldDefaults()
 	m_TextOptions["intsize"] = "64";
 	m_TextOptions["unset"] = "";
 	m_TextOptions["default"] = "";
-	m_TextOptions["maxlength"] = "";	// maximum length of string/bytes
+	m_TextOptions["storage"] = "regular";
 	// TODO, valid values could be: default, fixed, variable, dynamic
 	//m_TextOptions["encoding"] = "default";
 
 	m_BinOptions["devel"] = false;
 	m_BinOptions["packed"] = false;
 	m_BinOptions["used"] = true;
-	m_BinOptions["virtual"] = false;
 }
 
 
@@ -718,7 +728,7 @@ void Options::addOption(const char *option, const char *v, bool documented)
 			m_TextOptions.insert(make_pair(option,value));
 			return;
 		}
-		error("unknown option '%s'",option);
+		error("invalid option/value pair %s/%s",option,v);
 		return;
 	}
 	auto x(m_TextOptions.find(option));
@@ -739,7 +749,7 @@ void Options::addOption(const char *option, const char *v, bool documented)
 		}
 		p = p->m_parent;
 	}
-	error("unknown option '%s'",option);
+	error("undefined option '%s'",option);
 }
 
 
@@ -935,14 +945,14 @@ void Options::printHelp(ostream &out)
 	out.setf(ios_base::left);
 	for (auto i(TextOptionList.begin()), e(TextOptionList.end()); i != e; ++i) {
 		out << "-f";
-		out.width(20);
-		out << i->first << ":  " << i->second << '\n';
+		out.width(15);
+		out << i->first << ": " << i->second << '\n';
 	}
 
 	for (auto i(BinOptionList.begin()), e(BinOptionList.end()); i != e; ++i) {
 		out << "-f";
-		out.width(20);
-		out << i->first << ":  " << i->second << '\n';
+		out.width(15);
+		out << i->first << ": " << i->second << '\n';
 	}
 }
 

@@ -37,7 +37,7 @@ message M
 {
 	int I0 = 1;		// unspecified integer sizes will use the maximum int size of the target.
 	unsigned U0 = 2;	// In consequence I0,U0,S0 with values beyond 16bits range, will end up
-	signed S0 = 3;		// corrupted when sending from PC to optionset_16bit.
+	signed S0 = 3;		// corrupted when sending from PC to optionset_16bits.
 				// OTOH, there might be multiple sources with different value range,
 				// then these data-types are preferable to achieve compatibility.
 

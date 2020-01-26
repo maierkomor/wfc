@@ -61,10 +61,11 @@ void printUsage(ostream &out)
 		"-fwith-<o>  : enable option <o>\n"
 		"-fno-<o>    : disable option <o>\n"
 		"-f <o=v>    : set option <o> to value <v>\n"
-		"-O2         : optimize for speed (overrides .proto setting)\n"
-		"-Os         : optimize for size (overrides .proto setting)\n"
-		"-Or         : optimize for review (overrides .proto setting)\n"
+		"-O2         : optimize for speed\n"
+		"-Os         : optimize for size\n"
+		"-Or         : optimize for review\n"
 		"-o <name>   : set output basename to <name>\n"
+		"-g          : add comments\n"
 		"-l          : generate wfc library only\n"
 		"-m <msg>    : generate message <msg>\n"
 		"-s          : generate subclasses\n"
@@ -253,7 +254,7 @@ int main(int argc, char *argv[])
 	setenv("POSIXLY_CORRECT","1",1);
 #endif
 	while (optind < argc) {
-		int opt = getopt(argc,argv,PCORRECT "d:f:hI:lm:O:o:p:st:Vvx:y");
+		int opt = getopt(argc,argv,PCORRECT "d:f:ghI:lm:O:o:p:st:Vvx:y");
 		if (opt == -1) {
 			if (optind == argc) 
 				break;
@@ -269,6 +270,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'f':
 			options.addOption(optarg,true);
+			break;
+		case 'g':
+			options.addOption("comments",true);
 			break;
 		case 'h':
 			printUsage(cout);

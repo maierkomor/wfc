@@ -1,0 +1,9 @@
+message A
+{
+	fixed32 id = 1;
+	string name = 2;
+	string address = 3;
+	string country = 4;
+	string phone = 5;
+	unsigned timestamp = 6;
+}

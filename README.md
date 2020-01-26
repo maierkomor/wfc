@@ -59,6 +59,12 @@ multiple aspects of the generated code. E.g.:
 - naming of most functions
 - advanced enumeration naming concept
 
+License
+-------
+WFC is mulit-licensed. The open source edition is licensed under the
+GPLv3. It generates code that is also licensed under the same license.
+If you want to use WFC for a non-GPL project, please contact me.
+
 Author
 ------
 Thomas Maier-Komor

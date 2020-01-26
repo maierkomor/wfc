@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2019, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -33,6 +33,7 @@ using namespace std;
 
 string ParsingMessage;
 
+
 Field::Field(const char *n, unsigned l, quant_t q, uint32_t t, long long i)
 : parent(0)
 , name(n,l)
@@ -46,7 +47,7 @@ Field::Field(const char *n, unsigned l, quant_t q, uint32_t t, long long i)
 , quan(q)
 , packed(false)
 , used(true)
-, vmember(false)
+, storage(mem_unset)
 {
 	options = new Options((string)"field:"+n,Options::getFieldDefaults());
 	assert(q != q_unspecified);
@@ -111,8 +112,6 @@ bool Field::hasSimpleType() const
 
 unsigned Field::getMemberSize() const
 {
-	if (isVirtual())
-		return 0;
 	switch (type & ft_filter) {
 	case ft_msg:
 		return 0;
@@ -193,6 +192,8 @@ int64_t Field::getMaxSize() const
 				if (maxlen == "")
 					return 0;
 				ms = strtol(maxlen.c_str(),0,0);
+				if (ms <= 0)
+					error("maxlength must be > 0");
 			}
 			break;
 		case ft_int8:
@@ -252,6 +253,14 @@ int64_t Field::getMaxSize() const
 		return (ts + ms) * arraysize;
 	}
 	return ms;
+}
+
+
+mem_inst_t Field::getStorage() const
+{
+	if (storage == mem_unset)
+		return parent->getStorage();
+	return storage;
 }
 
 
@@ -414,6 +423,49 @@ const char *Field::getTypeName(bool full) const
 }
 
 
+const char *Field::getWfcType() const
+{
+	if ((type & ft_filter) == ft_enum) 
+		return Enum::getTypeName(type,true);
+	if ((type & ft_filter) == ft_msg) 
+		return Message::resolveId(type).c_str();
+	switch (type) {
+	case ft_signed:		return "signed";
+	case ft_int:		return "int";
+	case ft_unsigned:	return "unsigned";
+	case ft_bool:		return "bool";
+	case ft_int8:		return "int8";
+	case ft_uint8:		return "uint8";
+	case ft_sint8:		return "sint8";
+	case ft_fixed8:		return "fixed8";
+	case ft_sfixed8:	return "sfixed8";
+	case ft_int16:		return "int16";
+	case ft_uint16:		return "uint16";
+	case ft_sint16:		return "sint16";
+	case ft_fixed16:	return "fixed16";
+	case ft_sfixed16:	return "sfixed16";
+	case ft_int32:		return "int32";
+	case ft_uint32:		return "uint32";
+	case ft_sint32:		return "sint32";
+	case ft_fixed32:	return "fixed32";
+	case ft_sfixed32:	return "sfixed32";
+	case ft_int64:		return "int64";
+	case ft_uint64:		return "uint64";
+	case ft_sint64:		return "sint64";
+	case ft_fixed64:	return "fixed64";
+	case ft_sfixed64:	return "sfixed64";
+	case ft_float:		return "float";
+	case ft_double:		return "double";
+	case ft_bytes:		return "bytes";
+	case ft_cptr:
+	case ft_string:		return "string";
+	default:
+		ICE("unable to resolve type name for type %x",type);
+		return 0;
+	}
+}
+
+
 wiretype_t Field::getEncoding() const
 {
 	if ((type & ft_filter) == ft_msg)
@@ -541,6 +593,22 @@ wiretype_t Field::getElementEncoding() const
 bool Field::isEnum() const
 {
 	return ((type & ft_filter) == ft_enum);
+}
+
+
+bool Field::isStatic() const
+{
+	if (storage == mem_unset)
+		return parent->getStorage() == mem_static;
+	return storage == mem_static;
+}
+
+
+bool Field::isVirtual() const
+{
+	if (storage == mem_unset)
+		return parent->getStorage() == mem_virtual;
+	return storage == mem_virtual;
 }
 
 
@@ -782,13 +850,15 @@ void Field::setOption(const string &option, const string &value)
 	if (option == "default") {
 		defvalue = value;
 #ifdef BETA_FEATURES
-	} else if (option == "virtual") {
-		if (value == "true")
-			vmember = true;
-		else if (value == "false")
-			vmember = false;
+	} else if (option == "storage") {
+		if (value == "virtual")
+			storage = mem_virtual;
+		else if (value == "static")
+			storage = mem_static;
+		else if (value == "regular")
+			storage = mem_regular;
 		else
-			error("invalid value '%s' for option virtual",value.c_str());
+			error("invalid value '%s' for option %s",value.c_str(),option.c_str());
 #endif
 	} else if (option == "unset") {
 		invvalue = value;
@@ -848,7 +918,7 @@ void Field::setOption(const string &option, const string &value)
 			error("invalid setting for option intsize: %s",value.c_str());
 	//} else if (option == "encoding") {	// TODO
 	} else 
-		error("unknown option '%s'",option.c_str());
+		error("unknown field option '%s'",option.c_str());
 }
 
 

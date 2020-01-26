@@ -18,26 +18,24 @@ if [ -f ../.hg_archival.txt ]; then
 	echo "#define VERSION \"$VER\"" > version.h.new
 	BR=`awk '/^branch:/ {printf("%s",$2);}' ../.hg_archival.txt`
 	echo "#define HG_BRANCH \"$BR\"" >> version.h.new
-elif [ -d ../.hg ]; then
+elif [ -d ../.hg -o -d .hg ]; then
 	# Gather version information from repository and sandbox.
-	VER=`hg log -r. -T'{tags}'`
+	eval `hg log -r. -T"VER={tags} HG_REV={rev} HG_ID={node|short} HG_BRANCH={branch} LTAG={latesttag}{if(latesttagdistance,'.{latesttagdistance}')}"`
 	if [ "tip" == "$VER" ]; then
 		# Then create version based on latest tag, tag distance, and modification indicator.
-		VER=`hg log -r. -T "{latesttag}{if(latesttagdistance,'.{latesttagdistance}')}"`
+		#VER=`hg log -r. -T "{latesttag}{if(latesttagdistance,'.{latesttagdistance}')}"`
+		VER="$LTAG"
 	fi
 	# Check if we have modified, removed, added or deleted files.
-	if [ `hg st -mard | wc -l` != "0" ]; then
+	DELTA=`hg st -mad | wc -l`
+	if [ "$DELTA" != "0" ]; then
 		# add delta indicator
 		VER+="+"
 	fi
-	VER+=`hg log -r. -T" (hg:{rev}/{node|short})"`
-	HG_BRANCH=`hg id -b`
+	VER+=" (hg:$HG_REV/$HG_ID)"
 	echo "#define VERSION \"$VER\"" > version.h.new
-	HG_ID=`hg id -i`
 	echo "#define HG_ID \"$HG_ID\"" >> version.h.new
-	HG_REV=`hg log -r. -T{rev}`
 	echo "#define HG_REV \"$HG_REV\"" >> version.h.new
-	HG_BRANCH=`hg log -r. -T{branch}`
 	echo "#define HG_BRANCH \"$HG_BRANCH\"" >> version.h.new
 else
 	# Bail out with an error, if no version information an be gathered.

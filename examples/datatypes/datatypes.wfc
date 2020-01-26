@@ -1,3 +1,6 @@
+option header="cstring.h";
+option header="fstring.h";
+option MutableType="&";
 
 
 message DataTypes
@@ -45,4 +48,16 @@ message DataTypes
 
 	// arrays can be stored more efficiently using the packed option
 	repeated signed rs = 12 [ packed= true ];
+
+	// regular string, implemented as std::string
+	string s0 = 13;
+
+	// string, implemented as unmananged C-char-pointer
+	string s1 = 14 [ stringtype = "pointer" ];
+
+	// use class CString, required header file is specified at the top of the file
+	string s2 = 15 [ stringtype = "CString" ];
+
+	// string fixed allocated char array
+	string fs = 16 [ stringtype = "FString<16>" ];
 }

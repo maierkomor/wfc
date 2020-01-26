@@ -21,3 +21,4 @@ src/version.h
 src/template_lib.cc
 src/template_lib.h
 testsuite/fs_*
+CMakeFiles

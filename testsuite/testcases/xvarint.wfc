@@ -1,10 +1,10 @@
-
 option vi16 {
 	varintbits=16;
 	intsize=16;
 	namespace = VI16;
 	withEqual=true;
 	withUnequal=true;
+	toASCII=toASCII;
 }
 
 option vi32 {
@@ -13,12 +13,14 @@ option vi32 {
 	namespace = VI32;
 	withEqual=true;
 	withUnequal=true;
+	toASCII=toASCII;
 }
 
 option vi64 {
 	intsize=64;
 	withEqual=true;
 	withUnequal=true;
+	toASCII=toASCII;
 }
 
 message M

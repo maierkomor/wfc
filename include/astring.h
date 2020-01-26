@@ -20,7 +20,6 @@
 #ifndef _ASTRING_H
 #define _ASTRING_H
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -156,6 +155,25 @@ class AString
 			*str = 0;
 		}
 		return str;
+	}
+
+	const char *data() const
+	{ return str; }
+
+	void clear()
+	{
+		if (str)
+			free(str);
+		str = 0;
+	}
+
+	void assign(const char *m, size_t s)
+	{
+		if (str)
+			free(str);
+		str = (char *) malloc(s+1);
+		str[s] = 0;
+		memcpy(str,m,s);
 	}
 
 	size_t size() const

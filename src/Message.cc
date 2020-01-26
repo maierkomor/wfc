@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2019, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -38,11 +38,13 @@ static vector<Message *> Messages;
 
 Message::Message(const char *n, unsigned l, bool o)
 : m_parent(0)
+, m_options(0)
 , m_msgid(0)
 , m_maxfid(0)
 , m_numvalid(0)
 , m_used(false)
-, m_vdata(false)
+, m_storage(mem_regular)
+, m_sorting(sort_unset)
 {
 	if (o)
 		error("oneof is unsupported");
@@ -130,19 +132,38 @@ void Message::setNamePrefix(const string &p)
 }
 
 
-void Message::setOption(const std::string &option, const std::string &value)
+void Message::setOption(const char *option, const char *value)
 {
 #ifdef BETA_FEATURES
-	if (option == "members") {
-		if (value == "virtual")
-			m_vdata = true;
-		else if (value == "regular")
-			m_vdata = false;
+	if (!strcmp(option,"members")) {
+		if (!strcmp(value, "virtual"))
+			m_storage = mem_virtual;
+		else if (!strcmp(value,"static"))
+			m_storage = mem_static;
+		else if (!strcmp(value,"regular"))
+			m_storage = mem_regular;
 		else
-			error("invalid value '%s' for option 'virtual'",value.c_str());
+			error("invalid value '%s' for option '%s'",value,option);
 	} else
 #endif
-		error("invaid option '%s'",option.c_str());
+	if (!strcmp(option,"SortMembers")) {
+		if (!strcmp(value,"id"))
+			m_sorting = sort_id;
+		else if (!strcmp(value,"name"))
+			m_sorting = sort_name;
+		else if (!strcmp(value,"size"))
+			m_sorting = sort_size;
+		else if (!strcmp(value,"type"))
+			m_sorting = sort_type;
+		else if (!strcmp(value,"none"))
+			m_sorting = sort_none;
+		else if (!strcmp(value,"unsorted"))
+			m_sorting = sort_none;
+		else
+			error("invalid sorting type %s",value);
+	} else {
+		error("invalid message option '%s'",option);
+	}
 }
 
 
@@ -186,8 +207,6 @@ void Message::addField(Field *f)
 {
 	assert(f);
 	f->setParent(this);
-	if (m_vdata)
-		f->setVirtual(true);
 	const char *m_name = f->getName();
 	unsigned id = f->getId();
 	for (auto i(m_fields.begin()), e(m_fields.end()); i != e; ++i) {
@@ -344,6 +363,16 @@ size_t Message::getFixedSize() const
 		s += f->getFixedSize();
 	}
 	return s;
+}
+
+
+void Message::setOptions(Options *o)
+{
+	m_options = o;
+	if (m_sorting == sort_unset) {
+		// not explicitly set, derive from target
+		setOption("SortMembers",o->getOption("SortMembers").c_str());
+	}
 }
 
 

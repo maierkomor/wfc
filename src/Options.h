@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -34,6 +34,21 @@ typedef enum {
 	unknown_endian, little_endian, big_endian
 } endian_t;
 
+typedef enum {
+	bo_unset = 0,
+	bo_false = 1,
+	bo_true = 2,
+} boolopt_t;
+
+
+// member instantiation type
+typedef enum {
+	mem_unset = 0,
+	mem_regular = 1,
+	mem_virtual = 2,
+	mem_static = 3,
+} mem_inst_t;
+
 
 struct StrCaseCmp : public std::binary_function<std::string,std::string,bool>
 {
@@ -43,6 +58,7 @@ struct StrCaseCmp : public std::binary_function<std::string,std::string,bool>
 	}
 };
 
+
 struct CStrCaseCmp //: public std::binary_function<const char *,const char *,bool>
 {
 	bool operator()(const char *lhs, const char *rhs) const
@@ -50,6 +66,7 @@ struct CStrCaseCmp //: public std::binary_function<const char *,const char *,boo
 		return strcasecmp(lhs, rhs) < 0 ;
 	}
 };
+
 
 bool isBinaryArg(const char *value, bool &binValue);
 

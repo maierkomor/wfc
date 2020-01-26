@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -119,6 +119,7 @@ class Field
 	uint32_t getType() const;
 	uint32_t getTypeClass() const;
 	const char *getTypeName(bool full = false) const;
+	const char *getWfcType() const;
 
 	void setDefaultValue(const char *d, size_t l)
 	{ defvalue = std::string(d,l); }
@@ -144,12 +145,12 @@ class Field
 	bool isUsed() const
 	{ return used; }
 
-	bool isVirtual() const
-	{ return vmember; }
+	void setStorage(mem_inst_t s)
+	{ storage = s; }
 
-	void setVirtual(bool v)
-	{ vmember = v; }
-
+	mem_inst_t getStorage() const;
+	bool isStatic() const;
+	bool isVirtual() const;
 	bool hasFixedSize() const;
 	int64_t getMaxSize() const;
 	unsigned getMemberSize() const;
@@ -198,11 +199,12 @@ class Field
 
 	// -3: uninitialized,
 	// -2: invvalue,
-	// -1: vector/char*/repeated/requried,
+	// -1: vector / char* / repeated / requried,
 	// >=0: bit0, ...
 	int valid_bit;
 	quant_t quan;
-	bool packed,used,vmember;
+	bool packed,used;
+	mem_inst_t storage;
 };
 
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -22,112 +22,11 @@
 
 #include <string.h>
 
-#ifdef __AVR__
-#include <avr/pgmspace.h>
-
-struct CString
-{
-	CString()
-	: str(0)
-	, len(0)
-	, pgm_space(false)
-	{ }
-
-	CString(const char *d, bool p)
-	: str(d)
-	, len(d ? strlen_P(d) + 1 : 0)
-	, pgm_space(p)
-	{ }
-
-	CString(const char *d, size_t l, bool p)
-	: str(d)
-	, len(l)
-	, pgm_space(p)
-	{ }
-
-	void assign(const char *d)
-	{
-		str = d;
-		if (d) {
-			while (*d++);
-			len = d-str;
-		} else
-			len = 0;
-		pgm_space = false;
-	}
-
-	void assign_p(const char *d)
-	{
-		str = d;
-		if (d) {
-			while (pgm_read_byte(d++));
-			len = d-str;
-		} else
-			len = 0;
-		pgm_space = true;
-	}
-
-	void assign(const char *d, size_t l)
-	{
-		str = d;
-		len = l;
-		pgm_space = false;
-	}
-
-	void assign_p(const char *d, size_t l)
-	{
-		str = d;
-		len = l;
-		pgm_space = true;
-	}
-
-	// works only for strings initialized with terminating \0
-	const char *c_str() const
-	{
-		return str;
-	}
-
-	const char *data() const
-	{ return str; }
-
-	bool empty() const
-	{ return (len == 0); }
-
-	size_t size() const
-	{ return len; }
-
-	void clear()
-	{ str = 0; len = 0; }
-
-	bool operator == (const CString &r) const
-	{ return (len == r.len) && (0 == memcmp(str,r.str,len)); }
-
-	bool operator != (const CString &r) const
-	{ return (len != r.len) || (0 != memcmp(str,r.str,len)); }
-
-	CString &operator = (const char *s)
-	{
-		assign(s);
-		return *this;
-	}
-
-	void toWire(void (*put)(unsigned char)) const
-	{
-		for (size_t i = 0; i < len; ++i)
-			put(pgm_read_byte(str+i));
-
-	}
-
-	bool inPgmSpace() const
-	{ return pgm_space; }
-
-	private:
-	const char *str;
-	size_t len;
-	bool pgm_space;
-};
-
-#else
+// - string as pointer/length pair
+// - terminating \0 is required for c_str() and pointer assignment,
+//   but is otherise optional
+// - access to location of \0 termination must be possible, even if it
+//   is not there
 
 struct CString
 {
@@ -149,28 +48,22 @@ struct CString
 	void assign(const char *d)
 	{
 		str = d;
-		if (d) {
-			len = strlen(d) + 1;
-		} else {
+		if (d)
+			len = strlen(d);
+		else
 			len = 0;
-		}
 	}
 
 	void assign(const char *d, size_t l)
 	{
-		if (l && d && d[l-1] == 0) {
-			str = d;
-			len = l;
-		} else {
-			str = 0;
-			len = 0;
-		}
+		str = d;
+		len = l;
 	}
 
 	// works only for strings initialized with terminating \0
 	const char *c_str() const
 	{
-		if (str && (str[len-1] == 0))
+		if (str && (str[len] == 0))
 			return str;
 		return 0;
 	}
@@ -193,6 +86,12 @@ struct CString
 	bool operator != (const CString &r) const
 	{ return (len != r.len) || (0 != memcmp(str,r.str,len)); }
 
+	bool operator == (const char *r) const
+	{ return (len == strlen(r)) && (0 == memcmp(str,r,len)); }
+
+	bool operator != (const char *r) const
+	{ return (len != strlen(r)) || (0 != memcmp(str,r,len)); }
+
 	CString &operator = (const char *s)
 	{
 		assign(s);
@@ -201,16 +100,19 @@ struct CString
 
 	void toWire(void (*put)(unsigned char)) const
 	{
-		for (size_t i = 0; i < len; ++i)
-			put(str[i]);
+		const char *at = str;
+		const char *e = at + len;
+		while (at != e) {
+			put(*at);
+			++at;
+		}
 	}
+
 
 	private:
 	const char *str;
 	size_t len;
 };
-
-#endif
 
 
 #endif

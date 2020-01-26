@@ -1,0 +1,5 @@
+This example shows how to serialize and deserialize WFC objects to a
+file. There is one example using the POSIX API, and another one that
+uses C++ streams.
+
+Run make to build both executables.

@@ -64,7 +64,7 @@ $(OBJDIR)/%.d: %.c
 	$(CC) $(CCFLAGS) -MT$(@:%.d=%.o) -MM $< > $@
 
 $(OBJDIR)/%.d: %.cc
-	$(CXX) $(CXXFLAGS) -MT$(@:%.d=%.o) -MM $< > $@
+	$(CXX) $(CXXFLAGS) -MG -MT$(@:%.d=%.o) -MM $< > $@
 
 $(BINDIR):
 	-$(MKDIR) $(BINDIR)
@@ -93,10 +93,6 @@ $(OBJDIR):
 
 clean:
 	-$(RM) template_lib.cc template_lib.h xproto_tok.cc xproto.cc $(CXXOBJ) $(COBJ) reftest wfc core $(DEPS)
-
-distclean: clean
-	$(RM) $(BINDIR)/wfc $(BINDIR)/wfc.exe
-
 
 .depend: $(OBJDIR) | template_lib.cc version.h $(DEPS)
 	cat $(DEPS) > .depend

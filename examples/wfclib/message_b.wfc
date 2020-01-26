@@ -1,0 +1,12 @@
+message User
+{
+	string username = 1;
+	unsigned group = 2;
+}
+
+message B
+{
+	string hostname = 1;
+	string domainname = 2;
+	repeated User users = 3;
+}

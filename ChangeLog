@@ -1,3 +1,13 @@
+Release R2001:
+==============
+- enhancement: optimized JSON generation code
+- enhancement: added fixed size string header and usage example
+- updated incomplete astring.h
+- updated example syscfg
+- documentation updates (still incomplete)
+- added new examples and updated existing ones
+- minor bugfixes
+
 Release R1907:
 ==============
 - enhancement: messages and enums also need keyword safeguards

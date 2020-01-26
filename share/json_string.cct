@@ -26,8 +26,12 @@
  * function: json_indent
  * sysinclude: ostream
  */
-void json_indent($streamtype &json, unsigned indLvl)
+void json_indent($streamtype &json, unsigned indLvl, char fsep)
 {
+	if (fsep) {
+		json.put(fsep);
+		json.put('\n');
+	}
 	while (indLvl) {
 		--indLvl;
 		json.put(' ');
@@ -40,8 +44,12 @@ void json_indent($streamtype &json, unsigned indLvl)
  * function: json_indent
  */
 template <class C>
-void json_indent(J &json, unsigned indLvl)
+void json_indent(J &json, unsigned indLvl, char fsep = 0)
 {
+	if (fsep) {
+		json.put(fsep);
+		json.put('\n');
+	}
 	while (indLvl) {
 		--indLvl;
 		json.put(' ');
@@ -167,6 +175,10 @@ void json_string($streamtype &json, const C &str)
 	while (s) {
 		char c = (char) *data++;
 		switch (c) {
+		case 0:
+			json.put('\\');
+			json.put('0');
+			break;
 		case '\n':
 			json.put('\\');
 			json.put('n');
