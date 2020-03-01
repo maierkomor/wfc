@@ -1,0 +1,11 @@
+// varints are used in this message only for tags and only with optmode review
+
+option withUnequal=true;
+
+message NoVarint
+{
+	fixed32 ip4 = 1;
+	fixed8 netmask = 2;
+	fixed32 gateway = 3;
+	fixed32 dns = 4;
+}

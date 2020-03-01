@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2019, Thomas Maier-Komor
+ *  Copyright (C) 2019-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -32,10 +32,18 @@ class AString
 
 	AString(const char *s)
 	{
-		if (s)
-			str = strdup(s);
-		else
+		str = strdup(s);
+	}
+
+	AString(const char *s, size_t l)
+	{
+		if (l == 0) {
 			str = 0;
+		} else {
+			str = (char *) malloc(l+1);
+			memcpy(str,s,l);
+			str[l] = 0;
+		}
 	}
 
 	AString(const AString &a)
@@ -70,8 +78,11 @@ class AString
 				str = strdup(a.str);
 			return *this;
 		}
-		if ((a.str == 0) || (a.str[0] == 0))
+		if ((a.str == 0) || (a.str[0] == 0)) {
+			if (str)
+				str[0] = 0;
 			return *this;
+		}
 		size_t ol = strlen(str);
 		size_t al = strlen(a.str);
 		str = (char*)realloc(str,ol+al+1);
@@ -127,6 +138,15 @@ class AString
 		return *this;
 	}
 
+	AString &operator += (char c)
+	{
+		size_t l = str ? strlen(str) : 0;
+		str = (char*)realloc(str,l+2);
+		str[l] = c;
+		str[++l] = 0;
+		return *this;
+	}
+
 	bool operator == (const char *s) const
 	{
 		if (str == 0) {
@@ -162,18 +182,30 @@ class AString
 
 	void clear()
 	{
-		if (str)
+		if (str) {
 			free(str);
-		str = 0;
+			str = 0;
+		}
+	}
+
+	bool empty() const
+	{
+		return (str == 0) || (str[0] == 0);
 	}
 
 	void assign(const char *m, size_t s)
 	{
-		if (str)
-			free(str);
-		str = (char *) malloc(s+1);
+		str = (char *) realloc(str,s+1);
 		str[s] = 0;
 		memcpy(str,m,s);
+	}
+
+	void append(const char *m, size_t s)
+	{
+		size_t l = str ? strlen(str) : 0;
+		str = (char *) realloc(str,s+l+1);
+		memcpy(str+l,m,s);
+		str[l+s] = 0;
 	}
 
 	size_t size() const

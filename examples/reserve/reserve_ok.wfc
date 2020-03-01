@@ -1,0 +1,13 @@
+message M
+{
+
+	unsigned id = 1;
+	string name = 2;
+	string location = 3;
+
+	reserve 10..19;		// future use
+
+	fixed32 ip_addr = 20;
+
+	reserve 0x20..0x2f;	// planned extension xyz
+}

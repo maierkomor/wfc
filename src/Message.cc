@@ -38,7 +38,6 @@ static vector<Message *> Messages;
 
 Message::Message(const char *n, unsigned l, bool o)
 : m_parent(0)
-, m_options(0)
 , m_msgid(0)
 , m_maxfid(0)
 , m_numvalid(0)
@@ -70,6 +69,38 @@ void Message::addMessage(Message *m)
 {
 	m_msgs.push_back(m);
 	m->setParent(this);
+}
+
+
+static void reportOverlap(unsigned lb, unsigned ub, unsigned rl, unsigned rh)
+{
+	if (lb == ub) {
+		if (rl == rh)
+			warn("in message %s: reservation %u overlaps with %u",ParsingMessage.c_str(),lb,rl);
+		else
+			warn("in message %s: reservation %u overlaps with %u..%u",ParsingMessage.c_str(),lb,rl,rh);
+	} else {
+		if (rl == rh)
+			warn("in message %s: reservation %u..%u overlaps with %u",ParsingMessage.c_str(),lb,ub,rl);
+		else
+			warn("in message %s: reservation %u..%u overlaps with %u..%u",ParsingMessage.c_str(),lb,ub,rl,rh);
+	}
+}
+
+
+void Message::addReservation(unsigned lb, unsigned ub)
+{
+	for (auto i : m_reservations) {
+		if ((lb >= i.first) && (lb <= i.second))
+			reportOverlap(lb,ub,i.first,i.second);
+		if (lb != ub) {
+			if ((ub >= i.first) && (ub <= i.second))
+				reportOverlap(lb,ub,i.first,i.second);
+			if ((lb < i.first) && (ub > i.second))
+				reportOverlap(lb,ub,i.first,i.second);
+		}
+	}
+	m_reservations.push_back(std::make_pair(lb,ub));
 }
 
 
@@ -134,7 +165,6 @@ void Message::setNamePrefix(const string &p)
 
 void Message::setOption(const char *option, const char *value)
 {
-#ifdef BETA_FEATURES
 	if (!strcmp(option,"members")) {
 		if (!strcmp(value, "virtual"))
 			m_storage = mem_virtual;
@@ -144,9 +174,7 @@ void Message::setOption(const char *option, const char *value)
 			m_storage = mem_regular;
 		else
 			error("invalid value '%s' for option '%s'",value,option);
-	} else
-#endif
-	if (!strcmp(option,"SortMembers")) {
+	} else if (!strcmp(option,"SortMembers")) {
 		if (!strcmp(value,"id"))
 			m_sorting = sort_id;
 		else if (!strcmp(value,"name"))
@@ -207,8 +235,16 @@ void Message::addField(Field *f)
 {
 	assert(f);
 	f->setParent(this);
-	const char *m_name = f->getName();
 	unsigned id = f->getId();
+	for (auto i : m_reservations) {
+		if ((id >= i.first) && (id <= i.second)) {
+			error("in message %s: use of id %u is reserved",ParsingMessage.c_str(),id);
+			delete f;
+			return;
+		}
+	}
+	
+	const char *m_name = f->getName();
 	for (auto i(m_fields.begin()), e(m_fields.end()); i != e; ++i) {
 		Field *f2 = i->second;
 		if (f2 == 0)
@@ -297,25 +333,6 @@ bool Message::usesVectors() const
 }
 
 
-const string &Message::getOption(const char *o) const
-{
-	const Message *m = this;
-	while (m->m_parent)
-		m = m->m_parent;
-	assert(m->m_options);
-	return m->m_options->getOption(o);
-}
-
-
-bool Message::getFlag(const char *o) const
-{
-	const Message *m = this;
-	while (m->m_parent)
-		m = m->m_parent;
-	assert(m->m_options);
-	return m->m_options->getFlag(o);
-}
-
 string Message::findROstring() const
 {
 	string ret;
@@ -368,7 +385,6 @@ size_t Message::getFixedSize() const
 
 void Message::setOptions(Options *o)
 {
-	m_options = o;
 	if (m_sorting == sort_unset) {
 		// not explicitly set, derive from target
 		setOption("SortMembers",o->getOption("SortMembers").c_str());
@@ -399,12 +415,3 @@ void Message::setUsed(bool u)
 }
 
 
-/*
-const string &Message::getOption(string &path, const char *o) const
-{
-	if (path.c_str()[0] == '/') {
-
-	}
-	path = 
-}
-*/

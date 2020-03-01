@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -51,10 +51,19 @@ bool toIdentifier(string &id)
 		if (*str == 0)
 			return false;
 	}
+	char c = *str++;
+	if ((c >= 'a') && (c <= 'z'));
+	else if ((c >= 'A') && (c <= 'Z'));
+	else if (c == '_');
+	else {
+		error("'%s' is not a valid identifier",id.c_str());
+		return false;
+	}
 	while (*str) {
-		char c = *str++;
+		c = *str++;
 		if ((c >= 'a') && (c <= 'z'));
 		else if ((c >= 'A') && (c <= 'Z'));
+		else if ((c >= '0') && (c <= '9'));
 		else if (c == '_');
 		else {
 			error("'%s' is not a valid identifier",id.c_str());
@@ -62,37 +71,6 @@ bool toIdentifier(string &id)
 		}
 	}
 	return true;
-}
-
-
-static string resolve_esc(const string &s)
-{
-	string r;
-	const char *str = s.c_str();
-	while (char c = *str++) {
-		if (c == '\\') {
-			switch (char e = *str++) {
-			case 't':
-				r += '\t';
-				break;
-			case 'n':
-				r += '\n';
-				break;
-			case 'r':
-				r += '\r';
-				break;
-			case '\\':
-				r += '\\';
-				break;
-			default:
-				r += '\\';
-				r += e;
-			}
-		} else {
-			r += c;
-		}
-	}
-	return r;
 }
 
 
@@ -115,112 +93,27 @@ Generator::Generator(ostream &str, const Options *o)
 	m_skipAsserts = !m_options->getFlag("Asserts");
 	const string &vib = m_options->getOption("VarIntBits");
 	addVariable("VarIntBits",vib);
-	//addVariable("wiresize_s",(string)"wiresize_s"+vib);
-	//addVariable("wiresize_u",(string)"wiresize_u"+vib);
-	addVariable("wiresize_s",(string)"wiresize_s");
-	addVariable("wiresize_x",(string)"wiresize_x");
-	addVariable("wiresize_u",(string)"wiresize");
-	addVariable("bytestype",m_options->getOption("bytestype"));
-	addVariable("stringtype",m_options->getOption("stringtype"));
-	addVariable("json_indent",resolve_esc(m_options->getOption("json_indent")));
-	addVariable("streamtype",resolve_esc(m_options->getOption("streamtype")));
-	addVariable("varintbits",m_options->getOption("VarIntBits"));
+	addVariable("wiresize_s","wiresize_s");
+	addVariable("wiresize_x","wiresize_x");
+	addVariable("wiresize_u","wiresize");
+	addVariable("bytestype",o->getOption("bytestype"));
+	addVariable("stringtype",o->getOption("stringtype"));
+	addVariable("varintbits",o->getOption("VarIntBits"));
+	addVariable("set_by_name",o->getOption("SetByName"));
+	addVariable("ascii_indent",o->getIdentifier("ascii_indent"));
 
-	string sizeBaseType = o->getOption("ssize_t");
-	if (toIdentifier(sizeBaseType))
-		setVariable("ssize_t",sizeBaseType);
-	else
-		setVariable("ssize_t","");
-
-	setVariable("BaseClass","BaseClass");
-	string BaseClass = o->getOption("BaseClass");
-	if (toIdentifier(BaseClass))
-		setVariable("BaseClass",BaseClass);
-	else if (BaseClass == "")
-		setVariable("BaseClass","");
-	else
-		warn("ignoring invalid identifier name '%s' for method BaseClass",BaseClass.c_str());
-
-	setVariable("toMemory","toMemory");
-	string toMemory = o->getOption("toMemory");
-	if (toIdentifier(toMemory))
-		setVariable("toMemory",toMemory);
-	else if (toMemory == "")
-		setVariable("toMemory","");
-	else
-		warn("ignoring invalid identifier name '%s' for method toMemory",toMemory.c_str());
-
-	setVariable("toSink","toSink");
-	string toSink = o->getOption("toSink");
-	if (toIdentifier(toSink))
-		setVariable("toSink",toSink);
-	else if (toSink == "")
-		setVariable("toSink","");
-	else
-		warn("ignoring invalid identifier name '%s' for method toSink",toSink.c_str());
-
-	setVariable("toString","toString");
-	string toString = o->getOption("toString");
-	if (toIdentifier(toString))
-		setVariable("toString",toString);
-	else if (toString == "")
-		setVariable("toString","");
-	else
-		warn("ignoring invalid identifier name '%s' for method toString",toString.c_str());
-
-	setVariable("toWire","toWire");
-	string toWire = o->getOption("toWire");
-	if (toIdentifier(toWire))
-		setVariable("toWire",toWire);
-	else if (toWire == "")
-		setVariable("toWire","");
-	else
-		warn("ignoring invalid identifier name '%s' for method toWire",toWire.c_str());
-
-	setVariable("toASCII","toASCII");
-	string toASCII = o->getOption("toASCII");
-	if (toIdentifier(toASCII))
-		setVariable("toASCII",toASCII);
-	else if (toASCII == "")
-		setVariable("toASCII","");
-	else
-		warn("ignoring invalid identifier name '%s' for method toASCII",toASCII.c_str());
-
-	setVariable("toJSON","toJSON");
-	string toJSON = o->getOption("toJSON");
-	if (toIdentifier(toJSON))
-		setVariable("toJSON",toJSON);
-	else if (toJSON == "")
-		setVariable("toJSON","");
-	else
-		warn("ignoring invalid identifier name '%s' for method toJSON",toJSON.c_str());
-
-	setVariable("fromMemory","fromMemory");
-	string fromMemory = o->getOption("fromMemory");
-	if (toIdentifier(fromMemory))
-		setVariable("fromMemory",fromMemory);
-	else if (fromMemory == "")
-		setVariable("fromMemory","");
-	else 
-		warn("ignoring invalid identifier name '%s' for method formMemory",fromMemory.c_str());
-
-	setVariable("calcSize","calcSize");
-	string calcSize = o->getOption("calcSize");
-	if (toIdentifier(calcSize))
-		setVariable("calcSize",calcSize);
-	else if (calcSize == "")
-		setVariable("calcSize","");
-	else
-		warn("ignoring invalid identifier name '%s' for method calcSize",calcSize.c_str());
-
-	setVariable("getMaxSize","getMaxSize");
-	string getMaxSize = o->getOption("getMaxSize");
-	if (toIdentifier(getMaxSize))
-		setVariable("getMaxSize",getMaxSize);
-	else if (getMaxSize == "")
-		setVariable("getMaxSize","");
-	else
-		warn("ignoring invalid identifier name '%s' for method getMaxSize",getMaxSize.c_str());
+	addVariable("streamtype",o->getIdentifier("streamtype"));
+	setVariable("ssize_t",o->getIdentifier("ssize_t"));
+	setVariable("BaseClass",o->getIdentifier("BaseClass"));
+	setVariable("toMemory",o->getIdentifier("toMemory"));
+	setVariable("toSink",o->getIdentifier("toSink"));
+	setVariable("toString",o->getIdentifier("toString"));
+	setVariable("toWire",o->getIdentifier("toWire"));
+	setVariable("toASCII",o->getIdentifier("toASCII"));
+	setVariable("toJSON",o->getIdentifier("toJSON"));
+	setVariable("fromMemory",o->getIdentifier("fromMemory"));
+	setVariable("calcSize",o->getIdentifier("calcSize"));
+	setVariable("getMaxSize",o->getIdentifier("getMaxSize"));
 
 	setMode(gen_wire);
 }
@@ -228,9 +121,7 @@ Generator::Generator(ostream &str, const Options *o)
 
 Generator::~Generator()
 {
-	Indenter ind;
-	ind.process(m_folder->getOutput().c_str());
-	m_out << ind.getOutput();
+	indent_code(m_out,m_folder->getOutput().c_str());
 }
 
 
@@ -304,6 +195,21 @@ void Generator::clearVariable(const string &n)
 }
 
 
+void Generator::setVariable(const string &n, const char *v)
+{
+	if (v == 0)
+		v = "";
+	dbug("Generator::setVariable(%s,%s)",n.c_str(),v);
+	auto r = m_vars.insert(pair<string,string>(n,v));
+	r.first->second = v;
+	/*
+	auto i = m_vars.find(n);
+	assert(i != m_vars.end());
+	i->second = v;
+	*/
+}
+
+
 void Generator::setVariable(const string &n, const string &v)
 {
 	dbug("Generator::setVariable(%s,%s)",n.c_str(),v.c_str());
@@ -373,17 +279,6 @@ void Generator::setEnum(const Enum *e)
 	}
 	m_enum = e;
 }
-
-
-/*
-const char *Generator::getTypeName(uint32_t type) const
-{
-	if ((type & ft_filter) == ft_msg) 
-		return Message::resolveId(type).c_str();
-	ICE("unable to resolve type %x",type);
-	return 0;
-}
-*/
 
 
 void Generator::fillField(const string &arg)
@@ -499,7 +394,7 @@ void Generator::fillField(const string &arg)
 			(*this) << "$(m_field) = " << arg << ";\n";
 			break;
 		case ft_enum:
-			(*this) << "$(field_set)(($typestr) " << arg << ");\n";
+			(*this) << "$(m_field) = ($typestr) " << arg << ";\n";
 			break;
 		default:
 			ICE("missing field type 0x%x",tid);
@@ -564,12 +459,14 @@ void Generator::setField(const Field *f)
 {
 	m_field = f;
 	if (f) {
+		assert(m_options);
 		string fname = f->getName();
 		uint32_t tid = f->getType();
-		assert(m_options);
 		addVariable("fname",fname);
+		char fnamelen[8];
+		sprintf(fnamelen,"%lu",fname.size());
+		addVariable("fnamelen",fnamelen);
 		addVariable("m_field","m_"+fname);	// member reference
-		addVariable("p_field","&m_"+fname);	// member pointer
 		quant_t q = f->getQuantifier();
 		setVariable("bytestype",f->getOption("bytestype"));
 		const string &st = f->getOption("stringtype");
@@ -597,10 +494,7 @@ void Generator::setField(const Field *f)
 		} else {
 			addVariable("field_value","m_"+fname);
 		}
-		if (v)
-			addVariable("field_values","$(field_get)().data()");
-		else
-			addVariable("field_values","m_$(fname).data()");
+		addVariable("field_values",v ? "$(field_get)().data()" : "m_$(fname).data()");
 
 		char tmp[64];
 		unsigned id = f->getId();
@@ -672,8 +566,8 @@ void Generator::setField(const Field *f)
 			setEnum(e);
 	} else {
 		clearVariable("fname");
+		clearVariable("fnamelen");
 		clearVariable("m_field");
-		clearVariable("p_field");
 		clearVariable("typestr");
 		clearVariable("rtype");
 		clearVariable("fulltype");

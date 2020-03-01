@@ -37,7 +37,7 @@ INCFILES	=$(shell hg st --all include | awk '/^[CAM]/{print $$2}')
 INCDIRS		=
 DEFS		= $(BETA)
 CFLAGS		= $(DEFS) $(INCDIRS)
-CXXFLAGS	= $(DEFS) $(INCDIRS)
+CXXFLAGS	= -std=c++11 $(DEFS) $(INCDIRS)
 LIBS		= 
 
 export CC CFLAGS CXX CXXFLAGS DEFS LDFLAGS LIBS OBJDIR DIFF RELEASE YACC INSTALL SED LEX HG
@@ -57,14 +57,14 @@ prepare: bin
 
 debug:DEFS	+=-DDEBUG -DYYDEBUG=1 
 debug:CFLAGS	+= -g -Wall
-debug:CXXFLAGS	+=-std=c++11 -g -Wall
+debug:CXXFLAGS	+=-g -Wall
 debug:LIBS	+=-lpthread
 debug:OBJDIR	=../obj-g
 debug: prepare
 	+$(MAKE) -C src -e ../bin/wfc
 
 release:CFLAGS	+=-O2
-release:CXXFLAGS+=-std=c++11 -O2
+release:CXXFLAGS+=-O2
 release:LIBS	+=-lpthread
 release:LDFLAGS	+=-Wl,-s
 release:OBJDIR	=../obj-r
@@ -74,7 +74,7 @@ release: prepare
 clang:CC	=clang
 clang:CXX	=clang++
 clang:CFLAGS	+=-O2
-clang:CXXFLAGS	+=-std=c++11 -O2
+clang:CXXFLAGS	+=-O2
 clang:LIBS	+=-lpthread
 clang:OBJDIR	=../obj-c
 clang: prepare
@@ -87,10 +87,17 @@ tcov:OBJDIR	=../obj-t
 tcov: prepare
 	+$(MAKE) -C src -e ../bin/wfc
 
+prof:CFLAGS	+= -pg -O2
+prof:CXXFLAGS	+= -pg -O2
+prof:LIBS	+=-lpthread
+prof:OBJDIR	=../obj-p
+prof: prepare
+	+$(MAKE) -C src -e ../bin/wfc
+
 mingw:CC	=i686-w64-mingw32-gcc
 mingw:CXX	=$(shell which i686-w64-mingw32-g++-posix || i686-w64-mingw32-g++)
 mingw:CXXFLAGS	+=-g -O2 -fstack-protector-all
-mingw:INCDIRS	=-I/opt/mingw/include/botan-2
+mingw:INCDIRS	=
 mingw:LDFLAGS	=-static -static-libgcc -static-libstdc++ -Wl,-Bstatic,--nxcompat,--dynamicbase,--export-all-symbols,-s
 mingw:LIBS	=-liphlpapi -lws2_32 #-lwsock32
 mingw:OBJDIR	=../obj-m32
@@ -100,7 +107,7 @@ mingw: prepare
 mingw64:CC	=x86_64-w64-mingw32-gcc
 mingw64:CXX	=$(shell which x86_64-w64-mingw32-g++-posix || x86_64-w64-mingw32-g++)
 mingw64:CXXFLAGS+=-g -O2 -fno-keep-inline-dllexport -fstack-protector-all
-mingw64:INCDIRS	=-I/opt/mingw64/include/botan-2
+mingw64:INCDIRS	=
 mingw64:LDFLAGS	=-static -static-libgcc -static-libstdc++ -Wl,-Bstatic,--nxcompat -Wl,--dynamicbase,--export-all-symbols,-s
 mingw64:LIBS	=-liphlpapi -lws2_32 #-lwsock32
 mingw64:OBJDIR	=../obj-m64

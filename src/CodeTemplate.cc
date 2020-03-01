@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -33,11 +33,25 @@ using namespace std;
 
 const char *Functions[] = {
 	"$invalid_template",
+	"ascii_bytes",
+	"ascii_indent",
+	"ascii_string",
 	"json_cstr",
 	"json_indent",
 	"json_string",
 	"mangle_double",
 	"mangle_float",
+	"parse_ascii_bool",
+	"parse_ascii_dbl",
+	"parse_ascii_flt",
+	"parse_ascii_s16",
+	"parse_ascii_s32",
+	"parse_ascii_s64",
+	"parse_ascii_s8",
+	"parse_ascii_u16",
+	"parse_ascii_u32",
+	"parse_ascii_u64",
+	"parse_ascii_u8",
 	"place_varint",
 	"read_double",
 	"read_float",
@@ -177,6 +191,8 @@ CodeTemplate::CodeTemplate(char *f, char *sl, char *eoc, char *eofunc)
 				includes.push_back(value);
 			else if (!strcmp(param,"sysinclude"))
 				sysincludes.push_back(value);
+			else if (!strcmp(param,"requires"))
+				dependencies.push_back(value);
 			else if (!strcmp(param,"function"));
 			else if (!strcmp(param,"description"));
 			else if (!strcmp(param,"include"));
@@ -236,16 +252,22 @@ string CodeTemplate::getDeclaration() const
 }
 
 
-codeid_t CodeTemplate::getFunctionId() const
+codeid_t CodeTemplate::getFunctionId(const string &f)
 {
 	const char **fun = Functions;
 	++fun;
 	do {
-		if (*fun == function)
+		if (*fun == f)
 			return (codeid_t)(fun-Functions);
 		++fun;
 	} while (*fun);
 	return ct_invalid;
+}
+
+
+codeid_t CodeTemplate::getFunctionId() const
+{
+	return getFunctionId(function);
 }
 
 

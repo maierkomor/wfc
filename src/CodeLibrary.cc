@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -233,9 +233,9 @@ void CodeLibrary::addBuf(char *buf, const char *fn)
 			unsigned br = 1;
 			do {
 				++c;
-				if (*c == '{')
+				if ((*c == '{') && (c[1] != '\''))
 					++br;
-				else if (*c == '}')
+				else if ((*c == '}') && (c[1] != '\''))
 					--br;
 				else if (*c == 0) {
 					warn("file %s: template with incomplete body",fn);
@@ -251,7 +251,7 @@ void CodeLibrary::addBuf(char *buf, const char *fn)
 
 		CodeTemplate *ct = new CodeTemplate(f,slash,eoc,eofunc);
 		if (ct->getVariant().empty()) {
-			error("parser error for function %s: tag not found");
+			error("parser error for function %s: tag not found",f);
 			delete ct;
 			at = eofunc;
 			continue;
@@ -268,13 +268,13 @@ void CodeLibrary::addBuf(char *buf, const char *fn)
 			auto i = m_variants.insert(make_pair(variant,fn));
 			if (i.second) {
 				m_templates.insert(make_pair(id,ct));
+				dbug("added variant %s of template %s",variant.c_str(),Functions[id]);
 			} else {
 				warn("ignorin duplicate variant %s of function %s from file %s, taking %s",variant.c_str(),Functions[id],fn,i.first->second.c_str());
 				delete ct;
 			}
 		} else {
-			warn("ignoring template for unknown function %s in file %s",ct->getVariant().c_str(),fn);
-			delete ct;
+			m_functions.insert(pair<string,CodeTemplate *>(fn,ct));
 		}
 		at = eofunc;
 	}
@@ -313,6 +313,39 @@ CodeTemplate *CodeLibrary::getTemplate(codeid_t f, const Options *o) const
 	}
 	diag("no library variant available for function %s",Functions[f]);
 	return 0;
+}
+
+
+void CodeLibrary::write_dependencies(Generator &G, const vector<unsigned> &funcs, const Options *options, libmode_t lm) const
+{
+	set<string> deps;
+	for (auto i = funcs.begin(), e = funcs.end(); i != e; ++i) {
+		codeid_t id = (codeid_t)*i;
+		if (id & 0x10000)
+			continue;
+		CodeTemplate *t = getTemplate(id,options);
+		if (t == 0)
+			continue;
+		const vector<string> &d= t->getDependencies();
+		deps.insert(d.begin(),d.end());
+	}
+	auto e = m_functions.end();
+	for (auto d : deps) {
+		codeid_t id = CodeTemplate::getFunctionId(d);
+		if (id != ct_invalid) {
+			CodeTemplate *t = getTemplate(id,options);
+			if (0)
+				error("unable to find required template library function %s",d.c_str());
+			else if (m_generated.insert(id).second)
+				t->write_cpp(G,lm);
+		} else {
+			auto f = m_functions.find(d);
+			if (f == e)
+				error("unable to find required template function %s",d.c_str());
+			else
+				f->second->write_cpp(G,lm);
+		}
+	}
 }
 
 
@@ -388,10 +421,12 @@ void CodeLibrary::write_cpp(Generator &G, const vector<unsigned> &funcs, const O
 	else
 		abort();
 	diag("writing body of helper functions");
+	write_dependencies(G,funcs,options,lm);
 	for (auto i = funcs.begin(), e = funcs.end(); i != e; ++i) {
 		unsigned f = *i;
 		if (f & 0x10000) {
 			G.setMode((genmode_t)f);
+			m_generated.clear();
 			continue;
 		}
 		CodeTemplate *t = getTemplate((codeid_t)f,options);
@@ -400,7 +435,8 @@ void CodeLibrary::write_cpp(Generator &G, const vector<unsigned> &funcs, const O
 			error("unable to find implementation for function %s",Functions[f]);
 			continue;
 		}
-		t->write_cpp(G,lm);
+		if (m_generated.insert((codeid_t)f).second)
+			t->write_cpp(G,lm);
 	}
 }
 

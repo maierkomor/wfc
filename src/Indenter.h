@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -20,35 +20,8 @@
 #ifndef INDENTER_H
 #define INDENTER_H
 
-#include <stack>
-#include <string>
+#include <iosfwd>
 
-
-class Indenter
-{
-	public:
-	explicit Indenter()
-	: out()
-	, indent(0)
-	, indNext(false)
-	{ }
-
-	void process(const char *);
-
-	const std::string &getOutput() const
-	{ return out; }
-	
-	private:
-	std::string out;
-	int indent;
-	bool indNext;
-};
-
-
-inline Indenter &operator << (Indenter &c, const char *s)
-{
-	c.process(s);
-	return c;
-}
+void indent_code(std::ostream &out, const char *str);
 
 #endif

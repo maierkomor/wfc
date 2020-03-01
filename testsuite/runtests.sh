@@ -33,6 +33,12 @@ flagsets[fs_OrLs]="-Or -fwfclib=static -g"
 flagsets[fs_OrLi]="-Or -fwfclib=inline -g"
 flagsets[fs_OrLe]="-Or -fwfclib=extern -g"
 flagsets[fs_O2le]="-O2 -fendian=little -g"
+flagsets[fs_O2s]="-O2 -s"
+flagsets[fs_Ors]="-Or -s"
+flagsets[fs_Oss]="-Os -s"
+flagsets[fs_O2C]="-O2 -fStringType=C"
+flagsets[fs_OsC]="-Os -fStringType=C"
+flagsets[fs_OrC]="-Or -fStringType=C"
 
 CXXFLAGS0=$CXXFLAGS
 if [ "" == "$CXXFLAGS0" ]; then

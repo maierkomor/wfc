@@ -1,3 +1,7 @@
+option toASCII=toASCII;
+option withEqual=true;
+option withUnequal=true;
+
 option vi16 {
 	varintbits=16;
 	intsize=16;

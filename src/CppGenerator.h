@@ -21,6 +21,7 @@
 #define CPPGENERATOR_H
 
 #include "CodeGenerator.h"
+#include "codeid.h"
 #include "Field.h"
 #include <iosfwd>
 #include <string>
@@ -86,6 +87,8 @@ class CppGenerator : public CodeGeneratorImpl
 	void writePrint(Generator &out, Message *m);
 	void writeReaders(Generator &G, optmode_t optmode);
 	void writeSet(Generator &out, Field *f);
+	void writeSetByNameR(Generator &G, Field *f);
+	void writeSetByName(Generator &G, Message *m);
 	void writeSize(Generator &, Field *f);
 	void writeStaticMember(Generator &G, Field *f, const char *n);
 	void writeStaticMembers(Generator &G, Message *m);
@@ -124,8 +127,12 @@ class CppGenerator : public CodeGeneratorImpl
 	     Asserts, Debug, PrintOut, SubClasses, Checks, PaddedMsgSize, SinkToTemplate,
 	     WithJson, EarlyDecode,
 	     inlineClear, inlineHas, inlineGet, inlineMaxSize, inlineSet, inlineSize,
-	     hasVarInt, hasU16, hasU32, hasU64, hasFloat, hasDouble, hasInt, hasSInt, hasUInt, hasCStr,
-	     hasString, hasLenPfx, hasUnused, needJsonString, needCalcSize, needSendVarSInt;
+	     hasVarInt, hasVarSInt, hasInt, hasSInt, hasUInt, hasCStr,
+	     hasBool, hasFloat, hasDouble, 
+	     hasS8, hasS16, hasS32, hasS64, hasU8, hasU16, hasU32, hasU64,
+	     hasWT8, hasWT16, hasWT32, hasWT64,
+	     hasBytes, hasString, hasLenPfx, hasUnused,
+	     needJsonString, needCalcSize, needSendVarSInt;
 	unsigned VarIntBits, WireputArg;
 	std::string ErrorHandling, license;
 };

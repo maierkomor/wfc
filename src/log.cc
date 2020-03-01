@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -159,22 +159,22 @@ void error(const char *m, ...)
 
 void ICE(const char *m, ...)
 {
-	char prefix[] = "ice/bug: ";
-	char buf[1024];
+	char prefix[] = "ICE/bug: ";
+	if (-1 == write(DiagLog,prefix,sizeof(prefix)))
+		abort();
+	char *buf;
 	va_list val;
 	va_start(val,m);
 #if defined __MINGW32__ ||  defined __MINGW64__
-	strcpy(buf,prefix);
-	int n = vsnprintf(buf+sizeof(prefix)-1,sizeof(buf)-sizeof(prefix)-1,m,val) + sizeof(prefix) -1;
+	int n = vsnprintf(0,0,m,val);
+	buf = (char *) malloc(n+1);
+	vsprintf(buf,m,val);
 #else
-	int n = vsnprintf(stpcpy(buf,prefix),sizeof(buf)-sizeof(prefix)-1,m,val) + sizeof(prefix) - 1;
+	int n = vasprintf(&buf,m,val);
 #endif
 	va_end(val);
-	buf[n++] = '\n';
-	if (n >= (int)sizeof(buf))
-		n = sizeof(buf)-1;
 	if (-1 == write(DiagLog,buf,n))
-		perror("writing to diagnostic log");
+		abort();
 	abort();
 }
 

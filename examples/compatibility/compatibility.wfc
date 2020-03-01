@@ -1,0 +1,52 @@
+// This example demonstrates, what kind of techniques exist to ensure future
+// binary compatibility. Additionally, deprecation mechanism are demonstrated,
+// that allow fading out the use of data that has been substituted or should
+// not be used any longer for some other reason.
+
+option toASCII=toASCII;
+
+message M
+{
+	// bool can be extended to enum or int/uint
+	// old version:
+	// bool power = 1;	(false = off, true = on)
+	// later version:
+	enum power_t { off = 0; on = 1; standby = 2; };
+	power_t power = 1;
+
+	
+	// Variable length interger can be enlarged within type category.
+	// I.e.:
+	// int8 -> int16 -> int32 -> int64
+	// sint8 -> sint16 -> sint32 -> sint64
+	// uint8 -> uint16 -> uint32 -> uint64
+	// These changes a completely without forward compatibility concern.
+	// Of course old application will not be able to deal with new data.
+	// E.g.: old:
+	// uint8 number_of_devices = 2;
+	// later version:
+	uint16 number_of_devices = 2;
+
+	// If you take care about conflicts in value ranges, you can even
+	// switch the varint type:
+	// int8 -> uint16: make sure -128..-1 was never used
+	// otherwise it will show up as 128..255
+
+
+	// To stop usage of a field, use option 'usage'.
+	// Usage deprecated says that we no longer want to write that
+	// data, but want to be able to retrive it from existing serialized
+	// data. So fromMemory still supports this field, but toMemory and
+	// friends will ignore it.
+	string name = 8	[ usage = deprecated ];
+
+	// The new fields surname and lastname shall be used instead of name in future.
+	// The application must make sure to transfer the data to the new fields.
+	string lastname = 9;
+	string surname = 10;
+
+	// Usage obsolete denotes fields that no longer can be used. Reading
+	// and writing is not supported any longer for some reason.
+	// e.g. passwords must not be stored in clear text any longer
+	string password = 20	[ usage = obsolete ];
+}

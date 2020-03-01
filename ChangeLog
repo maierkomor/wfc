@@ -1,3 +1,20 @@
+Release R2002:
+==============
+- enhancement: getMaxSize returns SIZE_MAX if size is unlimited
+- enhancement: output custom declarations to .cpp
+- enhancement: support for custom JSON value generation
+- enhancement: storage type specification
+- enhancement: repeated types should have a const& get
+- enhancement: added concept for reserving ids
+- enhancement: set value by name from ASCII (restrictions see man page)
+- enhancement: removed dependency to wfc_support.* for ASCII output
+- enhancement: added support for custom template functions
+- documentation updates (ongoing)
+- fix: unset value should be used as default, if default is not set
+- fix JSON output for 8 bit integers
+- fix related to subclass naming
+- fixes and updates for alternate stringtypes
+
 Release R2001:
 ==============
 - enhancement: optimized JSON generation code

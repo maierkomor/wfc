@@ -1,0 +1,229 @@
+/*
+ *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *
+ *  This source file belongs to Wire-Format-Compiler.
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <string.h>
+
+/* wfc-template:
+ * function: parse_ascii_u8
+ * sysinclude: stdlib.h
+ */
+int parse_ascii_u8(uint8_t *v, const char *ascii)
+{
+	char *eptr;
+	long d = strtol(ascii,&eptr,0);
+	if ((d < 0) || (d > UINT8_MAX)) {
+		$handle_error;
+	}
+	if (eptr != ascii) {
+		*v = (uint8_t) d;
+		return eptr-ascii;
+	}
+	$handle_error;
+}
+
+
+/* wfc-template:
+ * function: parse_ascii_u16
+ * sysinclude: stdlib.h
+ */
+int parse_ascii_u16(uint16_t *v, const char *ascii)
+{
+	char *eptr;
+	long d = strtol(ascii,&eptr,0);
+	if ((d < 0) || (d > UINT16_MAX)) {
+		$handle_error;
+	}
+	if (eptr != ascii) {
+		*v = (uint16_t) d;
+		return eptr-ascii;
+	}
+	$handle_error;
+}
+
+
+/* wfc-template:
+ * function: parse_ascii_u32
+ * sysinclude: stdlib.h
+ */
+int parse_ascii_u32(uint32_t *v, const char *ascii)
+{
+	char *eptr;
+	long long d = strtoll(ascii,&eptr,0);
+	if ((d < 0) || (d > UINT32_MAX))
+		$handle_error;
+	if (eptr != ascii) {
+		*v = (uint32_t) d;
+		return eptr-ascii;
+	}
+	$handle_error;
+}
+
+
+/* wfc-template:
+ * function: parse_ascii_u64
+ * sysinclude: stdlib.h
+ */
+int parse_ascii_u64(uint64_t *v, const char *ascii)
+{
+	char *eptr;
+	unsigned long long d = strtoull(ascii,&eptr,0);
+	if (eptr != ascii) {
+		*v = (uint64_t) d;
+		return eptr-ascii;
+	}
+	$handle_error;
+}
+
+
+/* wfc-template:
+ * function: parse_ascii_s8
+ * sysinclude: stdlib.h
+ */
+int parse_ascii_s8(int8_t *v, const char *ascii)
+{
+	char *eptr;
+	long d = strtol(ascii,&eptr,0);
+	if ((d < INT8_MIN) || (d > INT8_MAX)) {
+		$handle_error;
+	}
+	if (eptr != ascii) {
+		*v = (uint8_t) d;
+		return eptr-ascii;
+	}
+	$handle_error;
+}
+
+
+/* wfc-template:
+ * function: parse_ascii_s16
+ * sysinclude: stdlib.h
+ */
+int parse_ascii_s16(int16_t *v, const char *ascii)
+{
+	char *eptr;
+	long d = strtol(ascii,&eptr,0);
+	if ((d < INT16_MIN) || (d > INT16_MAX)) {
+		$handle_error;
+	}
+	if (eptr != ascii) {
+		*v = (uint16_t) d;
+		return eptr-ascii;
+	}
+	$handle_error;
+}
+
+
+/* wfc-template:
+ * function: parse_ascii_s32
+ * sysinclude: stdlib.h
+ */
+int parse_ascii_s32(int32_t *v, const char *ascii)
+{
+	char *eptr;
+	long long d = strtoll(ascii,&eptr,0);
+	if ((d < INT32_MIN) || (d > INT32_MAX)) {
+		$handle_error;
+	}
+	if (eptr != ascii) {
+		*v = (uint32_t) d;
+		return eptr-ascii;
+	}
+	$handle_error;
+}
+
+
+/* wfc-template:
+ * function: parse_ascii_s64
+ * sysinclude: stdlib.h
+ */
+int parse_ascii_s64(int64_t *v, const char *ascii)
+{
+	char *eptr;
+	unsigned long long d = strtoull(ascii,&eptr,0);
+	if (eptr != ascii) {
+		*v = (uint64_t) d;
+		return eptr-ascii;
+	}
+	$handle_error;
+}
+
+
+/* wfc-template:
+ * function: parse_ascii_flt
+ * sysinclude: stdlib.h
+ */
+int parse_ascii_flt(float *v, const char *ascii)
+{
+	char *eptr;
+	float f = strtof(ascii,&eptr);
+	if (eptr != ascii) {
+		*v = f;
+		return eptr-ascii;
+	}
+	$handle_error;
+}
+
+
+/* wfc-template:
+ * function: parse_ascii_dbl
+ * sysinclude: stdlib.h
+ */
+int parse_ascii_dbl(double *v, const char *ascii)
+{
+	char *eptr;
+	double d = strtod(ascii,&eptr);
+	if (eptr != ascii) {
+		*v = d;
+		return eptr-ascii;
+	}
+	$handle_error;
+}
+
+
+/* wfc-template:
+ * function: parse_ascii_bool
+ * sysinclude: string.h
+ */
+int parse_ascii_bool(bool *v, const char *ascii)
+{
+	int r = 0;
+	if ('0' == ascii[0]) {
+		*v = false;
+		r = 1;
+	} else if ('1' == ascii[0]) {
+		*v = true;
+		r = 1;
+	} else if (0 == memcmp(ascii,"true",4)) {
+		*v = true;
+		r = 4;
+	} else if (0 == memcmp(ascii,"false",5)) {
+		*v = false;
+		r = 5;
+	} else if (0 == memcmp(ascii,"on",2)) {
+		*v = true;
+		r = 2;
+	} else if (0 == memcmp(ascii,"off",3)) {
+		*v = false;
+		r = 3;
+	} else {
+		$handle_error;
+	}
+	return r;
+}
+

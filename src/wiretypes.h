@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -37,6 +37,5 @@ typedef enum wiretype_e {
 	wt_repeated	= 0x42,
 	wt_any		= 0xf6,
 } wiretype_t;
-
 
 #endif

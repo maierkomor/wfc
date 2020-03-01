@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -30,11 +30,11 @@ void dbug(const char *, ...);
 #endif
 
 bool hadError();
-void msg(const char *, ...);
-void diag(const char *, ...);
-void warn(const char *, ...);
-void error(const char *, ...);
-void fatal(const char *, ...);
-void ICE(const char *, ...);
+void msg(const char *, ...) __attribute__((format(printf,1,2)));
+void diag(const char *, ...) __attribute__((format(printf,1,2)));
+void warn(const char *, ...) __attribute__((format(printf,1,2)));
+void error(const char *, ...) __attribute__((format(printf,1,2)));
+void fatal(const char *, ...) __attribute__((format(printf,1,2)));
+void ICE(const char *, ...) __attribute__((format(printf,1,2)));
 
 #endif

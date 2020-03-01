@@ -1,0 +1,9 @@
+option stringtype = AString;
+option header = <astring.h>;
+option withUnequal = true;
+
+message A
+{
+	string str = 1;
+	repeated string arr = 2;
+}

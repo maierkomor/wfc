@@ -37,7 +37,7 @@ struct CString
 
 	CString(const char *d)
 	: str(d)
-	, len(d ? strlen(d) + 1 : 0)
+	, len(d ? strlen(d) : 0)
 	{ }
 
 	CString(const char *d, size_t l)

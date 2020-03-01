@@ -110,9 +110,11 @@ class Options
 	const char *MutablePrefix() const;
 	const char *SetPrefix() const;
 	unsigned VarIntBits() const;
+	unsigned IntSize() const;
 	bool StringSerialization() const;
 	bool getFlag(const char *) const;
 	const std::string &getOption(const char *) const;
+	const char *getIdentifier(const char *) const;
 	bool isId(const char *) const;
 	std::string getId(const char *) const;
 	const char *getSource(const char *) const;
@@ -128,6 +130,7 @@ class Options
 	const std::map<std::string,KVPair*> &getNodeOptions() const
 	{ return m_NodeOptions; }
 
+	std::vector<std::string> getDeclarations() const;
 	std::vector<std::string> getHeaders() const;
 	std::vector<std::string> getCodeLibs() const;
 
@@ -138,7 +141,9 @@ class Options
 	std::map<std::string,bool,StrCaseCmp> m_BinOptions;
 	std::map<std::string,std::string,StrCaseCmp> m_TextOptions;
 	std::map<std::string,KVPair*> m_NodeOptions;
-	std::vector<std::string> m_CodeLibs, m_Headers;
+	std::vector<std::string> m_CodeLibs, m_Declarations, m_Headers;
 };
+
+bool isIdentifier(const char *id);
 
 #endif

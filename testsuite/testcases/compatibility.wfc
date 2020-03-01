@@ -1,0 +1,55 @@
+option vinst
+{
+	/M: virtual = true;
+}
+
+option V1
+{
+	namespace = V1;
+	withUnequal = true;
+	withEqual = true;
+	toASCII=toASCII;
+}
+
+option V2
+{
+	namespace = V2;
+	withUnequal = true;
+	withEqual = true;
+	toASCII=toASCII;
+	/M/i0 : usage = deprecated;
+	/M/s0 : usage = deprecated;
+	/M/ru : usage = deprecated;
+	/M/f0 : usage = deprecated;
+	/M/rd : usage = deprecated;
+	/M/sm : usage = deprecated;
+	/M/rsm : usage = deprecated;
+	/M/rn  : usage = deprecated;
+	/M/rs  : usage = deprecated;
+}
+
+enum number_t {
+	zero = 0;
+	one = 1;
+	two = 2;
+	three = 3;
+}
+
+message SM
+{
+	string a = 1;
+	float f = 2;
+}
+
+message M
+{
+	int i0 = 1;	
+	string s0 = 2;
+	repeated unsigned ru = 3;
+	float f0 = 4;
+	repeated double rd = 5;
+	SM sm = 6;
+	repeated SM rsm = 7;
+	repeated number_t rn = 8;
+	repeated string rs = 9;
+}

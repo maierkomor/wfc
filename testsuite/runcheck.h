@@ -217,7 +217,7 @@ void runcheck(const Message &tb)
 	++NumToASCII;
 	fw.toASCII(ss1);
 	if (ss0.str() != ss1.str())
-		fail("ascii",&tb);
+		fail("ascii",&tb,&fw);
 #endif
 
 	free(buf);

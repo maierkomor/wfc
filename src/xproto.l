@@ -12,7 +12,7 @@
 %{
 
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -56,6 +56,7 @@ ONEOF		"oneof"
 OPTIONAL	"optional"
 REQUIRED	"required"
 REPEATED	"repeated"
+RESERVE		"reserve"
 ENUM		"enum"
 STRING		"string"
 CSTR		"cstr"
@@ -95,6 +96,7 @@ RBRACE		"}"
 SEMI		";"
 COMMA		","
 COLON		":"
+RANGE		".."
 
 LCOMMENT	"//"[^\n]*\n
 BCOMMENT	"/*"
@@ -131,6 +133,7 @@ UNKNOWN		.
 {REQUIRED}	{ return yy::ProtoParser::token::REQUIRED; }
 {REPEATED}	{ return yy::ProtoParser::token::REPEATED; }
 {MESSAGE}	{ return yy::ProtoParser::token::MESSAGE; }
+{RESERVE}	{ return yy::ProtoParser::token::RESERVE; }
 {ONEOF}		{ return yy::ProtoParser::token::ONEOF; }
 {ENUM}		{ return yy::ProtoParser::token::ENUM; }
 {BOOL}		{ return yy::ProtoParser::token::BOOL; }
@@ -203,6 +206,7 @@ UNKNOWN		.
 {CSTR}		{ return yy::ProtoParser::token::CSTR; }
 {SEMI}		{ return yy::ProtoParser::token::SEMI; }
 {COMMA}		{ return yy::ProtoParser::token::COMMA; }
+{RANGE}		{ return yy::ProtoParser::token::RANGE; }
 {COLON}		{ return yy::ProtoParser::token::COLON; }
 {EQUAL}		{ return yy::ProtoParser::token::EQUAL; }
 

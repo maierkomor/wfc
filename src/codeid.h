@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -20,13 +20,29 @@
 #ifndef CODEID_H
 #define CODEID_H
 
+typedef enum { libstatic, libinline, libextern } libmode_t;
+
 typedef enum {
 	ct_invalid = 0,
+	ct_ascii_bytes,
+	ct_ascii_indent,
+	ct_ascii_string,
 	ct_json_cstr,
 	ct_json_indent,
 	ct_json_string,
 	ct_mangle_double,
 	ct_mangle_float,
+	ct_parse_ascii_bool,
+	ct_parse_ascii_dbl,
+	ct_parse_ascii_flt,
+	ct_parse_ascii_s16,
+	ct_parse_ascii_s32,
+	ct_parse_ascii_s64,
+	ct_parse_ascii_s8,
+	ct_parse_ascii_u16,
+	ct_parse_ascii_u32,
+	ct_parse_ascii_u64,
+	ct_parse_ascii_u8,
 	ct_place_varint,
 	ct_read_double,
 	ct_read_float,

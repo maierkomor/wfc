@@ -1,0 +1,3 @@
+This example demonstrates how to reserve ids for futures use.  Using an id that
+has been denoted as reserved will cause an error.  Like this you can make sure
+that ids can be allocated in a astructured way.

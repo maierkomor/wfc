@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -41,6 +41,7 @@ class CodeLibrary
 	//std::string getComment(const char *function, const Options *o) const;
 	//const std::string &getFunction(const char *function, const Options *o) const;
 	//const std::string &getFunction(codeid_t f, const Options *o) const;
+	void write_dependencies(Generator &G, const std::vector<unsigned> &funcs, const Options *options, libmode_t lm) const;
 	void write_includes(Generator &G, const std::vector<unsigned> &funcs, const Options *options) const;
 	void write_cpp(Generator &G, const std::vector<unsigned> &funcs, const Options *options) const;
 	void write_h(Generator &G, const std::vector<unsigned> &funcs, const Options *options) const;
@@ -50,6 +51,8 @@ class CodeLibrary
 	CodeTemplate *getTemplate(codeid_t, const Options *o) const;
 
 	std::multimap<codeid_t, CodeTemplate *> m_templates;
+	std::map<std::string, CodeTemplate *> m_functions;
+	mutable std::set<codeid_t> m_generated;
 	std::set<std::string> m_files;
 	std::map<std::string,std::string> m_variants;
 };

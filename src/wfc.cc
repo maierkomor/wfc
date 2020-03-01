@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2019, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -48,7 +48,7 @@ const char *InstallDir = 0;
 
 void printVersion(ostream &out)
 {
-	out << "Wire Format Compiler - wfc " VERSION "\nCopyright 2015-2019, Thomas Maier-Komor\n";
+	out << "Wire Format Compiler (WFC), Version " VERSION "\nCopyright 2015-2020, Thomas Maier-Komor\n";
 }
 
 

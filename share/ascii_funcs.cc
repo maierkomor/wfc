@@ -1,5 +1,6 @@
+
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -17,47 +18,54 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "wfc_support.h"
-
-#include <iostream>
+#include <inttypes.h>
+#include <stddef.h>
 #include <string.h>
 
 
-using namespace std;
+/* wfc-template:
+ * function: ascii_indent
+ */
+void ascii_indent($streamtype &out, size_t n)
+{
+	while (n) {
+		out << '\t';
+		--n;
+	}
+}
 
 
-void ascii2c_src(ostream &out, const char *str, const string &prefix)
+/* wfc-template:
+ * function: ascii_string
+ * sysinclude: string.h
+ */
+void ascii_string($streamtype &out, const char *str, size_t len, size_t indent)
 {
 	unsigned cil = 0;
-	size_t len = str ? strlen(str) : 0;
 	out << '"';
 	while (len) {
 		char c = *str++;
 		--len;
 		if (cil == 64) {
-			out << "\"\n" << prefix << '"';
+			out << "\"\n";
+			$ascii_indent(out,indent);
+			out << '"';
 			cil = 0;
 		}
 		++cil;
-		if ((c >= 0x5d) && (c <= 0x7e)) {
-			// ']'..'~'
-			// a-z plus some more
-			out << c;
-			continue;
-		}
-		if ((c == ' ') || (c == '!')) {
-			out << c;
-			continue;
-		}
-		if ((c >= 0x23) && (c <= 0x5b)) {
-			// 0-9, A-Z, some operators, etc
+		if ((c >= 0x23) && (c <= 0x7e)) {
+			if (c == 0x5c) {
+				// '\' itself must be escaped
+				out << '\\';
+			}
+			// 0-9, a-z A-Z
+			// ']'..'~', some operators, etc
 			out << c;
 			continue;
 		}
 		switch (c) {
 		case '\0': out << "\\0"; continue;
 		case '\t': out << "\\t"; continue;
-		case '\n': out << "\\n\"\n" << prefix << '"'; continue;
 		case '\r': out << "\\r"; continue;
 		case '\b': out << "\\b"; continue;
 		case '\a': out << "\\a"; continue;
@@ -65,7 +73,14 @@ void ascii2c_src(ostream &out, const char *str, const string &prefix)
 		case '\f': out << "\\f"; continue;
 		case '\v': out << "\\v"; continue;
 		case '\\': out << "\\\\"; continue;
-		case '"': out << "\\\""; continue;
+		case '"' : out << "\\\""; continue;
+		case ' ' : out << ' '; continue;
+		case '!' : out << '!'; continue;
+		case '\n':
+			out << "\\n\"\n";
+			$ascii_indent(out,indent);
+			out << '"';
+			continue;
 		default:
 			out << "\\0" << (unsigned)((c>>6)&0x3) << (unsigned)((c>>3)&0x7) << (unsigned)(c&0x7);
 		}
@@ -74,15 +89,21 @@ void ascii2c_src(ostream &out, const char *str, const string &prefix)
 }
 
 
-void ascii2hex(std::ostream &out, const uint8_t *str, size_t len, const string &prefix)
+/* wfc-template:
+ * function: ascii_bytes
+ */
+void ascii_bytes($streamtype &out, const uint8_t *str, size_t len, size_t indent)
 {
 	static char hex_table[] = "0123456789abcdef";
-	unsigned cil = 0;	// charakters in one line
-	bool mline = (len > 16);
-	if (mline)
-		out << "{\n" << prefix;
-	else
-		out << "{ ";
+	unsigned cil = 0;		// charakters in one line
+	bool mline = (len > 16);	// more than one line?
+	out << '{';
+	if (mline) {
+		out << '\n';
+		$ascii_indent(out,indent);
+	} else {
+		out << ' ';
+	}
 	while (len) {
 		uint8_t c = *str++;
 		out << hex_table[(c >> 4)&0xf] << hex_table[c&0xf];
@@ -95,29 +116,18 @@ void ascii2hex(std::ostream &out, const uint8_t *str, size_t len, const string &
 			if (mline && (cil == 8)) {
 				out << ' ';
 			} else if (cil == 16) {
-				out << '\n' << prefix;
+				out << '\n';
+				$ascii_indent(out,indent);
 				cil = 0;
 			}
 		}
 	}
 	if (mline) {
-		string indent = prefix;
-		indent.resize(prefix.size()-1);
-		out << '\n' << indent << '}';
-	} else
-		out << " }";
+		out << '\n';
+		$ascii_indent(out,indent-1);
+	} else {
+		out << ' ';
+	}
+	out << '}';
 }
 
-
-ostream &operator << (ostream &out, const C_ASCII &in)
-{
-	ascii2c_src(out,in.text,in.prefix);
-	return out;
-}
-
-
-ostream &operator << (ostream &out, const HexBytes &in)
-{
-	ascii2hex(out,in.data,in.len,in.prefix);
-	return out;
-}

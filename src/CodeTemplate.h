@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -31,8 +31,6 @@ class Options;
 
 extern const char *Functions[];
 
-typedef enum { libstatic, libinline, libextern } libmode_t;
-
 
 class CodeTemplate
 {
@@ -45,6 +43,7 @@ class CodeTemplate
 	bool isTemplate() const;
 	bool isUnion() const;
 
+	static codeid_t getFunctionId(const std::string &);
 	codeid_t getFunctionId() const;
 
 	void setFilename(const char *f)
@@ -55,6 +54,9 @@ class CodeTemplate
 
 	void write_h(Generator &G, libmode_t);
 	void write_cpp(Generator &G, libmode_t);
+
+	const std::vector<std::string> &getDependencies() const
+	{ return dependencies; }
 
 	const std::vector<std::string> &getIncludes() const
 	{ return includes; }
@@ -67,7 +69,7 @@ class CodeTemplate
 	std::string getDeclaration() const;
 
 	std::string function, variant, code, comment, filename;
-	std::vector<std::string> includes, sysincludes;
+	std::vector<std::string> includes, sysincludes, dependencies;
 	std::map<std::string,std::string> requirements, metadata;
 
 	/* valid requirements:

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, Thomas Maier-Komor
+#  Copyright (C) 2019-2020, Thomas Maier-Komor
 #
 #  This file belongs to Wire-Format-Compiler.
 #
@@ -23,7 +23,9 @@ WFCSRCS = testcases/empty_elements.wfc testcases/enumtest.wfc testcases/validbit
 	  testcases/NodeInfo.wfc testcases/stringtypes.wfc testcases/recursion.wfc \
 	  testcases/libtest1.wfc testcases/hostscope.wfc testcases/xvarint.wfc \
 	  testcases/reference.wfc testcases/validbits2.wfc testcases/tt.wfc \
-	  testcases/unused.wfc testcases/fixed_only.wfc
+	  testcases/unused.wfc testcases/fixed_only.wfc testcases/novarint.wfc \
+	  testcases/packed.wfc testcases/virtual.wfc testcases/astr.wfc \
+	  testcases/byname.wfc
 
 
 CXXSRCS	= $(WFCSRCS:testcases/%.wfc=$(ODIR)/%.cpp)
@@ -32,7 +34,7 @@ $(ODIR)/%.cpp: testcases/%.wfc
 	$(WFC) $(WFCFLAGS) $< -o $(@:.cpp=)
 
 
-all: $(CXXSRCS) $(ODIR)/skip_s.cpp
+all: $(CXXSRCS) $(ODIR)/skip_s.cpp $(ODIR)/comp_v1.cpp $(ODIR)/comp_v2.cpp
 
 
 $(ODIR)/hostscope.cpp: testcases/hostscope.wfc
@@ -46,3 +48,9 @@ $(ODIR)/xvarint.cpp: testcases/xvarint.wfc
 $(ODIR)/skip_s.cpp: testcases/skip.wfc
 	$(WFC) $(WFCFLAGS) -tsender testcases/skip.wfc -o $(ODIR)/skip_s
 	$(WFC) $(WFCFLAGS) -treceiver testcases/skip.wfc -o $(ODIR)/skip_r
+
+$(ODIR)/comp_v1.cpp: testcases/compatibility.wfc
+	$(WFC) $(WFCFLAGS) -tV1 -o $(ODIR)/comp_v1 testcases/compatibility.wfc
+
+$(ODIR)/comp_v2.cpp: testcases/compatibility.wfc
+	$(WFC) $(WFCFLAGS) -tV2 -o $(ODIR)/comp_v2 testcases/compatibility.wfc

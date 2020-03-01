@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2019, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -22,6 +22,7 @@
 #include "Field.h"
 #include "log.h"
 #include "keywords.h"
+#include "wirefuncs.h"
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -311,34 +312,15 @@ wiretype_t Enum::getEncoding() const
 	case enum_coding_fixed64:
 		return wt_64bit;
 	}
-	abort();
 }
 
 
-/*
 unsigned Enum::getMaximumSize() const
 {
-	// maximum size returns a forward compatible upper limit
-	switch (coding) {
-	default:
-	case enum_coding_unset:
-		abort();
-	case enum_coding_varint:
-		return options->VarIntBits()/7+1;
-	case enum_coding_dynamic:
-		return 8;
-	case enum_coding_fixed8:
-		return 1;
-	case enum_coding_fixed16:
-		return 2;
-	case enum_coding_fixed32:
-		return 4;
-	case enum_coding_fixed64:
-		return 8;
-	}
-	return 0;
+	unsigned lv = wiresize_u64(vmin);
+	unsigned uv = wiresize_u64(vmax);
+	return lv > uv ? lv : uv;
 }
-*/
 
 
 bool Enum::hasFixedSize() const
@@ -373,7 +355,7 @@ void Enum::setStringValue(const char *str, const char *text, size_t l)
 	val[l] = 0;
 	memcpy(val,text,l);
 	if (!stringValues.insert(make_pair(v,val)).second) {
-		error("enum value %lld has already a string literal set; ignoring %s",v,val);
+		error("enum value %ld has already a string literal set; ignoring %s",v,val);
 		free(val);
 	}
 }

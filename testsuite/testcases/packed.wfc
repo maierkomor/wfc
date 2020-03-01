@@ -1,0 +1,7 @@
+option withUnequal = true;
+
+message M {
+	repeated fixed16 F16 = 1	[ packed = true ];
+	repeated fixed32 F32 = 2	[ packed = true ];
+	repeated fixed64 F64 = 3	[ packed = true ];
+}

@@ -1,6 +1,6 @@
 %{
 /*
- *  Copyright (C) 2017-2019, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -70,7 +70,7 @@ class ProtoDriver;
 	class Options *options;
 }
 
-%token OPTION MESSAGE OPTIONAL REQUIRED REPEATED ENUM ONEOF
+%token OPTION MESSAGE OPTIONAL REQUIRED REPEATED ENUM ONEOF RESERVE
 	STRING BYTES BOOL CSTR
 	INT8 UINT8 SINT8 FIXED8 SFIXED8
 	INT16 UINT16 SINT16 FIXED16 SFIXED16
@@ -78,7 +78,7 @@ class ProtoDriver;
 	INT64 UINT64 SINT64 FIXED64 SFIXED32
 	INT UNSIGNED SIGNED
 	FLOAT DOUBLE
-	LBRACE RBRACE OPTSTART OPTEND SEMI EQUAL COMMA COLON
+	LBRACE RBRACE OPTSTART OPTEND SEMI EQUAL COMMA COLON RANGE
 
 %token<msgid> MSGNAME
 %token<enumid> ENUMNAME
@@ -173,13 +173,6 @@ OptionArg_P
 	{ $$ = $1; }
 	;
 
-/*
-OptionName_P
-	: OPTION IDENTIFIER
-	{ $$ = $2; }
-	;
-*/
-
 TargetOptions_P
 	: OPTION IDENTIFIER LBRACE
 	{ $$ = new Options(string($2.str,$2.len),Options::getDefaults()); }
@@ -259,6 +252,10 @@ MessageBody_P
 	{ $$ = $1; $1->addMessage($2); ParsingMessage = $1->getName(); }
 	| MessageBody_P Enum_P
 	{ $$ = $1; $1->addEnum($2); }
+	| MessageBody_P RESERVE IntLit_P SEMI
+	{ long l = strtol($3.str,0,0); $1->addReservation(l,l); }
+	| MessageBody_P RESERVE IntLit_P RANGE IntLit_P SEMI
+	{ $1->addReservation(strtol($3.str,0,0),strtol($5.str,0,0)); }
 	| MessageBody_P SEMI
 	{ $$ = $1; ParsingMessage = ""; }
 	;

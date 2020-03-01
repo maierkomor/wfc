@@ -1,0 +1,35 @@
+//option toASCII=toASCII;
+
+message Pair
+{
+	string key = 1;
+	string value = 2;
+}
+
+enum Number
+{
+	zero = 0;
+	one = 1;
+	two = 2;
+}
+
+message M
+{
+	Pair p = 1;
+	repeated Pair pairs = 2;
+
+	Number N = 3;
+	repeated Number RN = 4;
+
+	fixed16 F16 = 5;
+	sfixed16 S16 = 6;
+
+	double D = 7;
+	repeated double RD = 8;
+
+	string S = 9;
+	repeated string RS = 10;
+
+	bool B = 11;
+	repeated bool RB = 12;
+}

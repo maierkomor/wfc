@@ -41,7 +41,6 @@ class Message
 	, m_basename()
 	, m_prefix()
 	, m_parent(0)
-	, m_options(0)
 	, m_msgid(0)
 	, m_maxfid(0)
 	, m_numvalid(0)
@@ -90,9 +89,6 @@ class Message
 	size_t numFields() const
 	{ return m_fields.size(); }
 
-	//Field *getField(unsigned n) const
-	//{ return m_fields[n]; }
-
 	Field *getFieldId(unsigned n) const;
 	Field *getField(const char *n) const;
 
@@ -135,11 +131,9 @@ class Message
 
 	void setNumValid(unsigned n);
 	bool usesVectors() const;
-
-	const std::string &getOption(const char *) const;
-	bool getFlag(const char *) const;
 	bool hasFixedSize() const;
 	size_t getFixedSize() const;
+	void addReservation(unsigned lb, unsigned ub);
 
 	private:
 	Message(const Message &);
@@ -147,12 +141,12 @@ class Message
 
 	std::string m_name, m_basename, m_prefix, m_fullname;
 	Message *m_parent;
-	Options *m_options;
 	unsigned m_msgid, m_maxfid, m_numvalid;
 	std::map<unsigned,Field*> m_fields;
 	std::vector<Message*> m_msgs;
 	std::vector<Enum*> m_enums;
 	std::vector<unsigned> m_fieldseq;
+	std::vector< std::pair<unsigned,unsigned> > m_reservations;
 	bool m_used;
 	mem_inst_t m_storage;
 	msg_sorting_t m_sorting;

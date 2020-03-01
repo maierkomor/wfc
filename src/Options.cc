@@ -46,6 +46,7 @@ static bool init_module()
 	BinOptionList["comments"] = "generate comments";
 	BinOptionList["debug"] = "generate debugging/logging interface";
 	BinOptionList["asserts"] = "include asserts";
+	BinOptionList["gnux"] = "allow GNU extensions in generated code";
 
 	TextOptionList["author"] = "author of source file";
 	TextOptionList["copyright"] = "year of copyright of source file";
@@ -76,9 +77,11 @@ static bool init_module()
 	TextOptionList["MutablePrefix"] = "prefix to use for mutable methods";
 	TextOptionList["SetPrefix"] = "prefix to use for set methods";
 	TextOptionList["toSink"] = "name of function for serializing with sink interface; \"\" to omit generation";
-#ifdef BETA_FEATURES
+	TextOptionList["ascii_string"] = "function for printing strings in toASCII (default: ascii_string)";
+	TextOptionList["ascii_bytes"] = "function for printing bytes in toASCII (default: ascii_bytes)";
+	TextOptionList["ascii_indent"] = "function to create indentions in toASCII (default: ascii_indent)";
 	TextOptionList["storage"] = "storage type of message fields";
-#endif
+	TextOptionList["SetByName"] = "name of function for setting by name with ASCII input (default: setByName)";
 
 	TextOptionList["VarIntBits"] = "data type for varint_t (default: 64)";
 	ValidOptions["VarIntBits"].insert("64");
@@ -95,6 +98,7 @@ static bool init_module()
 	TextOptionList["SortMembers"] = "sort member variables by: id (default), name, type, size, unsorted";
 	TextOptionList["ErrorHandling"] = "error handling concept: assert, cancel (default), throw";
 	TextOptionList["wiresize"] = "library function to use as 'wiresize' function";
+	TextOptionList["declare"] = "add custom declaration to the generated .h file";
 	TextOptionList["header"] = "#include header file <file.h> or \"file.h\" in generated .h file";
 	TextOptionList["unset"] = "in-range value that marks the field as unset (omits valid bit generation)";
 	TextOptionList["inline"] = "comma separated list of methods to inline: has, get, set";
@@ -138,8 +142,11 @@ static bool init_module()
 	ValidOptions["Terminator"].insert("none");
 	ValidOptions["Terminator"].insert("null");
 	ValidOptions["Terminator"].insert("0");
+	ValidOptions["Terminator"].insert("0x0");
 	ValidOptions["Terminator"].insert("ff");
 	ValidOptions["Terminator"].insert("0xff");
+	ValidOptions["Terminator"].insert("FF");
+	ValidOptions["Terminator"].insert("0xFF");
 
 	ValidOptions["storage"].insert("regular");
 	ValidOptions["storage"].insert("static");
@@ -154,6 +161,9 @@ static bool init_module()
 	ValidOptions["lang"].insert("c++");
 	ValidOptions["lang"].insert("XML");
 	ValidOptions["lang"].insert("xml");
+	ValidOptions["usage"].insert("regular");
+	ValidOptions["usage"].insert("deprecated");
+	ValidOptions["usage"].insert("obsolete");
 	return true;
 }
 
@@ -223,7 +233,10 @@ void Options::initDefaults()
 	m_TextOptions["IntSize"] = "64";	// default size if no size is given (i.e. int, unsigned, signed)
 	m_TextOptions["UnknownField"] = "skip";
 	m_TextOptions["namespace"] = "";
-	m_TextOptions["toASCII"] = "";
+	m_TextOptions["toASCII"] = "toASCII";
+	m_TextOptions["ascii_bytes"] = "ascii_bytes";
+	m_TextOptions["ascii_string"] = "ascii_string";
+	m_TextOptions["ascii_indent"] = "ascii_indent";
 	m_TextOptions["toMemory"] = "toMemory";
 	m_TextOptions["toSink"] = "";
 	m_TextOptions["toString"] = "toString";
@@ -240,6 +253,17 @@ void Options::initDefaults()
 	m_TextOptions["sint_varint"] = "";
 	m_TextOptions["varint_sint"] = "";
 	m_TextOptions["send_varint"] = "";		// use wiresend function
+	m_TextOptions["parse_ascii_bool"] = "";
+	m_TextOptions["parse_ascii_flt"] = "";
+	m_TextOptions["parse_ascii_dbl"] = "";
+	m_TextOptions["parse_ascii_s8"] = "";
+	m_TextOptions["parse_ascii_s16"] = "";
+	m_TextOptions["parse_ascii_s32"] = "";
+	m_TextOptions["parse_ascii_s64"] = "";
+	m_TextOptions["parse_ascii_u8"] = "";
+	m_TextOptions["parse_ascii_u16"] = "";
+	m_TextOptions["parse_ascii_u32"] = "";
+	m_TextOptions["parse_ascii_u64"] = "";
 	m_TextOptions["read_u64"] = "";
 	m_TextOptions["read_u32"] = "";
 	m_TextOptions["read_u16"] = "";
@@ -267,6 +291,7 @@ void Options::initDefaults()
 	m_TextOptions["wfclib"] = "static";
 	m_TextOptions["libname"] = "wfccore";
 	m_TextOptions["streamtype"] = "std::ostream";
+	m_TextOptions["SetByName"] = "setByName";
 
 	m_TextOptions["mangle_double"] = "";
 	m_TextOptions["mangle_float"] = "";
@@ -276,6 +301,7 @@ void Options::initDefaults()
 	m_BinOptions["comments"] = true;
 	m_BinOptions["debug"] = false;
 	m_BinOptions["genlib"] = true;
+	m_BinOptions["gnux"] = true;
 	m_BinOptions["withEqual"] = false;
 	m_BinOptions["withUnequal"] = false;
 	m_BinOptions["FlexDecoding"] = false;
@@ -294,6 +320,9 @@ void Options::initFieldDefaults()
 	m_TextOptions["unset"] = "";
 	m_TextOptions["default"] = "";
 	m_TextOptions["storage"] = "regular";
+	m_TextOptions["to_ascii"] = "";
+	m_TextOptions["to_json"] = "";
+	m_TextOptions["usage"] = "regular";
 	// TODO, valid values could be: default, fixed, variable, dynamic
 	//m_TextOptions["encoding"] = "default";
 
@@ -403,7 +432,13 @@ void Options::printDefines(ostream &out) const
 			"#endif\n\n";
 		break;
 	}
-	out << "#define WFC_ENDIAN     " << Endian() << " // " << getOption("endian") << " endian\n";
+	out <<	"#ifdef WFC_ENDIAN\n"
+		"#if WFC_ENDIAN != " << Endian() << "\n"
+		"#error WFC generated code incompatible due to endian\n"
+		"#endif\n"
+		"#else\n"
+		"#define WFC_ENDIAN     " << Endian() << " // " << getOption("endian") << " endian\n"
+		"#endif\n\n";
 	if (getFlag("SubClasses"))
 		out << "#define SUBCLASSES 1\n";
 	if (isId("toMemory"))
@@ -779,6 +814,18 @@ vector<string> Options::getCodeLibs() const
 }
 
 
+vector<string> Options::getDeclarations() const
+{
+	vector<string> declarations;
+	const Options *o = this;
+	do {
+		declarations.insert(declarations.end(),o->m_Declarations.begin(),o->m_Declarations.end());
+		o = o->m_parent;
+	} while (o);
+	return declarations;
+}
+
+
 vector<string> Options::getHeaders() const
 {
 	vector<string> headers;
@@ -927,6 +974,24 @@ unsigned Options::VarIntBits() const
 }
 
 
+unsigned Options::IntSize() const
+{
+	const string &v = getOption("IntSize");
+	const char *value = v.c_str();
+	assert(value);
+	long l = strtol(value,0,0);
+	switch (l) {
+	case 16:
+	case 32:
+	case 64:
+		return l;
+	default:
+		error("Invalid setting for varint bits size of '%s'",value);
+		return 64;
+	}
+}
+
+
 void Options::merge(const Options &o) 
 {
 	for (auto i(o.m_TextOptions.begin()), e(o.m_TextOptions.end()); i != e; ++i) {
@@ -970,6 +1035,35 @@ bool Options::isEnabled(const char *k) const
 }
 
 
+const char *Options::getIdentifier(const char *option) const
+{
+	const Options *o = this;
+	auto i = o->m_TextOptions.find(option);
+	while (i == o->m_TextOptions.end()) {
+		o = o->m_parent;
+		if (o == 0)
+			ICE("unable to find well-known option");
+		i = o->m_TextOptions.find(option);
+	}
+	string &r = const_cast<string&>(i->second);
+	if (r.empty())
+		return 0;
+	const char *rs = r.c_str();
+	if ((rs[0] == '"') && (rs[r.size()-1] == '"')) {
+		r.erase(0,1);
+		r.resize(r.size()-1);
+	}
+	rs = r.c_str();
+	if (!isIdentifier(rs)) {
+		warn("option %s requires identifier, but is set to '%s'",option,rs);
+		r.clear();
+		return 0;
+	}
+	return rs;
+}
+	
+
+
 KVPair::~KVPair()
 {
 	delete next;
@@ -981,4 +1075,41 @@ void KVPair::setNext(KVPair *n)
 	assert(next == 0);
 	next = n;
 }
+
+
+bool isIdentifier(const char *id)
+{
+	size_t l = strlen(id);
+	if (l == 0)
+		return false;
+	char c = *id++;
+	if ((c >= 'a') && (c <= 'z'));
+	else if ((c >= 'A') && (c <= 'Z'));
+	else if (c == '_');
+	else if (c == ':') {
+		// this is for e.g. ::sometype
+		if ((id[0] != ':') || (id[1] == ':') || (id[1] == 0))
+			return false;
+		++id;
+		--l;
+	} else
+		return false;
+	while (--l) {
+		c = *id++;
+		if ((c >= 'a') && (c <= 'z'));
+		else if ((c >= 'A') && (c <= 'Z'));
+		else if ((c >= '0') && (c <= '9'));
+		else if (c == '_');
+		else if (c == ':') {
+			// this is for e.g. std::string
+			if ((id[0] != ':') || (id[1] == ':') || (id[1] == 0))
+				return false;
+			++id;
+			--l;
+		} else
+			return false;
+	}
+	return true;
+}
+
 

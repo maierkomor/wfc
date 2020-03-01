@@ -47,6 +47,7 @@ Field::Field(const char *n, unsigned l, quant_t q, uint32_t t, long long i)
 , quan(q)
 , packed(false)
 , used(true)
+, usage(use_regular)
 , storage(mem_unset)
 {
 	options = new Options((string)"field:"+n,Options::getFieldDefaults());
@@ -162,7 +163,7 @@ unsigned Field::getMemberSize() const
 int64_t Field::getMaxSize() const
 {
 	if ((quan == q_repeated) && (arraysize == 0))
-		return 0;
+		return -1;
 	unsigned mult = arraysize;
 	if (mult == 0)
 		mult = 1;
@@ -190,7 +191,7 @@ int64_t Field::getMaxSize() const
 			{
 				const string &maxlen = options->getOption("maxlength");
 				if (maxlen == "")
-					return 0;
+					return -1;
 				ms = strtol(maxlen.c_str(),0,0);
 				if (ms <= 0)
 					error("maxlength must be > 0");
@@ -199,23 +200,29 @@ int64_t Field::getMaxSize() const
 		case ft_int8:
 		case ft_uint8:
 		case ft_sint8:
+			ms = 2;
+			break;
 		case ft_int16:
 		case ft_uint16:
 		case ft_sint16:
+			ms = 3;
+			break;
 		case ft_int32:
 		case ft_uint32:
 		case ft_sint32:
+			ms = 5;
+			break;
 		case ft_int64:
 		case ft_uint64:
 		case ft_sint64:
-			ms = options->VarIntBits() / 7 + 1;
+			ms = 10;
 			break;
 		default:
 			abort();
 		}
 		if (ms == 0)
-			return 0;
-		ms += getVarintSize(ms);
+			return -1;
+		ms += wiresize_u64(ms);
 		break;
 	case wt_dynamic:
 		// invalid assumption: varint >= max(used fixed types)
@@ -226,7 +233,36 @@ int64_t Field::getMaxSize() const
 			ms = 8;
 		break;
 	case wt_varint:
-		ms = options->VarIntBits() / 7 + 1;
+		switch (type) {
+		case ft_int8:
+		case ft_uint8:
+		case ft_sint8:
+			ms = 2;
+			break;
+		case ft_int16:
+		case ft_uint16:
+		case ft_sint16:
+			ms = 3;
+			break;
+		case ft_int32:
+		case ft_uint32:
+		case ft_sint32:
+			ms = 5;
+			break;
+		case ft_int64:
+		case ft_uint64:
+		case ft_sint64:
+			ms = 10;
+			break;
+		default:
+			if ((type&ft_filter) == ft_enum) {
+				Enum *e = Enum::id2enum(type);
+				assert(e);
+				ms = e->getMaximumSize();
+			} else {
+				ms = options->VarIntBits() / 7 + 1;
+			}
+		}
 		break;
 	case wt_8bit:
 		ms = 1;
@@ -248,9 +284,9 @@ int64_t Field::getMaxSize() const
 	unsigned ts = getTagSize();
 	if (isPacked()) {
 		assert(quan == q_repeated);
-		return ts + getVarintSize(arraysize) + ms * arraysize;
+		return ts + wiresize_u64(mult) + ms * mult;
 	} else {
-		return (ts + ms) * arraysize;
+		return (ts + ms) * mult;
 	}
 	return ms;
 }
@@ -280,6 +316,11 @@ const char *Field::getDefaultValue() const
 				warn("default value %s of enum %s is not defined. Code may not compile.",defvalue.c_str(),en->getName().c_str());
 			return defvalue.c_str();
 		}
+		if (!invvalue.empty()) {
+			if (!en->hasValue(invvalue))
+				warn("unset value %s of enum %s is not defined. Code may not compile.",invvalue.c_str(),en->getName().c_str());
+			return invvalue.c_str();
+		}
 		const char *nullname = en->getName(0);
 		if (nullname)
 			return nullname;
@@ -288,6 +329,8 @@ const char *Field::getDefaultValue() const
 	}
 	if (!defvalue.empty())
 		return defvalue.c_str();
+	if (!invvalue.empty())
+		return invvalue.c_str();
 	if ((quan == q_required) && (getType() == ft_cptr))
 		return "\"\"";
 	return 0;
@@ -410,9 +453,7 @@ const char *Field::getTypeName(bool full) const
 		const string &stringtype = getOption("stringtype");
 		if ("std" == stringtype )
 			return "std::string";
-		if ("pointer" == stringtype)
-			return "const char *";
-		if ("C" == stringtype)
+		if (("pointer" == stringtype) || ("C" == stringtype))
 			return "const char *";
 		return stringtype.c_str();
 		}
@@ -420,6 +461,29 @@ const char *Field::getTypeName(bool full) const
 		ICE("unable to resolve type name for type %x",type);
 		return 0;
 	}
+}
+
+
+string Field::getRepeatedType(bool full) const
+{
+	string ret;
+	if (size_t s = getArraySize()) {
+		if (full)
+			ret = "array<$(fulltype),";
+		else
+			ret = "array<$(typestr),";
+		char len[16];
+		int n = snprintf(len,sizeof(len),"%lu",s);
+		assert(n < (int)sizeof(len));
+		ret += len;
+		ret += '>';
+	} else {
+		if (full)
+			ret = "std::vector<$(fulltype)>";
+		else
+			ret = "std::vector<$(typestr)>";
+	}
+	return ret;
 }
 
 
@@ -631,6 +695,14 @@ bool Field::isNumeric() const
 }
 
 
+bool Field::isInteger() const
+{
+	if ((type < ft_int32) || (type == ft_float) || (type == ft_double))
+		return false;
+	return true;
+}
+
+
 bool Field::isString() const
 {
 	switch (type) {
@@ -696,15 +768,9 @@ bool Field::isPacked() const
 	return false;
 }
 
-unsigned Field::getVarintSize(uint64_t v)
-{
-	return wiresize_u64(v);
-}
-
-
 unsigned Field::getTagSize() const
 {
-	return getVarintSize(id << 3);
+	return wiresize_u64(id << 3);
 }
 
 
@@ -767,7 +833,7 @@ unsigned Field::getFixedSize(bool tag) const
 		assert(e);
 		n = 1;
 		if (tag)
-			n += getVarintSize(id << 3);
+			n += wiresize_u64(id << 3);
 		return n;
 	}
 	if ((type & ft_filter) == ft_msg) {
@@ -775,8 +841,8 @@ unsigned Field::getFixedSize(bool tag) const
 		assert(m);
 		n = m->getFixedSize();
 		if (tag) {
-			n += getVarintSize(n);	// encoded length after tag
-			n += getVarintSize(id << 3);
+			n += wiresize_u64(n);	// encoded length after tag
+			n += wiresize_u64(id << 3);
 		}
 		return n;
 	}
@@ -822,8 +888,27 @@ unsigned Field::getFixedSize(bool tag) const
 		abort();
 	}
 	if (tag)
-		n += getVarintSize(id << 3);
+		n += wiresize_u64(id << 3);
 	return n;
+}
+
+
+const char *Field::getUsage() const
+{
+	if (!used)
+		return "unused";
+	switch (usage)
+	{
+	case use_obsolete:
+		return "obsolete";
+	case use_deprecated:
+		return "deprecated";
+	case use_regular:
+		return 0;
+	default:
+		abort();
+	}
+	return "";
 }
 
 
@@ -845,11 +930,34 @@ void Field::setTarget(Options *o)
 }
 
 
+static bool is_xid(const string &v)
+{
+	const char *s = v.c_str();
+	char c = *s++;
+	if ((c >= 'a') && (c <= 'z'));
+	else if ((c >= 'A') && (c <= 'Z'));
+	else if (c == '_');
+	else
+		return false;
+	while (*s) {
+		c = *s++;
+		if ((c >= 'a') && (c <= 'z'));
+		else if ((c >= 'A') && (c <= 'Z'));
+		else if ((c >= '0') && (c <= '9'));
+		else if (c == '_');
+		else if (c == '>');
+		else if (c == '<');
+		else
+			return false;
+	}
+	return true;
+}
+
+
 void Field::setOption(const string &option, const string &value)
 {
 	if (option == "default") {
 		defvalue = value;
-#ifdef BETA_FEATURES
 	} else if (option == "storage") {
 		if (value == "virtual")
 			storage = mem_virtual;
@@ -859,7 +967,6 @@ void Field::setOption(const string &option, const string &value)
 			storage = mem_regular;
 		else
 			error("invalid value '%s' for option %s",value.c_str(),option.c_str());
-#endif
 	} else if (option == "unset") {
 		invvalue = value;
 	} else if (option == "packed") {
@@ -916,6 +1023,25 @@ void Field::setOption(const string &option, const string &value)
 			intsize = 8;
 		else
 			error("invalid setting for option intsize: %s",value.c_str());
+	} else if (option == "to_ascii") {
+		if (is_xid(value))
+			ascii_value_func = value;
+		else
+			error("'%s' is not a valid argument for option %s",value.c_str(),option.c_str());
+	} else if (option == "to_json") {
+		if (is_xid(value))
+			json_value_func = value;
+		else
+			error("'%s' is not a valid argument for option %s",value.c_str(),option.c_str());
+	} else if (option == "usage") {
+		if (value == "deprecated")
+			usage = use_deprecated;
+		else if (value == "obsolete")
+			usage = use_obsolete;
+		else if (value == "regular")
+			usage = use_regular;
+		else
+			error("invalid argument '%s' for option %s",value.c_str(),option.c_str());
 	//} else if (option == "encoding") {	// TODO
 	} else 
 		error("unknown field option '%s'",option.c_str());

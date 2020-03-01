@@ -88,6 +88,12 @@ typedef enum {
 	st_pointer
 } stringtype_t;
 
+typedef enum {
+	use_regular = 0,
+	use_deprecated = 1,
+	use_obsolete = 2,
+} usage_t;
+
 
 class Enum;
 class Message;
@@ -120,6 +126,7 @@ class Field
 	uint32_t getTypeClass() const;
 	const char *getTypeName(bool full = false) const;
 	const char *getWfcType() const;
+	std::string getRepeatedType(bool full = false) const;
 
 	void setDefaultValue(const char *d, size_t l)
 	{ defvalue = std::string(d,l); }
@@ -159,7 +166,6 @@ class Field
 	{ return intsize; }
 	void setIntSize(unsigned i)
 	{ intsize = i; }
-	static unsigned getVarintSize(uint64_t);
 	wiretype_t getEncoding() const;
 	wiretype_t getElementEncoding() const;
 	void addOptions(class KVPair *);
@@ -171,8 +177,10 @@ class Field
 	bool isEnum() const;
 	bool isMessage() const;
 	bool isNumeric() const;
+	bool isInteger() const;
 	bool isString() const;
 	bool needsValidbit() const;
+	const char *getUsage() const;
 
 	Enum *toEnum() const;
 
@@ -181,15 +189,27 @@ class Field
 
 	const std::string &getOption(const char *) const;
 
+	const std::string &getAsciiFunction() const
+	{ return ascii_value_func; }
+
+	const std::string &getJsonFunction() const
+	{ return json_value_func; }
+
 	const std::string &getInvalidValue() const
 	{ return invvalue; }
+
+	bool isObsolete() const
+	{ return usage == use_obsolete; }
+
+	bool isDeprecated() const
+	{ return usage == use_deprecated; }
 
 	private:
 	Field(const Field &);
 	Field &operator = (const Field &);
 
 	Message *parent;
-	std::string name, defvalue, invvalue;
+	std::string name, defvalue, invvalue, ascii_value_func, json_value_func;
 	Options *options;
 	uint32_t type;
 	unsigned id;
@@ -204,6 +224,7 @@ class Field
 	int valid_bit;
 	quant_t quan;
 	bool packed,used;
+	usage_t usage;
 	mem_inst_t storage;
 };
 

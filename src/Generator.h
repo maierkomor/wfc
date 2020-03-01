@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -49,6 +49,7 @@ class Generator
 	void setField(const Field *f);
 	void setMessage(const Message *m);
 	void setVariable(const std::string &n, const std::string &v);
+	void setVariable(const std::string &n, const char *v);
 	void setVariableDec(const std::string &n, int64_t v);
 	void setVariableHex(const std::string &n, uint64_t v);
 	void clearVariable(const std::string &n);
@@ -68,7 +69,6 @@ class Generator
 	{ m_out.flush(); }
 
 	private:
-	//const char *writeUnfiltered(const char *t);
 	std::string evaluate(const std::string &p);
 
 	std::ostream &m_out;

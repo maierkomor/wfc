@@ -131,6 +131,36 @@ repeated type. If set to 0 (default), a std::vector will be used
 instead. Use if maximum number of elements is known, if you want to
 avoid impact of std::vector.
 .br
+\fIunset\fP: sets an in range value that will be interpreted as the value being
+not set. I.e. has_xx will return false if its value is the \fIunset\fP value.
+This eleminates the requirement for a dedicated bit to implement the related
+has_ methods.
+.br
+\fIto\_ascii\fP: specifies a function that will be used for generating an
+ASCII representation for its value. Like this you can produce readable outputs
+for binary coded words. E.g. the decimal dot representiation of an IPv4
+address. See the examples directory, to see how it works.
+.br
+\fIto\_json\fP: specifies a function that will be used for generating a
+JSON representation for its value. It works like \fIto\_ascii\fP, but is
+complementary available, because JSON output might require certain characters
+to be escaped differently when compared to ASCII output.
+.br
+\fIusage\fP: usage can be regular, deprecated, and obsolete. Default is
+regular. If usage is set to deprecated, data will not be serialized, but
+existing serialzed data will be read into memory. This is for fading out use of
+a certain field. Once you set the usage to obsolte, the data will neither be
+written or read anymore. Then the field specification is just there for
+blocking against future use, and documenting the fact that it was once there.
+.br
+\fISetByName\fP: name of function that can be used to assign members by name with
+ASCII input. This does not work for repeated types and bytes types. Enum types
+are limited to parsing their integer value for now. Only individual message
+fields can be set; i.e. parsing of complete messages like the ASCII output is
+out of scope. The function performs no input validity checking.
+Subelements of message fields can be selected with dot notation as in C:
+e.g. msg_a.field_b.element
+.br
 \fIstorage\fP (BETA): like option \fImembers\fP this option sets the instantiation
 style of the data for the relevant field. I.e. if set to true, all member
 functions will be pure virtual, and no data will be instantiated. This
