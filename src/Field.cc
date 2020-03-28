@@ -958,6 +958,8 @@ void Field::setOption(const string &option, const string &value)
 {
 	if (option == "default") {
 		defvalue = value;
+		if (!invvalue.empty() && (invvalue != defvalue))
+			warn("If both default and unset are set, both values should be the same, otherwise clear and construction value will differ.");
 	} else if (option == "storage") {
 		if (value == "virtual")
 			storage = mem_virtual;
@@ -969,6 +971,8 @@ void Field::setOption(const string &option, const string &value)
 			error("invalid value '%s' for option %s",value.c_str(),option.c_str());
 	} else if (option == "unset") {
 		invvalue = value;
+		if (!defvalue.empty() && (invvalue != defvalue))
+			warn("If both default and unset are set, both values should be the same, otherwise clear and construction value will differ.");
 	} else if (option == "packed") {
 		if (quan != q_repeated)
 			error("invalid option 'packed' for non-repated type");
@@ -1023,6 +1027,11 @@ void Field::setOption(const string &option, const string &value)
 			intsize = 8;
 		else
 			error("invalid setting for option intsize: %s",value.c_str());
+	} else if (option == "parse_ascii") {
+		if (is_xid(value))
+			parse_ascii_func = value;
+		else
+			error("'%s' is not a valid argument for option %s",value.c_str(),option.c_str());
 	} else if (option == "to_ascii") {
 		if (is_xid(value))
 			ascii_value_func = value;

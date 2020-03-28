@@ -61,7 +61,7 @@ message TestBench
 	optional fixed32 FI32 = 10;
 	optional fixed64 FI64 = 11;
 
-	optional string STR = 12;
+	optional string STR = 12	[ unset = "" ];
 	repeated string STRV = 13;
 	optional float Float = 14;
 

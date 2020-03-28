@@ -26,9 +26,10 @@
 /* wfc-template:
  * function: ascii_indent
  */
-void ascii_indent($streamtype &out, size_t n)
+void ascii_indent($streamtype &out, ssize_t n)
 {
-	while (n) {
+	out << '\n';
+	while (n > 0) {
 		out << '\t';
 		--n;
 	}

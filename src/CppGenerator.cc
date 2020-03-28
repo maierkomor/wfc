@@ -291,16 +291,16 @@ string CppGenerator::getValid(Field *f, bool invalid)
 		return ret;
 	}
 	int vbit = f->getValidBit();
-	const string &invValue = f->getInvalidValue();
-	if (!invValue.empty()) {
+	if (const char *invValue = f->getInvalidValue()) {
 		assert(vbit < 0);
+		ret += "m_$(fname)";
 		if (invalid)
-			ret += "m_$(fname) == " + invValue;
+			ret += " == ";
 		else
-			ret += "m_$(fname) != " + invValue;
+			ret += " != ";
+		ret += invValue;
 		return ret;
 	}
-	assert(invValue == "");
 	assert(vbit >= 0);
 	if (invalid)
 		ret += "0 == ";
@@ -890,6 +890,8 @@ bool CppGenerator::writeMember(Generator &G, Field *f, bool def_not_init, bool f
 			G << ")\n";
 		else if (const char *defv = f->getDefaultValue()) 
 			G << defv << ")\n";
+		else if (const char *inv = f->getInvalidValue())
+			G << inv << ")\n";
 		else if (f->getEncoding() == wt_lenpfx)
 			G << ")\n";
 		else 
@@ -926,7 +928,9 @@ void CppGenerator::writeStaticMember(Generator &G, Field *f, const char *mname)
 	}
 	G << "$(fname)";
 	if (const char *defv = f->getDefaultValue()) 
-		G << defv;
+		G << " = " << defv;
+	else if (const char *inv = f->getInvalidValue()) 
+		G << " = " << inv;
 
 	if (target->getFlag("comments"))
 		G << ";\t// " << f->getWfcType() << " $(fname), id $(field_id)\n";
@@ -1512,6 +1516,27 @@ void CppGenerator::writeHeader(const string &bn)
 }
 
 
+void CppGenerator::writeResetUnset(Generator &G, Field *f)
+{
+	int v = f->getValidBit();
+	assert(v != -3);	// should be initialized now
+	if (v == -1) 
+		return;
+	G << "if (";
+	writeGetValid(G,f,true);
+	G << ") {\n";
+	writeSetValid(G,v);
+	const char *def = f->getDefaultValue();
+	if (f->hasSimpleType()) {
+		G <<	"m_$(fname) = " << (def?def:"0") << ";\n";
+	} else if (def) {
+		G <<	"m_$(fname) = " << def << ";\n";
+	} else {
+		G << 	"m_$(fname).clear();\n";
+	}
+	G <<	"}\n";
+}
+
 
 void CppGenerator::writeGet(Generator &G, Field *f)
 {
@@ -1538,7 +1563,6 @@ void CppGenerator::writeMutable(Generator &G, Field *f)
 {
 	if (f->isDeprecated())
 		return;
-	bool simpletype = f->hasSimpleType();
 	uint32_t t = f->getType();
 	uint8_t q = f->getQuantifier();
 	bool mut_ref = target->getOption("MutableType") == "reference" || target->getOption("MutableType") == "&";
@@ -1551,38 +1575,16 @@ void CppGenerator::writeMutable(Generator &G, Field *f)
 		G.setVariable("R","&");
 	}
 	if (q == q_optional) {
-		int vbit = f->getValidBit();
-		if (-1 == vbit) {
-			G <<	"$(inline)$(fulltype) $(T)$(prefix)$(msg_name)::$(field_mutable)()\n"
-				"{\n"
-				"return $(R)m_$(fname)$(index);\n"
-				"}\n\n"
-				;
-		} else {
-			G <<	"$(inline)$(fulltype) $(T)$(prefix)$(msg_name)::$(field_mutable)()\n"
-				"{\n";
-			if (simpletype) {
-				const char *def = f->getDefaultValue();
-				G <<	"if (" << getValid(f,true) << ") {\n"
-					"m_$(fname) = " << (def?def:"0") << ";\n";
-				writeSetValid(G,vbit);
-				G <<	"}\n";
-			} else if ((t & ft_filter) == ft_msg) {
-				G << 	"if (" << getValid(f,true) << ") {\n"
-					"m_$(fname).clear();\n";
-				writeSetValid(G,vbit);
-				G <<	"}\n";
-			} else {
-				writeSetValid(G,vbit);
-			}
-			G <<	"return $(R)m_$(fname)$(index);\n"
-				"}\n\n"
-				;
-		}
+		G <<	"$(inline)$(fulltype) $(T)$(prefix)$(msg_name)::$(field_mutable)()\n"
+			"{\n";
+		writeResetUnset(G,f);
+		G <<	"return $(R)m_$(fname);\n"
+			"}\n\n"
+			;
 	} else if (q == q_required) {
 		G <<	"$(inline)$(fulltype) $(T)$(prefix)$(msg_name)::$(field_mutable)()\n"
 			"{\n"
-			"return $(R)m_$(fname)$(index);\n"
+			"return $(R)m_$(fname);\n"
 			"}\n\n"
 			;
 	} else if ((q == q_repeated) && (t != ft_bool)) {
@@ -1697,17 +1699,37 @@ void CppGenerator::writeSet(Generator &G, Field *f)
 void CppGenerator::writeSetByNameR(Generator &G, Field *f)
 {
 	uint32_t t = f->getType();
-	G <<	"if (0 == memcmp(name,\"$(fname)[\",$($fnamelen+1))) {\n"
+	G <<	"if (0 == memcmp(name,\"$(fname)\",$fnamelen)) {\n"
+		"if ((name[$fnamelen] == 0) && (value == 0)) {\n"
+		"$field_clear();\n"
+		"return 0;\n"
+		"} else if (name[$fnamelen] == '[') {\n"
 		"char *idxe;\n"
-		"unsigned long x = strtoul(name+$($fnamelen+1),&idxe,0);\n"
-		"if (idxe[0] != ']')\n"
-		"	$handle_error;\n"
-		"if (m_$(fname).size() <= x)\n"
-		"	$handle_error;\n";
+		"unsigned long x;\n"
+		"if ((name[$($fnamelen+1)] == '+') && (name[$($fnamelen+2)] == ']')) {\n"
+		"	x = m_$fname.size();\n"
+		"	m_$fname.resize(x+1);\n"
+		"	idxe = (char*)(name + $($fnamelen+2));\n"
+		"	if (idxe[1] == 0)\n"
+		"		return 0;\n"
+		"} else {\n"
+	       	"	x = strtoul(name+$($fnamelen+1),&idxe,0);\n"
+		"	if (idxe[0] != ']')\n"
+		"		$handle_error;\n"
+		"	if (m_$(fname).size() <= x)\n"
+		"		$handle_error;\n"
+		"}\n";
 	if ((t & ft_filter) == ft_msg) {
 		G <<	"if (idxe[1] != '.')\n"
 			"	$handle_error;\n"
 			"return m_$(fname)[x].$(set_by_name)(idxe+2,value);\n"
+			"}\n"
+			"}\n";
+		return;
+	}
+	if (!f->getOption("parse_ascii").empty()) {
+		G <<	"return $parse_ascii(&m_$fname[x],value);\n"
+			"}\n"
 			"}\n";
 		return;
 	}
@@ -1721,6 +1743,7 @@ void CppGenerator::writeSetByNameR(Generator &G, Field *f)
 			"m_$fname[x] = ($typestr) ll;\n";
 		writeSetValid(G,f->getValidBit());
 		G <<	"return eptr - value;\n"
+			"}\n"
 			"}\n";
 		return;
 	}
@@ -1785,7 +1808,7 @@ void CppGenerator::writeSetByNameR(Generator &G, Field *f)
 	default:
 		abort();
 	}
-	G << "}\n";
+	G << "}\n}\n";
 }
 
 
@@ -1811,14 +1834,32 @@ void CppGenerator::writeSetByName(Generator &G, Message *m)
 			continue;
 		}
 		if ((t & ft_filter) == ft_msg) {
-			G <<	"if (0 == memcmp(name,\"$(fname).\",$($fnamelen+1))) {\n";
+			G <<	"if (0 == memcmp(name,\"$(fname)\",$fnamelen)) {\n"
+				"if ((name[$fnamelen] == 0) && (value == 0)) {\n"
+				"m_$fname.clear();\n"
+				"return 0;\n"
+				"} else if (name[$fnamelen] == '.') {\n";
 			writeSetValid(G,f->getValidBit());
 			G <<	"return m_$(fname).$(set_by_name)(name+$($fnamelen+1),value);\n"
+				"}\n"
 				"}\n";
 			G.setField(0);
 			continue;
 		}
 		G <<	"if (0 == strcmp(name,\"$(fname)\")) {\n";
+		if (q_required != f->getQuantifier()) {
+			G <<	"if (value == 0) {\n"
+				"$field_clear();\n"
+				"return 0;\n"
+				"}\n";
+		}
+		if (!f->getOption("parse_ascii").empty()) {
+			writeSetValid(G,f->getValidBit());
+			G <<	"return $parse_ascii(&m_$fname,value);\n"
+				"}\n";
+			G.setField(0);
+			continue;
+		}
 		if ((t & ft_filter) == ft_enum) {
 			G <<	"char *eptr;\n"
 				"long long ll = strtoll(value,&eptr,0);\n"
@@ -1902,20 +1943,20 @@ void CppGenerator::writeClear(Generator &G, Field *f)
 	G	<< "$(inline)void $(prefix)$(msg_name)::$(field_clear)()\n"
 		   "{\n";
 	uint32_t type = f->getType();
-	const string &invStr = f->getInvalidValue();
 	int vbit = f->getValidBit();
 	if (vbit >= 0) {
 		writeClearValid(G,vbit);
-	} else if ((q == q_repeated) || ((type & ft_filter) == ft_msg)) {
+	}
+	if ((q == q_repeated) || ((type & ft_filter) == ft_msg)) {
 		G << "m_$(fname).clear();";
-	} else if (!invStr.empty()) {
+	} else if (const char *invStr = f->getInvalidValue()) {
 		G << "m_$(fname) = " << invStr << ';';
+	} else if (const char *defStr = f->getDefaultValue()) {
+		G << "m_$(fname) = " << defStr << ';';
 	} else if ((type == ft_string) || (type == ft_bytes)) {
 		G << "m_$(fname).clear();";
-	} else if (type == ft_cptr) {
-		G << "m_$(fname) = 0;";
 	} else {
-		abort();
+		G << "m_$(fname) = 0;";
 	}
 	G <<	"\n}\n\n";
 }
@@ -3505,12 +3546,16 @@ void CppGenerator::writeClear(Generator &G, Message *m)
 			continue;
 		G.setField(f);
 		uint8_t q = f->getQuantifier();
-		if (f->isVirtual()) {
+		if (f->isVirtual())
 			G << "$(field_clear)();\n";
-		} else if ((q == q_repeated) || (!f->hasSimpleType()) || f->isVirtual())
+		else if ((q == q_repeated) || f->isVirtual())
 			G << "m_$(fname).$(msg_clear)();\n";
+		else if (const char *inv = f->getInvalidValue())
+			G << "m_$(fname) = " << inv << ";\n";
 		else if (const char *def = f->getDefaultValue())
 			G << "m_$(fname) = " << def << ";\n";
+		else if (!f->hasSimpleType())
+			G << "m_$(fname).$(msg_clear)();\n";
 		else
 			G << "m_$(fname) = 0;\n";
 		G.setField(0);
@@ -3671,21 +3716,26 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 	G.setField(f);
 	uint8_t quan = f->getQuantifier();
 	uint32_t type = f->getType();
-	//G.addVariable("index","");
 	switch (quan) {
 	case q_optional:
-		G <<	"if ($(field_has)()) {\n"
-			"	$ascii_indent(o,indent);\n"
-			"	o << \"\\t$(fname) = \"";
+		G <<	//"if ($(field_has)()) {\n"
+			"$ascii_indent(o,indent);\n"
+			"o << \"$(fname) = \"";
 		break;
 	case q_required:
 		G <<	"$ascii_indent(o,indent);\n"
-			"o << \"\\t$(fname) = \"";
+			"o << \"$(fname) = \"";
 		break;
 	case q_repeated:
-		G <<	"for (size_t i = 0, e = $(field_size); i != e; ++i) {\n"
+		G <<	"$ascii_indent(o,indent);\n"
+			"o << \"$(fname)[\" << $field_size << \"] = {\";\n"
+			"++indent;\n"
+			"for (size_t i = 0, e = $(field_size); i != e; ++i) {\n"
 			"$ascii_indent(o,indent);\n"
-			"o << \"\\t$(fname)[\" << i << \"] = \"";
+			"o << i << \": \""
+			//"o << \"$(fname)[\" << i << \"] = \";\n"
+			//"$ascii_indent(o,indent);\n"
+			;
 		G.setVariable("index","i");
 		break;
 	default:
@@ -3693,24 +3743,24 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 	}
 	if (f->isVirtual()) {
 		if (f->isMessage()) {
-			G <<	";\n"
-				"$(fname)_$(toASCII)(o,indent);\n"
-			       	"o << \";\\n\";\n";
+			G <<	"$(fname)_$(toASCII)(o,indent);\n"
+			       	"o << ';';\n";
 		} else
-			G << " << $(field_value) << \";\\n\";\n";
+			G <<	"o << $(field_value) << ';';\n";
 	} else if (!f->getAsciiFunction().empty()) {
-		G << ";\n" << f->getAsciiFunction() << "(o,$(field_value));\n";
-		G << "o << \";\\n\";\n";
+		G << ";\n";
+		G << f->getAsciiFunction() << "(o,$(field_value));\n";
+		G << "o << ';';\n";
 	} else switch (type) {
 	case ft_uint8:
 	case ft_fixed8:
-		G << " << (unsigned) $(field_value) << \";\\n\";\n";
+		G << " << (unsigned) $(field_value) << ';';\n";
 		break;
 
 	case ft_int8:
 	case ft_sint8:
 	case ft_sfixed8:
-		G << " << (signed) $(field_value) << \";\\n\";\n";
+		G << " << (signed) $(field_value) << ';';\n";
 		break;
 
 	case ft_int32:
@@ -3730,52 +3780,56 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 	case ft_fixed64:
 	case ft_sfixed64:
 	case ft_double:
-		G << " << $(field_value) << \";\\n\";\n";
+		G << " << $(field_value) << ';';\n";
 		break;
 
 	case ft_bytes:
-		G << ";\n" << target->getOption("ascii_bytes") << "(o,(const uint8_t*)$(field_value).data(),$(field_value).size(),indent+2);\no << \";\\n\";\n";
+		G << ";\n" << target->getOption("ascii_bytes") << "(o,(const uint8_t*)$(field_value).data(),$(field_value).size(),indent+2);\no << ';';\n";
 		break;
 	case ft_string:
 		{
 			const string &filter = target->getOption("ascii_string");
 			if (!filter.empty())
-				G << ";\n" << filter << "(o,$field_value.data(),$field_value.size(),indent+2);\no << \";\\n\";\n";
+				G << ";\n" << filter << "(o,$field_value.data(),$field_value.size(),indent+2);\no << ';';\n";
 			else
-				G << " << $field_value.c_str() << \";\\n\";\n";
+				G << " << $field_value.c_str() << ';';\n";
 		}
 		break;
 	case ft_cptr:
 		{
 			const string &filter = target->getOption("StringFilter");
 			if (!filter.empty())
-				G << " << " << filter << "($(field_value),indent+2) << \";\\n\";\n";
+				G << " << " << filter << "($(field_value),indent+2) << ';';\n";
 			else
-				G << " << $(field_value) << \";\\n\";\n";
+				G << " << $(field_value) << ';';\n";
 		}
 		break;
 	case ft_bool:
-		G << " << ($(field_value) ? \"true\" : \"false\") << \";\\n\";\n";
+		G << " << ($(field_value) ? \"true\" : \"false\") << ';';\n";
 		break;
 
 	default:
 		if ((type & ft_filter) == ft_msg) {
-			G << ";\n";
-			if (PrintOut)
-				G << "$(field_value).$(toASCII)(o,indent+1);\n";
+			//if (quan != q_repeated)
+				//G << ";\n";
+			G << ";\n$(field_value).$(toASCII)(o,indent);\n";
 		} else if ((type & ft_filter) == ft_enum) {
 			Enum *e = Enum::id2enum(type);
 			assert(e);
 			const string &strfun = e->getStringFunction();
 			if (strfun.empty())
-				G << " << $(field_value) << \";\\n\";\n";
+				G << " << $(field_value) << ';';\n";
 			else
-				G << " << " << strfun << "($(field_value)) << \";\\n\";\n";
+				G << " << " << strfun << "($(field_value)) << ';';\n";
 		} else
 			abort();
 	}
-	if (quan != q_required)
-		G << "}\n";
+	if (quan == q_repeated)
+		G <<	"}\n"
+			"--indent;\n"
+			"$ascii_indent(o,indent);\n"
+			"o << '}';\n"
+			;
 	G.clearVariable("index");
 	G.setField(0);
 }
@@ -3788,15 +3842,17 @@ void CppGenerator::writePrint(Generator &G, Message *m)
 
 	G <<	"void $(prefix)$(msg_name)::$(toASCII)($(streamtype) &o, size_t indent) const\n"
 		"{\n"
-		"o << \"message $(msg_name) {\\n\";\n";
+		"o << \"$(msg_name) {\";\n"
+		"++indent;\n";
 	for (auto i : m->getFields()) {
 		Field *f = i.second;
 		if ((f == 0) || (!f->isUsed()) || f->isObsolete())
 			continue;
 		writePrint(G,f);
 	}
-	G <<	"$ascii_indent(o,indent);\n"
-		"o << \"}\\n\";\n"
+	G <<	"--indent;\n"
+		"$ascii_indent(o,indent);\n"
+		"o << '}';\n"
 		"}\n\n";
 
 	if (hasBytes)

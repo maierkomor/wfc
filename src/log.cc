@@ -44,16 +44,6 @@ bool Debug = false;
 static set<string> Errors, Warnings;
 
 
-#if defined __MINGW32__ || defined __MINGW64__
-char *stpcpy(char *t, const char *f)
-{
-	size_t l = strlen(f);
-	memcpy(t,f,l+1);
-	return t+l;
-}
-#endif
-
-
 bool hadError()
 { return HadError; }
 
@@ -115,12 +105,8 @@ void warn(const char *m, ...)
 	char buf[1024];
 	va_list val;
 	va_start(val,m);
-#if defined __MINGW32__ ||  defined __MINGW64__
-	strcpy(buf,prefix);
+	memcpy(buf,prefix,sizeof(prefix));
 	int n = vsnprintf(buf+sizeof(prefix)-1,sizeof(buf)-sizeof(prefix)-1,m,val) + sizeof(prefix) -1;
-#else
-	int n = vsnprintf(stpcpy(buf,prefix),sizeof(buf)-sizeof(prefix)-1,m,val) + sizeof(prefix) -1;
-#endif
 	va_end(val);
 	if (n >= (int)sizeof(buf))
 		n = sizeof(buf)-1;
@@ -140,12 +126,8 @@ void error(const char *m, ...)
 	HadError = true;
 	va_list val;
 	va_start(val,m);
-#if defined __MINGW32__ ||  defined __MINGW64__
-	strcpy(buf,prefix);
+	memcpy(buf,prefix,sizeof(prefix));
 	int n = vsnprintf(buf+sizeof(prefix)-1,sizeof(buf)-sizeof(prefix)-1,m,val) + sizeof(prefix) -1;
-#else
-	int n = vsnprintf(stpcpy(buf,prefix),sizeof(buf)-sizeof(prefix)-1,m,val) + sizeof(prefix) -1;
-#endif
 	va_end(val);
 	if (n >= (int)sizeof(buf))
 		n = sizeof(buf)-1;
@@ -185,12 +167,8 @@ void fatal(const char *m, ...)
 	char buf[1024];
 	va_list val;
 	va_start(val,m);
-#if defined __MINGW32__ ||  defined __MINGW64__
 	strcpy(buf,prefix);
 	int n = vsnprintf(buf+sizeof(prefix)-1,sizeof(buf)-sizeof(prefix)-1,m,val) + sizeof(prefix) -1;
-#else
-	int n = vsnprintf(stpcpy(buf,prefix),sizeof(buf)-sizeof(prefix)-1,m,val) + sizeof(prefix) - 1;
-#endif
 	va_end(val);
 	buf[n++] = '\n';
 	if (n >= (int)sizeof(buf))

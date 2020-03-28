@@ -134,7 +134,14 @@ avoid impact of std::vector.
 \fIunset\fP: sets an in range value that will be interpreted as the value being
 not set. I.e. has_xx will return false if its value is the \fIunset\fP value.
 This eleminates the requirement for a dedicated bit to implement the related
-has_ methods.
+has_ methods. The clear methods also use the unset value to reset the
+field.
+.br
+\fIdefault\fP: default value that will be assigned during object
+initialization and when clearing the field value. If the field is an
+optional field, the field is presented as unset nevertheless. Note also
+that if unset is set to a different value, the value after object
+construction and after calling clear() will differ.
 .br
 \fIto\_ascii\fP: specifies a function that will be used for generating an
 ASCII representation for its value. Like this you can produce readable outputs

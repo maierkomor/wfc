@@ -45,4 +45,23 @@ int main()
 	assert(x > 0);
 	assert(tb.PackedMsg().Bool() == false);
 	runcheck(tb);
+
+	// arrays
+	x = tb.setByName("kvpairs[+]","");
+	assert(x == 0);
+	assert(!tb.kvpairs().empty());
+	x = tb.setByName("kvpairs[0].key","k0");
+	assert(x > 0);
+	x = tb.setByName("kvpairs[0].value","v0");
+	assert(x > 0);
+	x = tb.setByName("kvpairs[+].key","k1");
+	assert(x > 0);
+	assert(tb.kvpairs().size() == 2);
+	x = tb.setByName("kvpairs[1].value","v1");
+	assert(x > 0);
+
+	// delete element
+	x = tb.setByName("kvpairs",0);
+	assert(x == 0);
+	assert(tb.kvpairs().size() == 0);
 }

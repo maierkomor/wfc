@@ -1,0 +1,24 @@
+option withEqual=true;
+
+enum number
+{
+	zero = 0;
+	one = 1;
+	two = 2;
+	three = 3;
+}
+
+
+message M
+{
+	string str = 1	[ default = "def", unset = "n/a" ];
+	string st_str0 = 2 [ storage = static, default="def", unset="unset"];
+	string st_str1 = 3 [ storage = static, unset="unset"];
+
+	unsigned u = 10 [ default = 1, unset = 0 ];
+	signed s = 11 [ default = 0, unset = -1 ];
+
+	number n0 = 20	[ default = one, unset = two ];
+	number n1 = 21	[ default = one ];
+	number n2 = 22	[ unset = one ];
+}

@@ -29,7 +29,7 @@ TESTCASES = \
 	corruption enumtest empty_test tttest vbittest xvarint \
 	cstrtest stringtest recursion json_hs lt1 skiptest reftest \
 	vbittest2 tttest fixed_test novi_test pack_test astr_test \
-	comp_test ref_byname byname_test
+	comp_test ref_byname byname_test inv_def_test
 
 COMPILETESTS = \
 	unused
@@ -48,7 +48,7 @@ $(ODIR)/%.o: $(ODIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 all: $(COMPILETESTS:%=$(ODIR)/%.o) $(TESTCASES:%=$(ODIR)/%)
-	for i in $(TESTCASES); do echo $$i; $(ODIR)/$$i || exit; done
+	for i in $(TESTCASES); do echo $$i; "$(ODIR)/$$i" || exit; done
 
 
 $(ODIR)/corruption: $(ODIR)/corruption.o $(ODIR)/hostscope.o $(WFCOBJS)
@@ -112,4 +112,7 @@ $(ODIR)/ref_byname: $(ODIR)/bynametest.o $(ODIR)/reference.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@
 
 $(ODIR)/byname_test: $(ODIR)/test_byname.o $(ODIR)/byname.o $(WFCOBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@
+
+$(ODIR)/inv_def_test: $(ODIR)/inv_def_test.o $(ODIR)/inv_def.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@

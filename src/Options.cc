@@ -320,6 +320,7 @@ void Options::initFieldDefaults()
 	m_TextOptions["unset"] = "";
 	m_TextOptions["default"] = "";
 	m_TextOptions["storage"] = "regular";
+	m_TextOptions["parse_ascii"] = "";
 	m_TextOptions["to_ascii"] = "";
 	m_TextOptions["to_json"] = "";
 	m_TextOptions["usage"] = "regular";
@@ -1072,7 +1073,8 @@ KVPair::~KVPair()
 
 void KVPair::setNext(KVPair *n)
 {
-	assert(next == 0);
+	assert(n->next == 0);
+	n->next = next;
 	next = n;
 }
 

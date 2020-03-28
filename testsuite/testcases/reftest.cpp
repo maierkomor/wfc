@@ -36,6 +36,10 @@ int main(int argc, char *argv[])
 	if (tb != tb2)
 		fail("clear",&tb,&tb2);
 	runcheck(tb);
+	assert(tb.VI64() == 3);
+	assert(tb.FI16() == 6);
+	assert(!tb.has_STR());
+	assert(tb.STR() == "");
 
 	tb.set_VI32(123456);
 	runcheck(tb);

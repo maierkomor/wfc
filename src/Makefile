@@ -94,7 +94,7 @@ $(OBJDIR):
 clean:
 	-$(RM) template_lib.cc template_lib.h xproto_tok.cc xproto.cc $(CXXOBJ) $(COBJ) reftest wfc core $(DEPS)
 
-.depend: $(OBJDIR) | template_lib.cc version.h $(DEPS)
+.depend: $(OBJDIR) xproto.cc template_lib.cc version.h | $(DEPS)
 	cat $(DEPS) > .depend
 
 include .depend

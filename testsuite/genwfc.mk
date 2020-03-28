@@ -25,32 +25,32 @@ WFCSRCS = testcases/empty_elements.wfc testcases/enumtest.wfc testcases/validbit
 	  testcases/reference.wfc testcases/validbits2.wfc testcases/tt.wfc \
 	  testcases/unused.wfc testcases/fixed_only.wfc testcases/novarint.wfc \
 	  testcases/packed.wfc testcases/virtual.wfc testcases/astr.wfc \
-	  testcases/byname.wfc
+	  testcases/byname.wfc testcases/inv_def.wfc
 
 
 CXXSRCS	= $(WFCSRCS:testcases/%.wfc=$(ODIR)/%.cpp)
 
 $(ODIR)/%.cpp: testcases/%.wfc
-	$(WFC) $(WFCFLAGS) $< -o $(@:.cpp=)
+	"$(WFC)" $(WFCFLAGS) $< -o $(@:.cpp=)
 
 
 all: $(CXXSRCS) $(ODIR)/skip_s.cpp $(ODIR)/comp_v1.cpp $(ODIR)/comp_v2.cpp
 
 
 $(ODIR)/hostscope.cpp: testcases/hostscope.wfc
-	$(WFC) $(WFCFLAGS) -fno-asserts $< -o $(@:.cpp=)
+	"$(WFC)" $(WFCFLAGS) -fno-asserts $< -o $(@:.cpp=)
 
 $(ODIR)/xvarint.cpp: testcases/xvarint.wfc
-	$(WFC) $(WFCFLAGS) -tvi16 -fwfclib=static $< -o $(ODIR)/xvarint_16
-	$(WFC) $(WFCFLAGS) -tvi32 -fwfclib=static $< -o $(ODIR)/xvarint_32
-	$(WFC) $(WFCFLAGS) -tvi64 -fwfclib=static $< -o $(ODIR)/xvarint
+	"$(WFC)" $(WFCFLAGS) -tvi16 -fwfclib=static $< -o $(ODIR)/xvarint_16
+	"$(WFC)" $(WFCFLAGS) -tvi32 -fwfclib=static $< -o $(ODIR)/xvarint_32
+	"$(WFC)" $(WFCFLAGS) -tvi64 -fwfclib=static $< -o $(ODIR)/xvarint
 
 $(ODIR)/skip_s.cpp: testcases/skip.wfc
-	$(WFC) $(WFCFLAGS) -tsender testcases/skip.wfc -o $(ODIR)/skip_s
-	$(WFC) $(WFCFLAGS) -treceiver testcases/skip.wfc -o $(ODIR)/skip_r
+	"$(WFC)" $(WFCFLAGS) -tsender testcases/skip.wfc -o $(ODIR)/skip_s
+	"$(WFC)" $(WFCFLAGS) -treceiver testcases/skip.wfc -o $(ODIR)/skip_r
 
 $(ODIR)/comp_v1.cpp: testcases/compatibility.wfc
-	$(WFC) $(WFCFLAGS) -tV1 -o $(ODIR)/comp_v1 testcases/compatibility.wfc
+	"$(WFC)" $(WFCFLAGS) -tV1 -o $(ODIR)/comp_v1 testcases/compatibility.wfc
 
 $(ODIR)/comp_v2.cpp: testcases/compatibility.wfc
-	$(WFC) $(WFCFLAGS) -tV2 -o $(ODIR)/comp_v2 testcases/compatibility.wfc
+	"$(WFC)" $(WFCFLAGS) -tV2 -o $(ODIR)/comp_v2 testcases/compatibility.wfc

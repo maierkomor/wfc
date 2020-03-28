@@ -1,3 +1,14 @@
+Release R2003:
+==============
+- enhancement: added option to set field ascii parsing function
+- enhancement: ascii output should include unset fields
+- enhancement: clear() should reset the member to the default value
+- enhancement: support to clear field with setByName(value = 0)
+- enhancement: support to add element with setByName("element[+]",...)
+- fix: assertion failure with multiple field options
+- fix: field options clear and unset must play together
+- fix: static storage initialization broken
+
 Release R2002:
 ==============
 - enhancement: getMaxSize returns SIZE_MAX if size is unlimited

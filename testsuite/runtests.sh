@@ -53,14 +53,14 @@ for flagset in "${!flagsets[@]}"; do
 	ODIR="$flagset"
 	WFCFLAGS="${flagsets["$flagset"]}"
 	CXXFLAGS="$CXXFLAGS0 -I../include -I. -I$ODIR"
-	if [ -d $ODIR ]; then
-		rm -r $ODIR
+	if [ -d "$ODIR" ]; then
+		rm -r "$ODIR"
 	fi
-	mkdir $ODIR
+	mkdir "$ODIR"
 	echo "$WFCFLAGS"|grep "wfclib=extern" > /dev/null
 	if [ "0" == "$?" ]; then
 		echo generating library into $ODIR
-		$WFC $WFCFLAGS -l -o $ODIR
+		"$WFC" $WFCFLAGS -l -o $ODIR
 		WFCOBJS=$ODIR/wfccore.o
 	else
 		WFCOBJS=

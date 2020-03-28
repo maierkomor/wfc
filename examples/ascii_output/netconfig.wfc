@@ -4,9 +4,9 @@ option toASCII = "toASCII";
 message NetConfig
 {
 	string hostname = 1	[ unset = "" ];
-	fixed32 address = 2	[ to_ascii = uint32_to_ip4, to_json = uint32_to_ip4 ];
+	fixed32 address = 2	[ parse_ascii = parse_ip4, to_ascii = uint32_to_ip4, to_json = uint32_to_ip4 ];
 	fixed8 netmask = 3;
-	fixed32 gateway = 4	[ to_ascii = uint32_to_ip4, to_json = uint32_to_ip4 ];
-	fixed32 dns = 5		[ to_ascii = uint32_to_ip4, to_json = uint32_to_ip4 ];
+	fixed32 gateway = 4	[ parse_ascii = parse_ip4, to_ascii = uint32_to_ip4, to_json = uint32_to_ip4 ];
+	fixed32 dns = 5		[ parse_ascii = parse_ip4, to_ascii = uint32_to_ip4, to_json = uint32_to_ip4 ];
 	float degC = 6		[ to_ascii = degC_to_ascii, to_json = degC_to_json ];
 }

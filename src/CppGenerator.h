@@ -86,6 +86,7 @@ class CppGenerator : public CodeGeneratorImpl
 	void writePrint(Generator &out, Field *f);
 	void writePrint(Generator &out, Message *m);
 	void writeReaders(Generator &G, optmode_t optmode);
+	void writeResetUnset(Generator &G, Field *f);
 	void writeSet(Generator &out, Field *f);
 	void writeSetByNameR(Generator &G, Field *f);
 	void writeSetByName(Generator &G, Message *m);

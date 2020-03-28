@@ -562,6 +562,7 @@ void Generator::setField(const Field *f)
 		addVariable("ptype",ptype);
 		sprintf(tmp,"%u",f->getTagSize());
 		addVariable("tagsize",tmp);
+		setVariable("parse_ascii",f->getOption("parse_ascii"));
 		if (Enum *e = f->toEnum())
 			setEnum(e);
 	} else {

@@ -195,8 +195,8 @@ class Field
 	const std::string &getJsonFunction() const
 	{ return json_value_func; }
 
-	const std::string &getInvalidValue() const
-	{ return invvalue; }
+	const char *getInvalidValue() const
+	{ return invvalue.empty() ? 0 : invvalue.c_str(); }
 
 	bool isObsolete() const
 	{ return usage == use_obsolete; }
@@ -209,7 +209,7 @@ class Field
 	Field &operator = (const Field &);
 
 	Message *parent;
-	std::string name, defvalue, invvalue, ascii_value_func, json_value_func;
+	std::string name, defvalue, invvalue, ascii_value_func, json_value_func, parse_ascii_func;
 	Options *options;
 	uint32_t type;
 	unsigned id;
@@ -219,7 +219,7 @@ class Field
 
 	// -3: uninitialized,
 	// -2: invvalue,
-	// -1: vector / char* / repeated / requried,
+	// -1: vector / char* / repeated / required,
 	// >=0: bit0, ...
 	int valid_bit;
 	quant_t quan;

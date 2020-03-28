@@ -16,6 +16,21 @@ void uint32_to_ip4(std::ostream &o, uint32_t v)
 		;
 }
 
+
+int parse_ip4(uint32_t *ip4, const char *str)
+{
+	uint8_t ip[4];
+	int n;
+	int r = sscanf(str,"%hhu.%hhu.%hhu.%hhu%n",ip,ip+1,ip+2,ip+3,&n);
+	if (4 != r) {
+		printf("sscanf returned %d\n",r);
+		return -1;
+	}
+	printf("parsed %d chars: %hhu.%hhu.%hhu.%hhu\n",n,ip[0],ip[1],ip[2],ip[3]);
+	*ip4 = ip[0] | (ip[1] << 8) | (ip[2] << 16) | (ip[3] << 24);
+	return n;
+}
+
 void degC_to_json(std::ostream &o, float f)
 {
 	o.precision(3);
@@ -38,8 +53,17 @@ uint32_t ip_to_int(uint8_t a0, uint8_t a1, uint8_t a2, uint8_t a3)
 int main()
 {
 	NetConfig nc;
-	nc.set_hostname("somehost");
-	nc.set_address(ip_to_int(192,168,1,60));
+	string tmp;
+
+	cout << "hostname?\n";
+	cin >> tmp;
+	nc.set_hostname(tmp);
+
+	cout << "address?\n";
+	cin >> tmp;
+	int r = nc.setByName("address",tmp.c_str());
+	cout << "set returned " << r << endl;
+
 	nc.set_netmask(24);
 	nc.set_gateway(ip_to_int(192,168,1,1));
 	nc.set_dns(ip_to_int(192,168,1,2));
