@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2019, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -45,6 +45,9 @@ class PBFile
 	void setOption(const char *o, unsigned, const char *v, unsigned);
 	const std::string &getOption(const char *) const;
 
+	const std::vector<Message *> &getMessages() const
+	{ return messages; }
+
 	const std::string &getFilename() const
 	{ return filename; }
 
@@ -58,6 +61,9 @@ class PBFile
 	{ return enums[i]; }
 
 	Enum *getEnum(const char *) const;
+
+	const std::vector<Enum *> &getEnums() const
+	{ return enums; }
 
 	unsigned numMessages() const
 	{ return messages.size(); }

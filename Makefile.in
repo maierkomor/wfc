@@ -26,6 +26,7 @@ HG		= @HG@
 DIFF		= @DIFF@
 RM		= @RM@
 MV		= @MV@
+XXD		= @XXD@
 MKDIR		= @MKDIR@
 INSTALL		= @INSTALL@
 PREFIX		= @prefix@
@@ -40,7 +41,7 @@ CFLAGS		= $(DEFS) $(INCDIRS)
 CXXFLAGS	= -std=c++11 $(DEFS) $(INCDIRS)
 LIBS		= 
 
-export CC CFLAGS CXX CXXFLAGS DEFS LDFLAGS LIBS OBJDIR DIFF RELEASE YACC INSTALL SED LEX HG
+export CC CFLAGS CXX CXXFLAGS DEFS LDFLAGS LIBS OBJDIR DIFF RELEASE YACC INSTALL SED LEX HG XXD
 
 default: release
 
@@ -95,7 +96,7 @@ prof: prepare
 	+$(MAKE) -C src -e ../bin/wfc
 
 mingw:CC	=i686-w64-mingw32-gcc
-mingw:CXX	=$(shell which i686-w64-mingw32-g++-posix || i686-w64-mingw32-g++)
+mingw:CXX	=$(shell which i686-w64-mingw32-g++-posix || echo i686-w64-mingw32-g++)
 mingw:CXXFLAGS	+=-g -O2 -fstack-protector-all
 mingw:INCDIRS	=
 mingw:LDFLAGS	=-static -static-libgcc -static-libstdc++ -Wl,-Bstatic,--nxcompat,--dynamicbase,--export-all-symbols,-s
@@ -105,7 +106,7 @@ mingw: prepare
 	+$(MAKE) -C src -e ../bin/wfc.exe
 
 mingw64:CC	=x86_64-w64-mingw32-gcc
-mingw64:CXX	=$(shell which x86_64-w64-mingw32-g++-posix || x86_64-w64-mingw32-g++)
+mingw64:CXX	=$(shell which x86_64-w64-mingw32-g++-posix || echo x86_64-w64-mingw32-g++)
 mingw64:CXXFLAGS+=-g -O2 -fno-keep-inline-dllexport -fstack-protector-all
 mingw64:INCDIRS	=
 mingw64:LDFLAGS	=-static -static-libgcc -static-libstdc++ -Wl,-Bstatic,--nxcompat -Wl,--dynamicbase,--export-all-symbols,-s

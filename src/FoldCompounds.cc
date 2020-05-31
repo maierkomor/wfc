@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -28,6 +28,10 @@ void FoldCompounds::process(const char *s)
 		bool deleted = false;
 		if (skip) {
 			switch (c) {
+			case '@':
+				// don't skip the next '{' - required for map initializer
+				skip = false;
+				break;
 			case '{':
 				++nesting;
 				toskip.push(nesting);
@@ -56,12 +60,8 @@ void FoldCompounds::process(const char *s)
 			switch (c) {
 			case '{':
 				++nesting;
-				if (skip) {
-					toskip.push(nesting);
-				} else {
-					skip = true;
-					out += '{';
-				}
+				skip = true;
+				out += '{';
 				break;
 			case '}':
 				if (!toskip.empty() && (toskip.top() == nesting)) {

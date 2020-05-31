@@ -47,6 +47,8 @@ static bool init_module()
 	BinOptionList["debug"] = "generate debugging/logging interface";
 	BinOptionList["asserts"] = "include asserts";
 	BinOptionList["gnux"] = "allow GNU extensions in generated code";
+	BinOptionList["id0"] = "allow use of field ID 0";
+	BinOptionList["enumnames"] = "allow use of enum names in setByName functions";
 
 	TextOptionList["author"] = "author of source file";
 	TextOptionList["copyright"] = "year of copyright of source file";
@@ -308,6 +310,7 @@ void Options::initDefaults()
 	m_BinOptions["SinkToTemplate"] = false;
 	m_BinOptions["devel"] = false;
 	m_BinOptions["PaddedMessageSize"] = false;
+	m_BinOptions["enumnames"] = false;
 }
 
 
@@ -450,6 +453,8 @@ void Options::printDefines(ostream &out) const
 		out << "#define HAVE_TO_WIRE 1\n";
 	if (isId("toASCII"))
 		out << "#define HAVE_TO_ASCII 1\n";
+	if (isId("toJSON"))
+		out << "#define HAVE_TO_JSON 1\n";
 	if (isId("fromMemory"))
 		out << "#define HAVE_FROM_MEMORY 1\n";
 	const string &errh = getOption("ErrorHandling");

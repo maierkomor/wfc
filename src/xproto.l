@@ -38,7 +38,9 @@
 #include "Options.h"
 #include "log.h"
 #include <assert.h>
+#include <stdio.h>
 #include <string>
+#include <errno.h>
 
 using namespace std;
 
@@ -46,6 +48,14 @@ using namespace std;
 #define YYLTYPE yy::ProtoParser::location_type
 #define YY_EXTRA_TYPE ProtoDriver*
 yy::ProtoParser::token_type lookupId(char *yytxt, unsigned yylen, YYSTYPE *param);
+
+#ifdef __CYGWIN__
+#define YY_INPUT(buf,result,max_size) \
+	result = fread(buf,1,max_size,yyin); \
+	if (ferror(yyin)) { \
+		YY_FATAL_ERROR("reading failed"); \
+	}
+#endif
 
 %}
 

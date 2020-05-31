@@ -1,6 +1,7 @@
 option toString="toString";
 option withEqual=true;
 option withUnequal=true;
+option id0=true;
 
 message OptionalFields
 {

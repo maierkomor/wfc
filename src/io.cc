@@ -59,7 +59,7 @@ char *readFile(const char *fn, struct stat *s)
 }
 
 
-#if defined __MINGW32__ || defined __MINGW64__ || defined __sun
+#if defined __MINGW32__ || defined __MINGW64__ || defined __sun || defined __CYGWIN__
 void *memrchr(void *p, char c, size_t l)
 {
 	char *x = (char*)p + l;

@@ -41,6 +41,7 @@ class Generator
 	~Generator();
 
 	void addVariable(const std::string &n, const std::string &v);
+	void addVariable(const std::string &n, const char *v);
 	const char *getVariable(const std::string &n);
 	bool hasVariable(const std::string &n) const;
 	bool hasValue(const std::string &n) const;

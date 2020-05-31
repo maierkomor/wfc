@@ -8,6 +8,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <json-c/json.h>
+
 
 struct fbuf_t
 {
@@ -54,8 +56,14 @@ int main()
 	int r = h0.fromMemory(b.data,b.size);
 	assert(r == b.size);
 
+#ifndef HAVE_TO_JSON
+#error json support expected
+#endif
 	stringstream json;
 	h0.toJSON(json);
-	printf("%s",json.str().c_str());
+	struct json_object *o = json_tokener_parse(json.str().c_str());
+	assert(o);
+	
+	//printf("%s",json.str().c_str());
 	return 0;
 }

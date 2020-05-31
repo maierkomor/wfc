@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -88,7 +88,7 @@ string Evaluator::getVariable(const string &v)
 	if (i != m_vars.end())
 		return i->second;
 	if (v == "handle_error") {
-		char buf[16];
+		char buf[24];
 		switch (m_errmode) {
 		case em_ret_errid:
 			--m_errid;

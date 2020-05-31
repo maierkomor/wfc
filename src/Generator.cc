@@ -101,19 +101,31 @@ Generator::Generator(ostream &str, const Options *o)
 	addVariable("varintbits",o->getOption("VarIntBits"));
 	addVariable("set_by_name",o->getOption("SetByName"));
 	addVariable("ascii_indent",o->getIdentifier("ascii_indent"));
+	addVariable("sink_template","");
 
 	addVariable("streamtype",o->getIdentifier("streamtype"));
-	setVariable("ssize_t",o->getIdentifier("ssize_t"));
-	setVariable("BaseClass",o->getIdentifier("BaseClass"));
-	setVariable("toMemory",o->getIdentifier("toMemory"));
-	setVariable("toSink",o->getIdentifier("toSink"));
-	setVariable("toString",o->getIdentifier("toString"));
-	setVariable("toWire",o->getIdentifier("toWire"));
-	setVariable("toASCII",o->getIdentifier("toASCII"));
-	setVariable("toJSON",o->getIdentifier("toJSON"));
-	setVariable("fromMemory",o->getIdentifier("fromMemory"));
-	setVariable("calcSize",o->getIdentifier("calcSize"));
-	setVariable("getMaxSize",o->getIdentifier("getMaxSize"));
+	addVariable("ssize_t",o->getIdentifier("ssize_t"));
+	addVariable("BaseClass",o->getIdentifier("BaseClass"));
+	addVariable("toMemory",o->getIdentifier("toMemory"));
+	addVariable("toSink",o->getIdentifier("toSink"));
+	addVariable("toString",o->getIdentifier("toString"));
+	addVariable("toWire",o->getIdentifier("toWire"));
+	addVariable("toASCII",o->getIdentifier("toASCII"));
+	addVariable("toJSON",o->getIdentifier("toJSON"));
+	addVariable("fromMemory",o->getIdentifier("fromMemory"));
+	addVariable("calcSize",o->getIdentifier("calcSize"));
+	addVariable("getMaxSize",o->getIdentifier("getMaxSize"));
+	addVariable("wireput","");
+	addVariable("putarg","");
+	addVariable("putparam","");
+	addVariable("write_varint","");
+	addVariable("write_xvarint","");
+	addVariable("u16_wire","");
+	addVariable("u32_wire","");
+	addVariable("u64_wire","");
+	addVariable("write_bytes","");
+	addVariable("toX","");
+	addVariable("inline","");
 
 	setMode(gen_wire);
 }
@@ -187,6 +199,14 @@ void Generator::addVariable(const string &n, const string &v)
 }
 
 
+void Generator::addVariable(const string &n, const char *v)
+{
+	//diag("addVariable(%s,%s)",n.c_str(),v.c_str());
+	auto r = m_vars.insert(make_pair(n,v ? v : ""));
+	assert(r.second);
+}
+
+
 void Generator::clearVariable(const string &n)
 {
 	auto i = m_vars.find(n);
@@ -201,12 +221,10 @@ void Generator::setVariable(const string &n, const char *v)
 		v = "";
 	dbug("Generator::setVariable(%s,%s)",n.c_str(),v);
 	auto r = m_vars.insert(pair<string,string>(n,v));
+	//assert(r.second == false);
+	if (r.second)
+		cerr << n << ',' << v << endl;
 	r.first->second = v;
-	/*
-	auto i = m_vars.find(n);
-	assert(i != m_vars.end());
-	i->second = v;
-	*/
 }
 
 
@@ -214,12 +232,8 @@ void Generator::setVariable(const string &n, const string &v)
 {
 	dbug("Generator::setVariable(%s,%s)",n.c_str(),v.c_str());
 	auto r = m_vars.insert(make_pair(n,v));
+	assert(r.second == false);
 	r.first->second = v;
-	/*
-	auto i = m_vars.find(n);
-	assert(i != m_vars.end());
-	i->second = v;
-	*/
 }
 
 
@@ -247,17 +261,18 @@ void Generator::setMessage(const Message *m)
 {
 	if (m) {
 		assert(m_message == 0);
-		setVariable("msg_name", m->getName());
-		setVariable("msg_fullname", m->getPrefix()+m->getName());
-		setVariable("msg_clear", m_options->getOption("ClearName"));
-		setVariable("prefix", m->getPrefix());
-		setVariable("validtype",m->getValidType());
+		addVariable("msg_name", m->getName());
+		addVariable("msg_fullname", m->getPrefix()+m->getName());
+		addVariable("msg_clear", m_options->getOption("ClearName"));
+		addVariable("prefix", m->getPrefix());
+		addVariable("validtype",m->getValidType());
 		setVariableDec("numvalidbytes",m->getNumValid()/8+((m->getNumValid()&7)?1:0));
 	} else {
 		clearVariable("msg_name");
 		clearVariable("msg_fullname");
 		clearVariable("msg_clear");
 		clearVariable("prefix");
+		clearVariable("validtype");
 	}
 	m_message = m;
 }
@@ -528,7 +543,7 @@ void Generator::setField(const Field *f)
 		if (vbit >= 0) {
 			char buf[16];
 			sprintf(buf,"%d",vbit);
-			setVariable("vbit",buf);
+			addVariable("vbit",buf);
 		} else
 			clearVariable("vbit");
 		string rtype,fullrtype;
@@ -562,7 +577,7 @@ void Generator::setField(const Field *f)
 		addVariable("ptype",ptype);
 		sprintf(tmp,"%u",f->getTagSize());
 		addVariable("tagsize",tmp);
-		setVariable("parse_ascii",f->getOption("parse_ascii"));
+		addVariable("parse_ascii",f->getOption("parse_ascii"));
 		if (Enum *e = f->toEnum())
 			setEnum(e);
 	} else {
@@ -589,6 +604,7 @@ void Generator::setField(const Field *f)
 		clearVariable("field_value");
 		clearVariable("field_values");
 		clearVariable("tagsize");
+		clearVariable("parse_ascii");
 		setVariable("bytestype",m_options->getOption("bytestype"));
 		setVariable("stringtype",m_options->getOption("stringtype"));
 		setEnum(0);
@@ -622,27 +638,6 @@ const char *Generator::getVariable(const string &n)
 		//assert(i->second.size() > 0);
 		return i->second.c_str();
 	}
-	/*
-	if (n == "handle_error") {
-		switch (errmode) {
-		case ret_errid:
-			--m_errid;
-			char buf[16];
-			snprintf(buf,sizeof(buf),"return %d",m_errid);
-			m_errstr = buf;
-			return m_errstr.c_str();
-		case abort_exe:
-			return "abort()";
-		case throw_errid:
-			--m_errid;
-			char buf[16];
-			snprintf(buf,sizeof(buf),"throw %d",m_errid);
-			m_errstr = buf;
-			return m_errstr.c_str();
-		default:
-			abort();
-	}
-	*/
 	ICE("undefined variable $(%s)",n.c_str());
 	return n.c_str();
 }
@@ -725,27 +720,6 @@ string Generator::evaluate(const string &a)
 }
 
 
-/*
-static const char *unfilteredEnd(const char *t)
-{
-	const char *e = t + strlen(t);
-	const char *d = strchr(t,'$');
-	const char *l = strchr(t,'{');
-	const char *r = strchr(t,'}');
-	const char *n = strchr(t,'\n');
-	if (d && (d < e))
-		e = d;
-	if (l && (l < e))
-		e = l;
-	if (r && (r < e))
-		e = r;
-	if (n && (n < e))
-		e = n;
-	return e;
-}
-*/
-
-
 void Generator::indentingWrite(const char *t, const char *e)
 {
 	errmode_t em = em_invalid;
@@ -811,113 +785,6 @@ void Generator::indentingWrite(const char *t, const char *e)
 }
 
 
-/*
-static unsigned chrcnt(const char *str, const char *end, char c)
-{
-	unsigned n = 0;
-	str = (const char *) memchr(str,c,end-str);
-	while (str) {
-		++n;
-		++str;
-		str = (const char *) memchr(str,c,end-str);
-	}
-	return n;
-}
-
-
-void Generator::indentingWrite(const char *t, const char *e)
-{
-	Evaluator eval(m_vars);
-	string rol;
-	while (t < e) {
-		if (m_afternl) {
-			while (*t == '\t')
-				++t;
-			m_afternl = false;
-		}
-		const char *d = (const char *) memchr(t,'$',e-t);
-		const char *n = (const char *) memchr(t,'\n',e-t);
-		if (d && ((d < n) || (n == 0))) {
-			m_linebuf += string(t,d);
-			dbug("linebuf0: '%s'",m_linebuf.c_str());
-			if (n)
-				rol = string(d,n);
-			else
-				rol = d;
-			eval.evaluate(rol);
-			m_linebuf += rol;
-			if (n)
-				t = n;
-			else
-				t = e;
-			dbug("linebuf1: '%s'",m_linebuf.c_str());
-			continue;
-		} else if (n == 0) {
-			m_linebuf += string(t,e);
-			dbug("linebuf2: '%s'",m_linebuf.c_str());
-			return;
-		} else if (n < d) {
-			m_linebuf += string(t,n+1);
-			dbug("linebuf4: '%s'",m_linebuf.c_str());
-		} else {
-			m_linebuf += string(t,n+1);
-			dbug("linebuf3: '%s'",m_linebuf.c_str());
-		}
-		const char *line = m_linebuf.c_str();
-		const char *eol = line + m_linebuf.size();
-		assert(line[strlen(line)-1] == '\n');
-		if (m_skipAsserts && (0 == strncmp(line,"assert(",7))) {
-			assert(m_ind1line == false);
-			m_linebuf.clear();
-			t = n + 1;
-			continue;
-		}
-		unsigned rb = chrcnt(line,eol,'}');
-		//assert(rb < 2);
-		unsigned lb = chrcnt(line,eol,'{');
-		assert(lb < 2);
-		if ((rb == 1) && (lb == 1))
-			rb = lb = 0;
-		m_indent -= rb;
-		if (m_indent < 0) {
-			m_out.flush();
-			error("unmatched '}'");
-			m_indent = 0;
-		}
-		int indent = m_indent;
-		if (0 == strncmp(line,"case ",5))
-			--indent;
-		else if (0 == strncmp(line,"default:",8))
-			--indent;
-		else if (0 == strncmp(line,"} else {",8))
-			--indent;
-		if (indent < 0)
-			indent = 0;
-		if (m_ind1line) {
-			++indent;
-			m_ind1line = false;
-		}
-		if (m_indent <= 16)
-			m_out.write("\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t",indent);
-		else 
-			for (int i = 0; i < indent; ++i)
-				m_out.put('\t');
-		if ((0 == lb) && ((0 == strncmp(line,"if (",4)) || (0 == strncmp(line,"while (",7)) || (0 == strncmp(line,"for (",5))))
-			m_ind1line = true;
-		else if (strstr(line,"if ("))
-			diag("unmatched if(: '%s'",line);
-		m_indent += lb;
-		if (lb || rb)
-			dbug("m_indent = %d",m_indent);
-		m_out << m_linebuf;
-		m_linebuf.clear();
-		t = n + 1;
-		m_afternl = true;
-	}
-}
-*/
-
-
 Generator &operator << (Generator &g, const char *t)
 {
 	g.indentingWrite(t,t+strlen(t));
@@ -933,38 +800,3 @@ Generator &operator << (Generator &g, const string &s)
 }
 
 
-/*
-Generator &operator << (Generator &g, uint32_t u)
-{
-	char buf[32];
-	int n = sprintf(buf,"%u",u);
-	g.indentingWrite(buf,buf+n);
-	return g;
-}
-
-
-Generator &operator << (Generator &g, int32_t u)
-{
-	char buf[32];
-	int n = sprintf(buf,"%d",u);
-	g.indentingWrite(buf,buf+n);
-	return g;
-}
-
-Generator &operator << (Generator &g, uint64_t u)
-{
-	char buf[32];
-	int n = sprintf(buf,"%ld",u);
-	g.indentingWrite(buf,buf+n);
-	return g;
-}
-
-Generator &operator << (Generator &g, int64_t u)
-{
-	char buf[32];
-	int n = sprintf(buf,"%ld",u);
-	g.indentingWrite(buf,buf+n);
-	return g;
-}
-
-*/

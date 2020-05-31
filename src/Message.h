@@ -69,6 +69,12 @@ class Message
 	Enum *getEnum(unsigned i) const;
 	Enum *getEnum(const char *e) const;
 
+	const std::vector<Enum*> &getEnums() const
+	{ return m_enums; }
+
+	const std::vector<Message*> &getMessages() const
+	{ return m_msgs; }
+
 	const std::string &getName() const
 	{ return m_name; }
 

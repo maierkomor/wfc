@@ -4,6 +4,7 @@ option withUnequal=true;
 option SortMembers=type;
 option toString="toString";
 option header="cstring.h";
+option enumnames=true;
 
 enum packable_enum {
 	pe_0 = 0;

@@ -33,5 +33,22 @@ int main(int argc, const char *argv[])
 	et.clear_b();
 	runcheck(et);
 
+	int r = et.setByName("a.w","frozen");
+	assert(r == 6);
+	assert(et.a().w() == -1);
+
+	r = et.setByName("b.water","ice");
+	assert(r == 3);
+	assert(et.b().water() == -1);
+
+	r = et.setByName("a.w","fluid");
+	assert(r == 5);
+	assert(et.a().w() == 1);
+
+	r = et.setByName("b.water","steam");
+	assert(r == 5);
+	assert(et.b().water() == 1);
+
+
 	printf("%s: %s\n",argv[0],testcnt());
 }

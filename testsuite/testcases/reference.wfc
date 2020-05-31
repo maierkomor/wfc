@@ -3,6 +3,7 @@ option withEqual=true;
 option withUnequal=true;
 option SortMembers=type;
 option toString="toString";
+option toJSON="toJSON";
 option header="cstring.h";
 
 enum packable_enum {

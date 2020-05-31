@@ -376,6 +376,8 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 
 	cg.writeFiles(outname ? outname : fn);
+	if (hadError())
+		exit(EXIT_FAILURE);
 	if (NumWarnings)
 		msg("Finished with %u warnings.",NumWarnings);
 	return 0;

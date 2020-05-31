@@ -1,0 +1,86 @@
+/*
+ *  Copyright (C) 2020, Thomas Maier-Komor
+ *
+ *  This source file belongs to Wire-Format-Compiler.
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+
+/* wfc-template:
+ * function: decode_union
+ */
+union decode_union
+{
+	varint_t vi;
+	uint64_t u64;
+	double d;
+	uint32_t u32;
+	float f;
+	uint16_t u16;
+	uint8_t u8;
+};
+
+
+
+/* wfc-template:
+ * function: decode_early
+ * requires: decode_union,read_u16,read_u32,read_u64
+ */
+int decode_early(const uint8_t *s, const uint8_t *e, union decode_union *ud, varint_t *fid)
+{
+	int fn = read_varint(s,e-s,fid);
+	if (fn <= 0)
+		$handle_error;
+	const uint8_t *a = s + fn;
+	switch ((*fid)&7) {
+	case 0x0: // varint
+	case 0x2: // varint of len pfx array
+		fn = read_varint(a,e-a,&ud->vi);
+		if (fn <= 0)
+			$handle_error;
+		a += fn;
+		break;
+	case 0x1: // 64-bit
+		if (a+8 > e)
+			$handle_error;
+		ud->u64 = read_u64(a);
+		a += 8;
+		break;
+	case 0x3: // 8-bit
+		if (a+1 > e)
+			$handle_error;
+		ud->u64 = 0;
+		ud->u8 = *a++;
+		break;
+	case 0x4: // 16-bit
+		if (a+2 > e)
+			$handle_error;
+		ud->u$varintbits = 0;
+		ud->u16 = read_u16(a);
+		a += 2;
+		break;
+	case 0x5: // 32-bit
+		if (a+4 > e)
+			$handle_error;
+		ud->u$varintbits = 0;
+		ud->u32 = read_u32(a);
+		a += 4;
+		break;
+	default:
+		$handle_error;
+	}
+	return a-s;
+}
+

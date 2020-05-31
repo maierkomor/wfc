@@ -58,8 +58,6 @@ class CppGenerator : public CodeGeneratorImpl
 	void writeEnumDecl(Generator &, Enum *, bool = false);
 	void writeEnumDefs(Generator &, Enum *);
 	void writeHelpers(std::vector<unsigned> &);
-	void writeInlineHelpers(Generator &, std::vector<unsigned> &);
-	//void writeInlineHelpers(Generator &);
 
 	bool writeMember(Generator &, Field *,bool,bool = false);
 	void writeCalcSize(Generator &out, Field *f);
@@ -129,9 +127,9 @@ class CppGenerator : public CodeGeneratorImpl
 	     WithJson, EarlyDecode,
 	     inlineClear, inlineHas, inlineGet, inlineMaxSize, inlineSet, inlineSize,
 	     hasVarInt, hasVarSInt, hasInt, hasSInt, hasUInt, hasCStr,
-	     hasBool, hasFloat, hasDouble, 
+	     hasBool, hasFloat, hasFloats, hasDouble, hasDoubles,
 	     hasS8, hasS16, hasS32, hasS64, hasU8, hasU16, hasU32, hasU64,
-	     hasWT8, hasWT16, hasWT32, hasWT64,
+	     hasWT8, hasWT16, hasWT32, hasWT64, hasEnums,
 	     hasBytes, hasString, hasLenPfx, hasUnused,
 	     needJsonString, needCalcSize, needSendVarSInt;
 	unsigned VarIntBits, WireputArg;

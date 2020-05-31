@@ -41,14 +41,14 @@ class CodeLibrary
 	//std::string getComment(const char *function, const Options *o) const;
 	//const std::string &getFunction(const char *function, const Options *o) const;
 	//const std::string &getFunction(codeid_t f, const Options *o) const;
-	void write_dependencies(Generator &G, const std::vector<unsigned> &funcs, const Options *options, libmode_t lm) const;
 	void write_includes(Generator &G, const std::vector<unsigned> &funcs, const Options *options) const;
-	void write_cpp(Generator &G, const std::vector<unsigned> &funcs, const Options *options) const;
-	void write_h(Generator &G, const std::vector<unsigned> &funcs, const Options *options) const;
+	void write_cpp(Generator &G, std::vector<unsigned> &funcs, const Options *options) const;
+	void write_h(Generator &G, std::vector<unsigned> &funcs, const Options *options) const;
 
 	private:
 	void addFile(const char *fn, struct stat * = 0);
 	CodeTemplate *getTemplate(codeid_t, const Options *o) const;
+	void add_dependencies(std::vector<unsigned> &funcs, const Options *options, libmode_t lm) const;
 
 	std::multimap<codeid_t, CodeTemplate *> m_templates;
 	std::map<std::string, CodeTemplate *> m_functions;

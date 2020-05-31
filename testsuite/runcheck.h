@@ -36,6 +36,8 @@
 #include <fcntl.h>
 #include <iostream>
 #include <sstream>
+#include <json-c/json.h>
+
 using namespace std;
 #endif
 
@@ -218,6 +220,15 @@ void runcheck(const Message &tb)
 	fw.toASCII(ss1);
 	if (ss0.str() != ss1.str())
 		fail("ascii",&tb,&fw);
+#endif
+#ifdef HAVE_TO_JSON
+	stringstream js;
+	tb.toJSON(js);
+	struct json_object *o = json_tokener_parse(js.str().c_str());
+	if (o == 0) {
+		printf("%s\n\nJSON validation failed.\n",js.str().c_str());
+		abort();
+	}
 #endif
 
 	free(buf);

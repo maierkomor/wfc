@@ -42,6 +42,7 @@ class CodeTemplate
 	bool isFunction() const;
 	bool isTemplate() const;
 	bool isUnion() const;
+	bool isStruct() const;
 
 	static codeid_t getFunctionId(const std::string &);
 	codeid_t getFunctionId() const;
@@ -66,6 +67,7 @@ class CodeTemplate
 
 	private:
 	void writeComment(Generator &G) const;
+	void addDependencies(char *);
 	std::string getDeclaration() const;
 
 	std::string function, variant, code, comment, filename;

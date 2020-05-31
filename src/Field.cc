@@ -52,9 +52,7 @@ Field::Field(const char *n, unsigned l, quant_t q, uint32_t t, long long i)
 {
 	options = new Options((string)"field:"+n,Options::getFieldDefaults());
 	assert(q != q_unspecified);
-	if (id == 0)
-		warn("In message %s: field %s has invalid id %lld: id should be positive integer",ParsingMessage.c_str(),name.c_str(),i);
-	else if (i < 0)
+	if (i < 0)
 		fatal("In message %s: field %s has invalid id %lld: id must not be negative integer",ParsingMessage.c_str(),name.c_str(),i);
 	if (isKeyword(name.c_str()))
 		error("identifier %s is a keyword",name.c_str());

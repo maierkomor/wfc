@@ -23,12 +23,12 @@ MAKE=`which gmake||which make`
 #echo make is $MAKE
 
 declare -A flagsets
-flagsets[fs_O2Ls]="-O2 -fwfclib=static -g"
-flagsets[fs_O2Li]="-O2 -fwfclib=inline -g"
-flagsets[fs_O2Le]="-O2 -fwfclib=extern -g"
 flagsets[fs_OsLs]="-Os -fwfclib=static -g"
 flagsets[fs_OsLi]="-Os -fwfclib=inline -g"
 flagsets[fs_OsLe]="-Os -fwfclib=extern -g"
+flagsets[fs_O2Ls]="-O2 -fwfclib=static -g"
+flagsets[fs_O2Li]="-O2 -fwfclib=inline -g"
+flagsets[fs_O2Le]="-O2 -fwfclib=extern -g"
 flagsets[fs_OrLs]="-Or -fwfclib=static -g"
 flagsets[fs_OrLi]="-Or -fwfclib=inline -g"
 flagsets[fs_OrLe]="-Or -fwfclib=extern -g"
@@ -42,7 +42,7 @@ flagsets[fs_OrC]="-Or -fStringType=C"
 
 CXXFLAGS0=$CXXFLAGS
 if [ "" == "$CXXFLAGS0" ]; then
-	CXXFLAGS0="-Os -g -Wall --std=c++11"
+	CXXFLAGS0="-Os -g -Wall --std=gnu++11"
 fi
 
 

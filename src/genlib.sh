@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#  Copyright (C) 2017-2019, Thomas Maier-Komor
+#  Copyright (C) 2017-2020, Thomas Maier-Komor
 #
 #  This source file belongs to Wire-Format-Compiler.
 #
@@ -39,7 +39,7 @@ echo '#include "template_lib.h"' > template_lib.cc.new
 echo >> template_lib.cc.new
 echo "char TemplateLib[] = {" >> template_lib.cc.new
 
-cat $CCTSRC | xxd -i >> template_lib.cc.new
+cat $CCTSRC | "$XXD" -i >> template_lib.cc.new
 
 echo ", 0x00 };" >> template_lib.cc.new
 

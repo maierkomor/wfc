@@ -147,7 +147,7 @@ void ICE(const char *m, ...)
 	char *buf;
 	va_list val;
 	va_start(val,m);
-#if defined __MINGW32__ ||  defined __MINGW64__
+#if defined __MINGW32__ ||  defined __MINGW64__ || defined __CYGWIN__
 	int n = vsnprintf(0,0,m,val);
 	buf = (char *) malloc(n+1);
 	vsprintf(buf,m,val);

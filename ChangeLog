@@ -1,3 +1,17 @@
+Release R2005:
+==============
+- enhancement: added option to en-/disable use of ID 0
+- enhancement: WFC should exit with EXIT_FAILURE on all errors
+- enhancement: JSON and ASCII of unkown enums as decimal integer
+- enhancement: parsing of enum values in setByValue
+- enhancement: reduced JSON code size
+- enhancement: updated early decoding and moved from beta to stable
+- fix: several fixes related to JSON output generation
+- fix: added missing boundary check for string assignment
+- enhancement: JSON validation integrated in test-suite
+- buildenv: updated autoconf scripts, check that xxd is available
+- porting: update for Cygwin
+
 Release R2003:
 ==============
 - enhancement: added option to set field ascii parsing function

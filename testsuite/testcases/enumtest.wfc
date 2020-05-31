@@ -1,5 +1,6 @@
 option withUnequal=true;
 option withEqual=true;
+option enumnames=true;
 
 /*
 option default {

@@ -41,6 +41,8 @@ const char *Functions[] = {
 	"json_string",
 	"mangle_double",
 	"mangle_float",
+	"decode_early",
+	"decode_union",
 	"parse_ascii_bool",
 	"parse_ascii_dbl",
 	"parse_ascii_flt",
@@ -52,6 +54,7 @@ const char *Functions[] = {
 	"parse_ascii_u32",
 	"parse_ascii_u64",
 	"parse_ascii_u8",
+	"parse_enum",
 	"place_varint",
 	"read_double",
 	"read_float",
@@ -79,6 +82,7 @@ const char *Functions[] = {
 	"write_u64",
 	"write_varint",
 	"write_xvarint",
+	"CStrLess",
 	0
 };
 
@@ -107,7 +111,6 @@ static const char *MetaData[] = {
 };
 
 
-extern const char *Functions[];
 extern const char *InstallDir;
 
 
@@ -123,20 +126,30 @@ static bool isOf(const char *p, const char **list)
 
 
 CodeTemplate::CodeTemplate(char *f, char *sl, char *eoc, char *eofunc)
+: function()
+, variant()
+, code()
+, comment()
+, filename()
 {
 	char *eof = f;
 	do {
 		++eof;
 	} while (isalnum(*eof)||(*eof == '_'));
-	function = string(f,eof);
+	function.assign(f,eof);
 	char *t;
 	char *p = strchr(eoc,'(');
 	char *b = strchr(eoc,'{');
 	if (b < p) {
 		// this must be a union: '{' before '('
-		char * u = strstr(eoc,"union");
-		assert(u);
-		u += 5;
+		char *u = strstr(eoc,"union");
+		if (u && isspace(u[5])) {
+			u += 6;
+		} else {
+			u = strstr(eoc,"struct");
+			assert(u && isspace(u[6]));
+			u += 7;
+		}
 		while (isspace(*u))
 			++u;
 		t = u;
@@ -192,7 +205,7 @@ CodeTemplate::CodeTemplate(char *f, char *sl, char *eoc, char *eofunc)
 			else if (!strcmp(param,"sysinclude"))
 				sysincludes.push_back(value);
 			else if (!strcmp(param,"requires"))
-				dependencies.push_back(value);
+				addDependencies(value);
 			else if (!strcmp(param,"function"));
 			else if (!strcmp(param,"description"));
 			else if (!strcmp(param,"include"));
@@ -224,27 +237,30 @@ void CodeTemplate::writeComment(Generator &G) const
 }
 
 
-string CodeTemplate::getDeclaration() const
+static const char *end_of_decl(const char *code)
 {
-	assert(isFunction());
 	unsigned p = 0;
-	string decl;
-	const char *c = code.c_str();
-	const char *at = strchr(c,'(');
-	if (at == 0) {
-		assert(isDefine());
-		return c;
-	}
+	const char *at = strchr(code,'(');
+	if (at == 0)
+		return 0;
 	do {
 		if (*at == ')')
 			--p;
 		else if (*at == '(')
 			++p;
-		else
-			assert(*at != 0);
+		else if (*at == 0)
+			fatal("unable to find end of declaration in code template:\n%s",code);
 		++at;
 	} while (p != 0);
-	string ret(c,at);
+	return at;
+}
+
+
+string CodeTemplate::getDeclaration() const
+{
+	assert(isFunction());
+	const char *c = code.c_str();
+	string ret(c,end_of_decl(c));
 	if (isFunction())
 		ret += ';';
 	ret += '\n';
@@ -328,11 +344,22 @@ bool CodeTemplate::isUnion() const
 }
 
 
+bool CodeTemplate::isStruct() const
+{
+	const char *c = code.c_str();
+	if (!strncmp(c,"struct",6) && isspace(c[6]))
+		return true;
+	return false;
+}
+
+
 bool CodeTemplate::isFunction() const
 {
 	if (isDefine())
 		return false;
 	if (isUnion())
+		return false;
+	if (isStruct())
 		return false;
 	if (isTemplate())
 		return false;
@@ -343,7 +370,7 @@ bool CodeTemplate::isFunction() const
 void CodeTemplate::write_h(Generator &G, libmode_t m)
 {
 	diag("write_h(%s)",function.c_str());
-	if (isUnion()) {
+	if (isUnion() || isStruct()) {
 		if (m != libstatic) {
 			writeComment(G);
 			G << code << ";\n\n\n";
@@ -359,6 +386,7 @@ void CodeTemplate::write_h(Generator &G, libmode_t m)
 	}
 	assert(isFunction());
 
+	const char *c = code.c_str();
 	switch (m) {
 	case libinline:
 		writeComment(G);
@@ -368,7 +396,7 @@ void CodeTemplate::write_h(Generator &G, libmode_t m)
 		break;
 	case libextern:
 		writeComment(G);
-		G << "extern " << getDeclaration() << "\n\n\n";
+		G << "extern " << string(c,end_of_decl(c)) << ";\n\n\n";
 		break;
 	default:
 		abort();
@@ -376,10 +404,37 @@ void CodeTemplate::write_h(Generator &G, libmode_t m)
 }
 
 
+static string getDefHeader(const char *dec, const char *eod)
+{
+	string ret(dec,eod);
+	const char *str = ret.c_str();
+	const char *e = strchr(str,'=');
+	while (e) {
+		while ((e != str) && ((*e == ' ') || (*e == '\t')))
+			--e;
+		const char *at = e;
+		++at;
+		char c = *at;
+		while ((c != ',') && (c != ')') && (c != 0)) {
+			++at;
+			c = *at;
+		}
+		if (c == 0) {
+			dbug("invalid default argument in template: '%s'",str);
+			fatal("error handling default argument of template");
+		}
+		ret.erase(e-str,at-e);
+		str = ret.c_str();
+		e = strchr(str,'=');
+	}
+	return ret;
+}
+
+
 void CodeTemplate::write_cpp(Generator &G, libmode_t m)
 {
 	//dbug("write_cpp(%s)",function.c_str());
-	if (isUnion()) {
+	if (isUnion() || isStruct()) {
 		if (m == libstatic) {
 			writeComment(G);
 			G << code << ";\n\n\n";
@@ -394,21 +449,43 @@ void CodeTemplate::write_cpp(Generator &G, libmode_t m)
 		return;
 	}
 	assert(isFunction());
-	
+	if (m == libinline)
+		return;
+	writeComment(G);
+	const char *c = code.c_str();
+	const char *eod = end_of_decl(c);
 	switch (m) {
-	case libinline:
-		break;
 	case libstatic:
-		writeComment(G);
-		G << "static " << code << "\n\n\n";
+		G << "static ";
+		G << code;
 		break;
 	case libextern:
-		writeComment(G);
-		G << code << "\n\n\n";
+		G << getDefHeader(c,eod);
+		G << eod;
 		break;
 	default:
 		abort();
 	}
+	G << "\n\n\n";
 }
 
 
+void CodeTemplate::addDependencies(char *deps)
+{
+	string dep;
+	char c = *deps++;
+	do {
+		while (isspace(c) || (c == ',') || (c == ';'))
+			c = *deps++;
+		while (isalnum(c) || (c == '_')) {
+			dep += c;
+			c = *deps++;
+		}
+		if (!dep.empty()) {
+			dependencies.push_back(dep);
+			dep.clear();
+		}
+	} while (isspace(c) || isalnum(c) || (c == '_') || (c == ',') || (c == ';'));
+	if ((c != '\n') && (c != '/') && (c != 0))
+		warn("invalid argument for requirements: %s",deps);
+}

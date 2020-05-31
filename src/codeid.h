@@ -32,6 +32,8 @@ typedef enum {
 	ct_json_string,
 	ct_mangle_double,
 	ct_mangle_float,
+	ct_decode_early,
+	ct_decode_union,
 	ct_parse_ascii_bool,
 	ct_parse_ascii_dbl,
 	ct_parse_ascii_flt,
@@ -43,6 +45,7 @@ typedef enum {
 	ct_parse_ascii_u32,
 	ct_parse_ascii_u64,
 	ct_parse_ascii_u8,
+	ct_parse_enum,
 	ct_place_varint,
 	ct_read_double,
 	ct_read_float,
@@ -70,6 +73,7 @@ typedef enum {
 	ct_write_u64,
 	ct_write_varint,
 	ct_write_xvarint,	// sign extended varint for varintbits < 64
+	ct_cstrless,
 	ct_id_max,		// beginning of unassigned id range
 } codeid_t;
 

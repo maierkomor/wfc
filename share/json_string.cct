@@ -26,7 +26,7 @@
  * function: json_indent
  * sysinclude: ostream
  */
-void json_indent($streamtype &json, unsigned indLvl, char fsep)
+void json_indent($streamtype &json, unsigned indLvl, char fsep, const char *fname = 0)
 {
 	if (fsep) {
 		json.put(fsep);
@@ -36,6 +36,12 @@ void json_indent($streamtype &json, unsigned indLvl, char fsep)
 		--indLvl;
 		json.put(' ');
 		json.put(' ');
+	}
+	if (fname) {
+		json.put('"');
+		json << fname;
+		json.put('"');
+		json.put(':');
 	}
 }
 
@@ -64,101 +70,50 @@ void json_indent(J &json, unsigned indLvl, char fsep = 0)
  */
 void json_cstr($streamtype &json, const char *cstr)
 {
-	json << '"';
+	json.put('"');
+	if (cstr == 0) {
+		json.put('"');
+		return;
+	}
 	char c = *cstr;
 	while (c) {
-		switch (c) {
-		case '\n':
-			json << '\\';
-			json << 'n';
-			break;
-		case '\r':
-			json << '\\';
-			json << 'r';
-			break;
-		case '\b':
-			json << '\\';
-			json << 'b';
-			break;
-		case '\f':
-			json << '\\';
-			json << 'f';
-			break;
-		case '\t':
-			json << '\\';
-			json << 't';
-			break;
-		case '\\':
-		case '"':
-		case '/':
-			json << '\\';
-			json << c;
-			break;
-		default:
-			if ((c >= 0x20) && (c <= 0x7e)) {
-				json << c;
-			} else {
-				char buf[8];
-				sprintf(buf,"\\u%04x",c);
-				json << buf;
+		if ((c >= 0x20) && (c <= 0x7e)) {
+			json.put(c);
+		} else {
+			json.put('\\');
+			switch (c) {
+			case '\n':
+				json.put('n');
+				break;
+			case '\r':
+				json.put('r');
+				break;
+			case '\b':
+				json.put('b');
+				break;
+			case '\f':
+				json.put('f');
+				break;
+			case '\t':
+				json.put('t');
+				break;
+			case '\\':
+			case '"':
+			case '/':
+				json.put(c);
+				break;
+			default:
+				{
+					char buf[8];
+					ssize_t n = sprintf(buf,"u%04x",c);
+					json.write(buf,n);
+				}
 			}
 		}
 		++cstr;
 		c = *cstr;
 	}
-	json << '"';
-}
-
-
-/* no-wfc-template:
- * function: json_cstr
- * sysinclude: stdio.h
- */
-void json_cstr(std::string &json, const char *cstr)
-{
-	json += '"';
-	char c = *cstr;
-	while (c) {
-		switch (c) {
-		case '\n':
-			json += '\\';
-			json += 'n';
-			break;
-		case '\r':
-			json += '\\';
-			json += 'r';
-			break;
-		case '\b':
-			json += '\\';
-			json += 'b';
-			break;
-		case '\f':
-			json += '\\';
-			json += 'f';
-			break;
-		case '\t':
-			json += '\\';
-			json += 't';
-			break;
-		case '\\':
-		case '"':
-		case '/':
-			json += '\\';
-			json += c;
-			break;
-		default:
-			if ((c >= 0x20) && (c <= 0x7e)) {
-				json += c;
-			} else {
-				char buf[8];
-				sprintf(buf,"\\u%04x",c);
-				json += buf;
-			}
-		}
-		++cstr;
-		c = *cstr;
-	}
-	json += '"';
+	json.put('"');
 }
 
 
@@ -174,44 +129,37 @@ void json_string($streamtype &json, const C &str)
 	size_t s = str.size();
 	while (s) {
 		char c = (char) *data++;
-		switch (c) {
-		case 0:
-			json.put('\\');
-			json.put('0');
-			break;
-		case '\n':
-			json.put('\\');
-			json.put('n');
-			break;
-		case '\r':
-			json.put('\\');
-			json.put('r');
-			break;
-		case '\b':
-			json.put('\\');
-			json.put('b');
-			break;
-		case '\f':
-			json.put('\\');
-			json.put('f');
-			break;
-		case '\t':
-			json.put('\\');
-			json.put('t');
-			break;
-		case '\\':
-		case '"':
-		case '/':
-			json.put('\\');
+		if ((c >= 0x20) && (c <= 0x7e)) {
 			json.put(c);
-			break;
-		default:
-			if ((c >= 0x20) && (c <= 0x7e)) {
+		} else {
+			json.put('\\');
+			switch (c) {
+			case '\n':
+				json.put('n');
+				break;
+			case '\r':
+				json.put('r');
+				break;
+			case '\b':
+				json.put('b');
+				break;
+			case '\f':
+				json.put('f');
+				break;
+			case '\t':
+				json.put('t');
+				break;
+			case '\\':
+			case '"':
+			case '/':
 				json.put(c);
-			} else {
-				char buf[8];
-				int n = sprintf(buf,"\\u%04x",c);
-				json.write(buf,n);
+				break;
+			default:
+				{
+					char buf[8];
+					int n = sprintf(buf,"u%04x",c);
+					json.write(buf,n);
+				}
 			}
 		}
 		--s;
@@ -321,6 +269,8 @@ void to_dblstr_str($streamtype &s, double d)
 {
 	if (isnan(d))
 		s << "\"NaN\"";
+	else if (isinf(d))
+		s << "\"Infinity\"";
 	else
 		s << d;
 }

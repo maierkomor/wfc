@@ -140,6 +140,36 @@ void CodeLibrary::addFile(const char *filename, struct stat *st)
 }
 
 
+static void min_of(char *&a, char *&b)
+{
+	if ((a == 0) || (b == 0))
+		return;
+	if (a < b)
+		b = 0;
+	else
+		a = 0;
+}
+
+
+static char *get_end_of_body(char *at)
+{
+	char *c = strchr(at,'{');
+	if (c == 0)
+		return 0;
+	int br = 0;
+	do {
+		if ((*c == '{') && (c[1] != '\''))
+			++br;
+		else if ((*c == '}') && (c[1] != '\''))
+			--br;
+		else if (*c == 0)
+			return 0;
+		++c;
+	} while (br > 0);
+	return c;
+}
+
+
 void CodeLibrary::addBuf(char *buf, const char *fn)
 {
 	char *at = buf;
@@ -186,26 +216,11 @@ void CodeLibrary::addBuf(char *buf, const char *fn)
 		char *define = strstr(eoc,"#define");
 		char *ifdef = strstr(eoc,"#if");
 		char *c = strchr(z,'{');
-		if (ifdef && c) {
-			if (ifdef < c)
-				c = 0;
-			else
-				ifdef = 0;
-		}
-		if (define && c) {
-			if (define < c)
-				c = 0;
-			else
-				define = 0;
-		}
-		if (ifdef && define) {
-			if (define < ifdef)
-				ifdef = 0;
-			else
-				define = 0;
-		}
+		min_of(define,c);
+		min_of(ifdef,c);
+		min_of(define,ifdef);
 		char *eofunc = 0;
-		char *p = strchr(eoc+2,'(');
+		//char *p = strchr(eoc+2,'(');
 		if (ifdef) {
 			char *endif = strstr(ifdef+3,"#endif");
 			if (endif == 0) {
@@ -221,28 +236,9 @@ void CodeLibrary::addBuf(char *buf, const char *fn)
 				eofunc = strchr(eofunc,'\n');
 			} while (eofunc && (eofunc[-1] == '\\'));
 		} else if (c) {
-			while (p && p[-1] == '$')	// skip over leading $(inline)
-				p = strchr(p+1,'(');
-			/*
-			if ((p == 0) || (p > c)) {
-				warn("file %s: template without parameter list",fn);
-				at = eoc + 2;
-				continue;
-			}
-			*/
-			unsigned br = 1;
-			do {
-				++c;
-				if ((*c == '{') && (c[1] != '\''))
-					++br;
-				else if ((*c == '}') && (c[1] != '\''))
-					--br;
-				else if (*c == 0) {
-					warn("file %s: template with incomplete body",fn);
-					return;
-				}
-			} while (br);
-			eofunc = c + 1;
+			//while (p && p[-1] == '$')	// skip over leading $(inline)
+				//p = strchr(p+1,'(');
+			eofunc = get_end_of_body(c);
 		}
 		if (eofunc == 0) {
 			warn("file %s: template without body",fn);
@@ -259,12 +255,7 @@ void CodeLibrary::addBuf(char *buf, const char *fn)
 		ct->setFilename(fn);
 		codeid_t id = ct->getFunctionId();
 		if (id != ct_invalid) {
-			while (isspace(p[-1]))
-				--p;
-			char *v = p-1;
-			while (isalnum(v[-1])||(v[-1] == '_'))
-				--v;
-			string variant = string(v,p);
+			const string &variant = ct->getVariant();
 			auto i = m_variants.insert(make_pair(variant,fn));
 			if (i.second) {
 				m_templates.insert(make_pair(id,ct));
@@ -301,7 +292,6 @@ string CodeLibrary::getComment(const char *f, const Options *o) const
 CodeTemplate *CodeLibrary::getTemplate(codeid_t f, const Options *o) const
 {
 	auto p = m_templates.equal_range(f);
-
 	while (p.first != p.second) {
 		CodeTemplate *t = p.first->second;
 		dbug("trying variant %s",t->getVariant().c_str());
@@ -316,34 +306,30 @@ CodeTemplate *CodeLibrary::getTemplate(codeid_t f, const Options *o) const
 }
 
 
-void CodeLibrary::write_dependencies(Generator &G, const vector<unsigned> &funcs, const Options *options, libmode_t lm) const
+void CodeLibrary::add_dependencies(vector<unsigned> &funcs, const Options *options, libmode_t lm) const
 {
 	set<string> deps;
-	for (auto i = funcs.begin(), e = funcs.end(); i != e; ++i) {
-		codeid_t id = (codeid_t)*i;
+	for (auto id : funcs) {
 		if (id & 0x10000)
 			continue;
-		CodeTemplate *t = getTemplate(id,options);
+		CodeTemplate *t = getTemplate((codeid_t)id,options);
 		if (t == 0)
 			continue;
-		const vector<string> &d= t->getDependencies();
+		const vector<string> &d = t->getDependencies();
 		deps.insert(d.begin(),d.end());
 	}
-	auto e = m_functions.end();
-	for (auto d : deps) {
-		codeid_t id = CodeTemplate::getFunctionId(d);
-		if (id != ct_invalid) {
-			CodeTemplate *t = getTemplate(id,options);
-			if (0)
-				error("unable to find required template library function %s",d.c_str());
-			else if (m_generated.insert(id).second)
-				t->write_cpp(G,lm);
-		} else {
-			auto f = m_functions.find(d);
-			if (f == e)
-				error("unable to find required template function %s",d.c_str());
-			else
-				f->second->write_cpp(G,lm);
+	if (deps.empty())
+		return;
+	set<codeid_t> all;
+	for (auto x: funcs)
+		all.insert((codeid_t)x);
+	for (const string &n: deps) {
+		dbug("adding dependency: %s",n.c_str());
+		codeid_t id = CodeTemplate::getFunctionId(n);
+		if (id == ct_invalid) {
+			warn("unable to find depency %s",n.c_str());
+		} else if (all.insert(id).second) {
+			funcs.insert(funcs.begin(),id);
 		}
 	}
 }
@@ -375,7 +361,7 @@ void CodeLibrary::write_includes(Generator &G, const vector<unsigned> &funcs, co
 }
 
 
-void CodeLibrary::write_h(Generator &G, const vector<unsigned> &funcs, const Options *options) const
+void CodeLibrary::write_h(Generator &G, vector<unsigned> &funcs, const Options *options) const
 {
 	const string &wfclib = options->getOption("wfclib");
 	libmode_t lm;
@@ -388,6 +374,8 @@ void CodeLibrary::write_h(Generator &G, const vector<unsigned> &funcs, const Opt
 	else
 		abort();
 	diag("writing header of helper functions");
+	if (lm == libinline)
+		add_dependencies(funcs,options,lm);
 	for (auto i = funcs.begin(), e = funcs.end(); i != e; ++i) {
 		unsigned f = *i;
 		if (f & 0x10000) {
@@ -407,7 +395,7 @@ void CodeLibrary::write_h(Generator &G, const vector<unsigned> &funcs, const Opt
 }
 
 
-void CodeLibrary::write_cpp(Generator &G, const vector<unsigned> &funcs, const Options *options) const
+void CodeLibrary::write_cpp(Generator &G, vector<unsigned> &funcs, const Options *options) const
 {
 	write_includes(G,funcs,options);
 	const string &wfclib = options->getOption("wfclib");
@@ -421,7 +409,7 @@ void CodeLibrary::write_cpp(Generator &G, const vector<unsigned> &funcs, const O
 	else
 		abort();
 	diag("writing body of helper functions");
-	write_dependencies(G,funcs,options,lm);
+	add_dependencies(funcs,options,lm);
 	for (auto i = funcs.begin(), e = funcs.end(); i != e; ++i) {
 		unsigned f = *i;
 		if (f & 0x10000) {
