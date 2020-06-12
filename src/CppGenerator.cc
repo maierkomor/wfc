@@ -4341,7 +4341,7 @@ void CppGenerator::writeFromMemory_early(Generator &G, Field *f)
 	case ft_bytes:
 	case ft_string:
 		G <<	"case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding byte[]\n"
-			"if ((ud.vi < 0) || (ud.vi > e-a)) {\n"
+			"if (ud.vi > e-a) {\n"
 			"	$handle_error;\n"
 			"}\n";
 		G.fillField("(const char*)a,ud.vi");

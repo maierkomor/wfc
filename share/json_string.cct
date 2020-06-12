@@ -105,7 +105,7 @@ void json_cstr($streamtype &json, const char *cstr)
 			default:
 				{
 					char buf[8];
-					ssize_t n = sprintf(buf,"u%04x",c);
+					ssize_t n = sprintf(buf,"u%04x",(uint8_t)c);
 					json.write(buf,n);
 				}
 			}
@@ -157,7 +157,7 @@ void json_string($streamtype &json, const C &str)
 			default:
 				{
 					char buf[8];
-					int n = sprintf(buf,"u%04x",c);
+					int n = sprintf(buf,"u%04x",(uint8_t)c);
 					json.write(buf,n);
 				}
 			}

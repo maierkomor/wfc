@@ -1,3 +1,8 @@
+Latest Changes:
+===============
+- fix: potential stack corruption in JSON bytes output
+- fix: remove superfluous check (ud.vi < 0)
+
 Release R2005:
 ==============
 - enhancement: added option to en-/disable use of ID 0
