@@ -3769,20 +3769,18 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 	switch (quan) {
 	case q_optional:
 		G <<	//"if ($(field_has)()) {\n"
-			"$ascii_indent(o,indent);\n"
-			"o << \"$(fname) = \"";
+			"$ascii_indent(o,indent,\"$fname\");\n";
 		break;
 	case q_required:
-		G <<	"$ascii_indent(o,indent);\n"
-			"o << \"$(fname) = \"";
+		G <<	"$ascii_indent(o,indent,\"$fname\");\n";
 		break;
 	case q_repeated:
-		G <<	"$ascii_indent(o,indent);\n"
-			"o << \"$(fname)[\" << $field_size << \"] = {\";\n"
+		G <<   "$ascii_indent(o,indent);\n"
+	               "o << \"$(fname)[\" << $field_size << \"] = {\";\n"
 			"++indent;\n"
 			"for (size_t i = 0, e = $(field_size); i != e; ++i) {\n"
 			"$ascii_indent(o,indent);\n"
-			"o << i << \": \""
+			"o << i << \": \";\n"
 			//"o << \"$(fname)[\" << i << \"] = \";\n"
 			//"$ascii_indent(o,indent);\n"
 			;
@@ -3794,7 +3792,7 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 	if (f->isVirtual()) {
 		if (f->isMessage()) {
 			G <<	"$(fname)_$(toASCII)(o,indent);\n"
-			       	"o << ';';\n";
+				"o << ';';\n";
 		} else
 			G <<	"o << $(field_value) << ';';\n";
 	} else if (!f->getAsciiFunction().empty()) {
@@ -3804,13 +3802,13 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 	} else switch (type) {
 	case ft_uint8:
 	case ft_fixed8:
-		G << " << (unsigned) $(field_value) << ';';\n";
+		G << "o << (unsigned) $(field_value) << ';';\n";
 		break;
 
 	case ft_int8:
 	case ft_sint8:
 	case ft_sfixed8:
-		G << " << (signed) $(field_value) << ';';\n";
+		G << "o << (signed) $(field_value) << ';';\n";
 		break;
 
 	case ft_int32:
@@ -3830,47 +3828,47 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 	case ft_fixed64:
 	case ft_sfixed64:
 	case ft_double:
-		G << " << $(field_value) << ';';\n";
+		G << "o << $(field_value) << ';';\n";
 		break;
 
 	case ft_bytes:
-		G << ";\n" << target->getOption("ascii_bytes") << "(o,(const uint8_t*)$(field_value).data(),$(field_value).size(),indent+2);\no << ';';\n";
+		G << target->getOption("ascii_bytes") << "(o,(const uint8_t*)$(field_value).data(),$(field_value).size(),indent+2);\no << ';';\n";
 		break;
 	case ft_string:
 		{
 			const string &filter = target->getOption("ascii_string");
 			if (!filter.empty())
-				G << ";\n" << filter << "(o,$field_value.data(),$field_value.size(),indent+2);\no << ';';\n";
+				G << filter << "(o,$field_value.data(),$field_value.size(),indent+2);\no << ';';\n";
 			else
-				G << " << $field_value.c_str() << ';';\n";
+				G << "o << $field_value.c_str() << ';';\n";
 		}
 		break;
 	case ft_cptr:
 		{
 			const string &filter = target->getOption("StringFilter");
 			if (!filter.empty())
-				G << " << " << filter << "($(field_value),indent+2) << ';';\n";
+				G << "o << " << filter << "($(field_value),indent+2) << ';';\n";
 			else
-				G << " << $(field_value) << ';';\n";
+				G << "o << $(field_value) << ';';\n";
 		}
 		break;
 	case ft_bool:
-		G << " << ($(field_value) ? \"true\" : \"false\") << ';';\n";
+		G << "o << ($(field_value) ? \"true\" : \"false\") << ';';\n";
 		break;
 
 	default:
 		if ((type & ft_filter) == ft_msg) {
 			//if (quan != q_repeated)
 				//G << ";\n";
-			G << ";\n$(field_value).$(toASCII)(o,indent);\n";
+			G << "$(field_value).$(toASCII)(o,indent);\n";
 		} else if ((type & ft_filter) == ft_enum) {
 			Enum *e = Enum::id2enum(type);
 			assert(e);
 			const string &strfun = e->getStringFunction();
 			if (strfun.empty())
-				G << " << $(field_value) << ';';\n";
+				G << "o << $(field_value) << ';';\n";
 			else
-				G << ";\nif (const char *v = " << strfun << "($(field_value)))\n"
+				G << "if (const char *v = " << strfun << "($(field_value)))\n"
 				       "o << v;\n"
 				       "else\n"
 				       "o << $field_value;\n"
@@ -4328,7 +4326,7 @@ void CppGenerator::writeFromMemory_early(Generator &G, Field *f)
 		G <<	"case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding byte[]\n";
 		if (f->getQuantifier() == q_repeated)
 			G << "$(m_field).emplace_back();\n";
-		G <<	"if (ud.vi != 0) {\n"
+		G <<	"if (((ssize_t)ud.vi > 0) && ((ssize_t)ud.vi <= (e-a))) {\n"
 			"int n;\n";
 		G.fillField("(const uint8_t*)a,ud.vi");
 		G <<	"if (n != (ssize_t)ud.vi)\n"
@@ -4341,7 +4339,7 @@ void CppGenerator::writeFromMemory_early(Generator &G, Field *f)
 	case ft_bytes:
 	case ft_string:
 		G <<	"case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding byte[]\n"
-			"if (ud.vi > e-a) {\n"
+			"if ((ssize_t)ud.vi > e-a) {\n"
 			"	$handle_error;\n"
 			"}\n";
 		G.fillField("(const char*)a,ud.vi");

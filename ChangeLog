@@ -1,5 +1,7 @@
-Latest Changes:
-===============
+Release R2007:
+==============
+- enhancement: code optimization for ASCII output
+- enhancement: better protection against corrupt data
 - fix: potential stack corruption in JSON bytes output
 - fix: remove superfluous check (ud.vi < 0)
 

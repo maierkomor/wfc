@@ -23,6 +23,16 @@
 #include <sstream>
 
 /* wfc-template:
+ * function: json_semi
+ * sysinclude: ostream
+ */
+void json_semi(ostream &json)
+{
+	json.put(';');
+}
+
+
+/* wfc-template:
  * function: json_indent
  * sysinclude: ostream
  */

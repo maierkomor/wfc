@@ -52,7 +52,7 @@ for flagset in "${!flagsets[@]}"; do
 	#ODIR=`pwd`/"$flagset"
 	ODIR="$flagset"
 	WFCFLAGS="${flagsets["$flagset"]}"
-	CXXFLAGS="$CXXFLAGS0 -I../include -I. -I$ODIR"
+	CXXFLAGS="$CXXFLAGS0 -I../include -I. -I$ODIR -I/usr/pkg/include"
 	if [ -d "$ODIR" ]; then
 		rm -r "$ODIR"
 	fi

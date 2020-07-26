@@ -25,12 +25,18 @@
 /* wfc-template:
  * function: ascii_indent
  */
-void ascii_indent($streamtype &out, ssize_t n)
+void ascii_indent($streamtype &out, ssize_t n, const char *fname = 0)
 {
-	out << '\n';
+	out.put('\n');
 	while (n > 0) {
-		out << '\t';
+		out.put('\t');
 		--n;
+	}
+	if (fname) {
+		out << fname;
+		out.put(' ');
+		out.put('=');
+		out.put(' ');
 	}
 }
 

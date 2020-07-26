@@ -23,7 +23,7 @@ CXX	=g++
 CXXFLAGS=-g -Os -I$(ODIR) -I../include -I.
 #CXXSRCS	+=$(ODIR)/comp_v1.cpp $(ODIR)/comp_v2.cpp
 CXXOBJS	= $(CXXSRCS:%.cpp=%.o) $(WFCOBJS)
-LIBS	= -ljson-c
+LIBS	= -L/usr/pkg/lib -ljson-c -Wl,-R/usr/pkg/lib
 
 
 TESTCASES = \
