@@ -48,7 +48,6 @@ CppGenerator::CppGenerator(PBFile *p, Options *o)
 , clOptions(o)
 , usesArrays(false)
 , usesVectors(false)
-, usesCStrings(false)
 , usesStringTypes(false)
 , PaddedMsgSize(false)
 , SinkToTemplate(false)
@@ -343,9 +342,9 @@ const char *CppGenerator::clearValid(int vbit, unsigned numvalid)
 	if (vbit < 0)
 		return "";
 	if (numvalid <= VarIntBits)
-		return "p_validbits &= ~(($(validtype))1U << $vbit);";
+		return "p_validbits &= ~(($(validtype))1U << $vbit);\n";
 	else
-		return "p_validbits[$($vbit/8)] &= ~(($(validtype))1U << $($vbit&7));";
+		return "p_validbits[$($vbit/8)] &= ~(($(validtype))1U << $($vbit&7));\n";
 }
 
 
@@ -467,7 +466,6 @@ void CppGenerator::init(const vector<string> &msgs)
 	usesArrays = false;
 	usesVectors = false;
 	usesBytes = false;
-	usesCStrings = false;
 	usesStringTypes = false;
 	for (unsigned i = 0, n = file->numMessages(); i != n; ++i) {
 		Message *m = file->getMessage(i);
@@ -758,8 +756,8 @@ void CppGenerator::writeLib()
 	string defname = libname;
 	transform(libname.begin(),libname.end(),defname.begin(),::toupper);
 	Generator lhg(lh,target);
-	lhg << "#ifndef " << defname << "_H\n"
-		"#define " << defname << "_H\n\n\n";
+	lhg << "#ifndef _" << defname << "_H\n"
+		"#define _" << defname << "_H\n\n\n";
 	if (Asserts || (target->getOption("UnknownField") == "assert"))
 		lhg << "#include <assert.h>\n";
 	if (PrintOut)
@@ -782,6 +780,11 @@ void CppGenerator::writeLib()
 		"#include <stdlib.h>\n";
 	if (target->getOption("stringtype") == "std")
 		lhg << "#include <string>\n";
+	if (!target->getHeaders().empty()) {
+		lhg <<	"/* user requested header files */\n";
+		for (auto &h : target->getHeaders()) 
+			lhg <<	"#include " << h << '\n';
+	}
 	Lib.write_includes(lhg,allfuncs,target);
 	target->printDefines(lh);
 	lhg <<	"\n\n"
@@ -797,6 +800,8 @@ void CppGenerator::writeLib()
 
 void CppGenerator::writeFiles(const char *basename)
 {
+	if ((target->getOption("stringtype")== "C") && !target->getOption("toString").empty())
+		fatal("cannot generate method toString with stringtype C");
 	for (unsigned i = 0, n = file->numMessages(); i != n; ++i)
 		scanRequirements(file->getMessage(i));
 	if (PrintOut) {
@@ -1473,8 +1478,6 @@ void CppGenerator::writeHeader(const string &bn)
 		else
 			G << "#include <sink.h>\n";
 	}
-	if (usesCStrings)
-		G << "#include <cstring.h>\n";
 	if (usesBytes)
 		G << "#include <bytes.h>\n";
 	else
@@ -1743,6 +1746,10 @@ void CppGenerator::writeSetByNameR(Generator &G, Field *f)
 		"		$handle_error;\n"
 		"	if (m_$(fname).size() <= x)\n"
 		"		$handle_error;\n"
+		"	if ((idxe[1] == 0) && (value == 0)) {\n"
+		"		m_$fname.erase(m_$fname.begin()+x);\n"
+		"		return 0;\n"
+		"	}\n"
 		"}\n";
 	if ((t & ft_filter) == ft_msg) {
 		G <<	"if (idxe[1] != '.')\n"
@@ -1871,12 +1878,21 @@ void CppGenerator::writeSetByName(Generator &G, Message *m)
 			continue;
 		}
 		if ((t & ft_filter) == ft_msg) {
-			G <<	"if (0 == memcmp(name,\"$(fname)\",$fnamelen)) {\n"
-				"if ((name[$fnamelen] == 0) && (value == 0)) {\n"
-				"m_$fname.clear();\n"
-				"return 0;\n"
-				"} else if (name[$fnamelen] == '.') {\n";
-			writeSetValid(G,f->getValidBit());
+			if (f->getValidBit() >= 0) {
+				G <<	"if (0 == memcmp(name,\"$(fname)\",$fnamelen)) {\n"
+					"if ((name[$fnamelen] == 0) && (value == 0)) {\n"
+					"$field_clear();\n"
+					"return 0;\n"
+					"} else if (name[$fnamelen] == '.') {\n";
+				writeSetValid(G,f->getValidBit());
+			} else {
+				G <<	"if (0 == memcmp(name,\"$(fname)\",$fnamelen)) {\n"
+					"if ((name[$fnamelen] == 0) && (value == 0)) {\n"
+					"m_$fname.clear();\n"
+					"return 0;\n"
+					"} else if (name[$fnamelen] == '.') {\n";
+
+			}
 			G <<	"return m_$(fname).$(set_by_name)(name+$($fnamelen+1),value);\n"
 				"}\n"
 				"}\n";
@@ -3384,12 +3400,14 @@ void CppGenerator::writeToJson(Generator &G, Field *f, char fsep)
 			   "json.put('\"');\n";
 		writevalue = av.c_str();
 	} else if (f->isEnum()) {
-		writevalue = "json.put('\"');\n"
-			"if (const char *v = $(strfun)($(field_value)))\n"
+		writevalue = 
+			"if (const char *v = $(strfun)($(field_value))) {\n"
+			"json.put('\"');\n"
 			"json << v;\n"
-			"else\n"
+			"json.put('\"');\n"
+			"} else {\n"
 			"json << $(field_value);\n"
-			"json.put('\"');\n";
+			"}\n";
 	} else if (type == ft_bool) {
 		writevalue = "json << ($(field_value) ? \"true\" : \"false\");\n";
 	} else if (f->isNumeric()) {

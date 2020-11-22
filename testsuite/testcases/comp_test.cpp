@@ -28,7 +28,8 @@ int main()
 	m_v1.add_rs("nix");
 	m_v1.add_rs("weiter");
 
-	string xfer;
+#ifdef HAVE_TO_STRING
+	stringtype xfer;
 	m_v1.toString(xfer);
 
 	V2::M m_v2;
@@ -41,16 +42,17 @@ int main()
 	stringstream ss1,ss2;
 	m_v1.toASCII(ss1);
 	m_v2.toASCII(ss2);
-	string s1 = ss1.str();
-	string s2 = ss2.str();
+	stringtype s1 = ss1.str().c_str();
+	stringtype s2 = ss2.str().c_str();
 	if (s1 != s2) {
 		cout << "v1_a:\n";
-		cout << s1 << endl;
+		cout << s1.c_str() << endl;
 		cout << "v2_a:\n";
-		cout << s2 << endl;
+		cout << s2.c_str() << endl;
 		abort();
 	}
 	xfer = "";
 	m_v2.toString(xfer);
 	assert(m_v2.calcSize() == xfer.size());
+#endif
 }

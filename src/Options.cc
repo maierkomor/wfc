@@ -304,8 +304,8 @@ void Options::initDefaults()
 	m_BinOptions["debug"] = false;
 	m_BinOptions["genlib"] = true;
 	m_BinOptions["gnux"] = true;
-	m_BinOptions["withEqual"] = false;
-	m_BinOptions["withUnequal"] = false;
+	m_BinOptions["withEqual"] = true;
+	m_BinOptions["withUnequal"] = true;
 	m_BinOptions["FlexDecoding"] = false;
 	m_BinOptions["SinkToTemplate"] = false;
 	m_BinOptions["devel"] = false;
@@ -447,6 +447,8 @@ void Options::printDefines(ostream &out) const
 		out << "#define SUBCLASSES 1\n";
 	if (isId("toMemory"))
 		out << "#define HAVE_TO_MEMORY 1\n";
+	if (isId("toString"))
+		out << "#define HAVE_TO_STRING 1\n";
 	if (isId("toSink"))
 		out << "#define HAVE_TO_SINK 1\n";
 	if (isId("toWire"))

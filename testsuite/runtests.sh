@@ -22,7 +22,7 @@ export WFC=`pwd`/../bin/wfc
 MAKE=`which gmake||which make`
 #echo make is $MAKE
 
-declare -A flagsets
+declare -A flagsets cxxflags
 flagsets[fs_OsLs]="-Os -fwfclib=static -g"
 flagsets[fs_OsLi]="-Os -fwfclib=inline -g"
 flagsets[fs_OsLe]="-Os -fwfclib=extern -g"
@@ -32,27 +32,61 @@ flagsets[fs_O2Le]="-O2 -fwfclib=extern -g"
 flagsets[fs_OrLs]="-Or -fwfclib=static -g"
 flagsets[fs_OrLi]="-Or -fwfclib=inline -g"
 flagsets[fs_OrLe]="-Or -fwfclib=extern -g"
-flagsets[fs_O2le]="-O2 -fendian=little -g"
 flagsets[fs_O2s]="-O2 -s"
 flagsets[fs_Ors]="-Or -s"
 flagsets[fs_Oss]="-Os -s"
-flagsets[fs_O2C]="-O2 -fStringType=C"
-flagsets[fs_OsC]="-Os -fStringType=C"
-flagsets[fs_OrC]="-Or -fStringType=C"
+flagsets[fs_O2C]='-O2 -fStringType=C -ftoString=""'
+flagsets[fs_OsC]='-Os -fStringType=C -ftoString=""'
+flagsets[fs_OrC]='-Or -fStringType=C -ftoString=""'
+flagsets[fs_O2A]="-O2 -fStringType=AString '-fheader=\"astring.h\"'"
+flagsets[fs_OsA]="-O2 -fStringType=AString '-fheader=\"astring.h\"'"
+flagsets[fs_OrA]="-O2 -fStringType=AString '-fheader=\"astring.h\"'"
+flagsets[fs_O2ALe]="-O2 -fStringType=AString '-fheader=\"astring.h\"'"
+flagsets[fs_OsALe]="-O2 -fStringType=AString '-fheader=\"astring.h\"'"
+flagsets[fs_OrALe]="-O2 -fStringType=AString '-fheader=\"astring.h\"'"
+if [ `uname -m` != "armv7l" ]; then
+	flagsets[fs_O2le]="-O2 -fendian=little -g"
+fi
+
+cxxflags[fs_OsLs]="-Dstringtype=string"
+cxxflags[fs_OsLi]="-Dstringtype=string"
+cxxflags[fs_OsLe]="-Dstringtype=string"
+cxxflags[fs_O2Ls]="-Dstringtype=string"
+cxxflags[fs_O2Li]="-Dstringtype=string"
+cxxflags[fs_O2Le]="-Dstringtype=string"
+cxxflags[fs_OrLs]="-Dstringtype=string"
+cxxflags[fs_OrLi]="-Dstringtype=string"
+cxxflags[fs_OrLe]="-Dstringtype=string"
+cxxflags[fs_O2s]="-Dstringtype=string"
+cxxflags[fs_Ors]="-Dstringtype=string"
+cxxflags[fs_Oss]="-Dstringtype=string"
+cxxflags[fs_O2C]="-Dstringtype=string"
+cxxflags[fs_OsC]="-Dstringtype=string"
+cxxflags[fs_OrC]="-Dstringtype=string"
+cxxflags[fs_O2A]="-Dstringtype=AString"
+cxxflags[fs_OsA]="-Dstringtype=AString"
+cxxflags[fs_OrA]="-Dstringtype=AString"
+cxxflags[fs_O2ALe]="-Dstringtype=AString"
+cxxflags[fs_OsALe]="-Dstringtype=AString"
+cxxflags[fs_OrALe]="-Dstringtype=AString"
+cxxflags[fs_O2le]="-Dstringtype=string"
+
 
 CXXFLAGS0=$CXXFLAGS
 if [ "" == "$CXXFLAGS0" ]; then
-	CXXFLAGS0="-Os -g -Wall --std=gnu++11"
+	#CXXFLAGS0="-Os -g -Wall --std=gnu++11"
+	CXXFLAGS0="-g -Wall --std=gnu++11"
 fi
 
 
 for flagset in "${!flagsets[@]}"; do
 	echo testing with flagset $flagset
+	echo CXXFLAGS=${cxxflags[$flagset]}
 
 	#ODIR=`pwd`/"$flagset"
 	ODIR="$flagset"
-	WFCFLAGS="${flagsets["$flagset"]}"
-	CXXFLAGS="$CXXFLAGS0 -I../include -I. -I$ODIR -I/usr/pkg/include"
+	WFCFLAGS="${flagsets[$flagset]}"
+	CXXFLAGS="$CXXFLAGS0 -I../include -I. -I$ODIR -I/usr/pkg/include ${cxxflags[$flagset]}"
 	if [ -d "$ODIR" ]; then
 		rm -r "$ODIR"
 	fi

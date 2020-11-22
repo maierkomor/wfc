@@ -27,141 +27,91 @@ class AString
 {
 	public:
 	AString()
-	: str(0)
-	{ }
+	: str((char*)malloc(1))
+	, len(0)
+	{
+		str[0] = 0;
+	}
 
 	AString(const char *s)
+	: len(strlen(s))
 	{
-		str = strdup(s);
+		str = (char *)malloc(len + 1);
+		memcpy(str,s,len+1);
 	}
 
 	AString(const char *s, size_t l)
+	: str((char*)malloc(l+1))
+	, len(l)
 	{
-		if (l == 0) {
-			str = 0;
-		} else {
-			str = (char *) malloc(l+1);
-			memcpy(str,s,l);
-			str[l] = 0;
-		}
+		memcpy(str,s,l);
+		str[l] = 0;
 	}
 
 	AString(const AString &a)
+	: str((char*)(malloc(a.len+1)))
+	, len(a.len)
 	{
-		if (a.str)
-			str = strdup(a.str);
-		else
-			str = 0;
+		memcpy(str,a.str,len+1);
 	}
 
 	~AString()
 	{
-		if (str)
-			free(str);
+		free(str);
 	}
 
 	AString &operator = (const AString &a)
 	{
-		if (str)
-			free(str);
-		if (a.str)
-			str = strdup(a.str);
-		else
-			str = 0;
+		str = (char*) realloc(str,a.len+1);
+		len = a.len;
+		memcpy(str,a.str,len+1);
 		return *this;
 	}
 
 	AString &operator += (const AString &a)
 	{
-		if (str == 0) {
-			if (a.str != 0)
-				str = strdup(a.str);
-			return *this;
-		}
-		if ((a.str == 0) || (a.str[0] == 0)) {
-			if (str)
-				str[0] = 0;
-			return *this;
-		}
-		size_t ol = strlen(str);
-		size_t al = strlen(a.str);
-		str = (char*)realloc(str,ol+al+1);
-		memcpy(str+ol,a.str,al+1);
+		str = (char*) realloc(str,len+a.len+1);
+		memcpy(str+len,a.str,a.len+1);
+		len += a.len;
 		return *this;
 	}
 
 	bool operator == (const AString &a) const
-	{
-		if (str == 0) {
-			if (a.str == 0)
-				return true;
-			if (a.str[0] == 0)
-				return true;
-			return false;
-		}
-		if (a.str == 0) {
-			if (str[0] == 0)
-				return true;
-			return false;
-		}
-		return 0 == strcmp(str,a.str);
-	}
+	{ return (len == a.len) && (0 == memcmp(str,a.str,len)); }
 
 	bool operator != (const AString &a) const
-	{ return !(*this == a); }
+	{ return (len != a.len) || (0 != memcmp(str,a.str,len)); }
 
 
 	AString &operator = (const char *s)
 	{
-		if (str)
-			free(str);
-		if (s)
-			str = strdup(s);
-		else
-			str = 0;
+		len = strlen(s);
+		str = (char*) realloc(str,len+1);
+		memcpy(str,s,len+1);
 		return *this;
 	}
 
 	AString &operator += (const char *s)
 	{
-		if (str == 0) {
-			if (s != 0)
-				str = strdup(s);
-			return *this;
-		}
-		if ((s == 0) || (s[0] == 0))
-			return *this;
-		size_t ol = strlen(str);
 		size_t al = strlen(s);
-		str = (char*)realloc(str,ol+al+1);
-		memcpy(str+ol,s,al+1);
+		str = (char*)realloc(str,len+al+1);
+		memcpy(str+len,s,al+1);
+		len += al;
 		return *this;
 	}
 
 	AString &operator += (char c)
 	{
-		size_t l = str ? strlen(str) : 0;
-		str = (char*)realloc(str,l+2);
-		str[l] = c;
-		str[++l] = 0;
+		str = (char*)realloc(str,len+2);
+		str[len] = c;
+		str[++len] = 0;
 		return *this;
 	}
 
 	bool operator == (const char *s) const
 	{
-		if (str == 0) {
-			if (s == 0)
-				return true;
-			if (s[0] == 0)
-				return true;
-			return false;
-		}
-		if (s == 0) {
-			if (str[0] == 0)
-				return true;
-			return false;
-		}
-		return 0 == strcmp(str,s);
+		size_t l = strlen(s);
+		return (len == l) && (0 == memcmp(str,s,l));
 	}
 
 	bool operator != (const char *a) const
@@ -169,28 +119,20 @@ class AString
 
 
 	const char *c_str() const
-	{
-		if (str == 0) {
-			str = (char*)malloc(1);
-			*str = 0;
-		}
-		return str;
-	}
+	{ return str; }
 
 	const char *data() const
 	{ return str; }
 
 	void clear()
 	{
-		if (str) {
-			free(str);
-			str = 0;
-		}
+		str[0] = 0;
+		len = 0;
 	}
 
 	bool empty() const
 	{
-		return (str == 0) || (str[0] == 0);
+		return str[0] == 0;
 	}
 
 	void assign(const char *m, size_t s)
@@ -198,18 +140,26 @@ class AString
 		str = (char *) realloc(str,s+1);
 		str[s] = 0;
 		memcpy(str,m,s);
+		len = s;
 	}
 
 	void append(const char *m, size_t s)
 	{
-		size_t l = str ? strlen(str) : 0;
-		str = (char *) realloc(str,s+l+1);
-		memcpy(str+l,m,s);
-		str[l+s] = 0;
+		str = (char *) realloc(str,s+len+1);
+		memcpy(str+len,m,s);
+		len += s;
+		str[len] = 0;
+	}
+
+	void push_back(char c)
+	{
+		str = (char *) realloc(str,len+2);
+		str[len] = c;
+		str[++len] = 0;
 	}
 
 	size_t size() const
-	{ return str ? strlen(str) : 0; }
+	{ return len; }
 
 	friend bool operator < (const AString &, const AString &);
 	friend bool operator <= (const AString &, const AString &);
@@ -222,6 +172,7 @@ class AString
 
 	private:
 	mutable char *str;
+	size_t len;
 };
 
 

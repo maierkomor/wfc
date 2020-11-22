@@ -2,6 +2,11 @@
 #include "skip_s.h"
 #include "skip_r.h"
 #include "runcheck.cpp"
+#include "astring.h"
+
+#ifndef stringtype
+#define stringtype string
+#endif
 
 int main(int argc, char **argv)
 {
@@ -54,13 +59,14 @@ int main(int argc, char **argv)
 	M.set_end("ende");
 	runcheck(M);
 
-	string binary;
+#ifdef HAVE_TO_STRING
+	stringtype binary;
 	M.toString(binary);
 
 	receiver::Msg RM;
 	RM.fromMemory(binary.data(),binary.size());
 
-	string back;
+	stringtype back;
 	RM.toString(back);
 
 	sender::Msg SM;
@@ -78,6 +84,7 @@ int main(int argc, char **argv)
 
 	if (M != SM)
 		fail("M==SM",&M,&SM);
+#endif
 
 	printf("%s: %s\n",argv[0],testcnt());
 }

@@ -83,7 +83,7 @@ void fail(const char *err)
 
 using namespace std;
 
-string Wire;
+stringtype Wire;
 unsigned NumToASCII, NumToWire, NumToMem, NumFromMem, NumToSink, NumErrThrow;
 
 const char *testcnt()

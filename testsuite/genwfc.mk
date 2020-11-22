@@ -24,8 +24,8 @@ WFCSRCS = testcases/empty_elements.wfc testcases/enumtest.wfc testcases/validbit
 	  testcases/libtest1.wfc testcases/hostscope.wfc testcases/xvarint.wfc \
 	  testcases/reference.wfc testcases/validbits2.wfc testcases/tt.wfc \
 	  testcases/unused.wfc testcases/fixed_only.wfc testcases/novarint.wfc \
-	  testcases/packed.wfc testcases/virtual.wfc testcases/astr.wfc \
-	  testcases/byname.wfc testcases/inv_def.wfc
+	  testcases/packed.wfc testcases/virtual.wfc testcases/byname.wfc \
+	  testcases/inv_def.wfc testcases/arraycheck.wfc
 
 
 CXXSRCS	= $(WFCSRCS:testcases/%.wfc=$(ODIR)/%.cpp)

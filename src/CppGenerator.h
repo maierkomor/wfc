@@ -122,7 +122,7 @@ class CppGenerator : public CodeGeneratorImpl
 	Options *clOptions;	// command line options to override target settings
 	optmode_t optmode;
 	endian_t Endian;
-	bool usesArrays, usesVectors, usesCStrings, usesStringTypes, usesBytes,
+	bool usesArrays, usesVectors, usesStringTypes, usesBytes,
 	     Asserts, Debug, PrintOut, SubClasses, Checks, PaddedMsgSize, SinkToTemplate,
 	     WithJson, EarlyDecode,
 	     inlineClear, inlineHas, inlineGet, inlineMaxSize, inlineSet, inlineSize,

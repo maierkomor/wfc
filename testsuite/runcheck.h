@@ -37,6 +37,11 @@
 #include <iostream>
 #include <sstream>
 #include <json-c/json.h>
+#include <astring.h>
+
+#ifndef stringtype
+#define stringtype std::string
+#endif
 
 using namespace std;
 #endif
@@ -79,7 +84,7 @@ void runcheck(const Message &tb)
 
 #include <stdio.h>
 #define PSTR(STR) STR
-extern std::string Wire;
+extern stringtype Wire;
 extern unsigned NumToASCII, NumToWire, NumToMem, NumFromMem, NumToSink, NumErrThrow;
 
 const char *testcnt();
@@ -167,7 +172,7 @@ void runcheck(const Message &tb)
 	
 
 #ifdef HAVE_TO_STRING
-	std::string str;
+	stringtype str;
 	tb.toString(str);
 	if (s != (ssize_t)str.size())
 		fail("to_str size",&tb);

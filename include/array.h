@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2020, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -56,10 +56,23 @@ class array
 		n = ns;
 	}
 
-	void push_back(T d)
+	void push_back(const T &d)
 	{
 		assert(n < maxsize);
 		data[n++] = d;
+	}
+
+	void emplace_back(const T &d)
+	{
+		assert(n < maxsize);
+		data[n++] = d;
+	}
+
+	template <typename... Args>
+	void emplace_back(const Args&... args)
+	{
+		assert(n < maxsize);
+		data[n++] = T(args...);
 	}
 
 	const T& operator [] (size_t x) const
@@ -86,8 +99,35 @@ class array
 		return data[n-1];
 	}
 
+	T *begin()
+	{ return data; }
+
+	T *end()
+	{ return data+maxsize; }
+
+	const T *begin() const
+	{ return data; }
+
+	const T *end() const
+	{ return data+maxsize; }
+
 	bool empty() const
 	{ return n == 0; }
+
+	void erase(T *x)
+	{
+		int i = x - data;
+		assert((i >= 0) & (i < n));
+		if (std::is_trivial<T>::value) {
+			memmove(data+i,data+i+1,sizeof(T)*(n-i-1));
+		} else {
+			while (i+1 < n) {
+				data[i] = data[i+1];
+				++i;
+			}
+		}
+		--n;
+	}
 
 	private:
 	size_t n;
@@ -100,7 +140,17 @@ class array
 template <typename T,size_t arraysize>
 bool operator != (const array<T,arraysize> &l, const array<T,arraysize> &r)
 {
-	return 0 != memcmp(l.data,r.data,sizeof(T)*arraysize);
+	if (l.n != r.n)
+		return true;
+	if (std::is_trivial<T>::value) {
+		return 0 != memcmp(l.data,r.data,sizeof(T)*l.n);
+	} else {
+		for (size_t i = 0; i < l.n; ++i) {
+			if (l.data[i] != r.data[i])
+				return true;
+		}
+	}
+	return false;
 }
 
 #endif

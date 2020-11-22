@@ -29,8 +29,8 @@ LIBS	= -L/usr/pkg/lib -ljson-c -Wl,-R/usr/pkg/lib
 TESTCASES = \
 	corruption enumtest empty_test tttest vbittest xvarint \
 	cstrtest stringtest recursion json_hs lt1 skiptest reftest \
-	vbittest2 tttest fixed_test novi_test pack_test astr_test \
-	comp_test ref_byname byname_test inv_def_test
+	vbittest2 tttest fixed_test novi_test pack_test comp_test \
+	ref_byname byname_test inv_def_test arraycheck
 
 COMPILETESTS = \
 	unused
@@ -116,4 +116,7 @@ $(ODIR)/byname_test: $(ODIR)/test_byname.o $(ODIR)/byname.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
 $(ODIR)/inv_def_test: $(ODIR)/inv_def_test.o $(ODIR)/inv_def.o $(WFCOBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
+
+$(ODIR)/arraycheck: $(ODIR)/checkarray.o $(ODIR)/arraycheck.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)

@@ -159,8 +159,8 @@ void send_xvarint($putparam, varint_t v)
  * function: send_msg
  * Optimize: speed
  */
-template <class C>
-void send_msg_fast(std::string &str, const C &c)
+template <typename S, class C>
+void send_msg_fast(S &str, const C &c)
 {
 	size_t off = str.size();
 	str.append(9,0x80);
@@ -177,8 +177,8 @@ void send_msg_fast(std::string &str, const C &c)
 /* wfc-template:
  * function: send_msg
  */
-template <class C>
-void send_msg(std::string &str, const C &c)
+template <typename S, class C>
+void send_msg(S &str, const C &c)
 {
 	std::string tmp;
 	c.toString(tmp);

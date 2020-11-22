@@ -17,15 +17,15 @@
 #endif
 
 
-uint8_t ValuesU8[] = {0,  1,  INT8_MAX, INT8_MAX+1, UINT8_MAX};
-uint16_t ValuesU16[] = {0,  1,  INT16_MAX, INT16_MAX+1, UINT16_MAX};
-uint32_t ValuesU32[] = {0,  1,  INT32_MAX, (uint32_t)INT32_MAX+1ULL, UINT32_MAX};
-uint64_t ValuesU64[] = {0,  1,  INT64_MAX, (uint64_t)INT64_MAX+1ULL, UINT64_MAX};
+uint8_t ValuesU8[] = {0, 1, 77, INT8_MAX, INT8_MAX+1, UINT8_MAX};
+uint16_t ValuesU16[] = {0, 1, 77,  INT16_MAX, INT16_MAX+1, UINT16_MAX};
+uint32_t ValuesU32[] = {0, 1, 77, INT32_MAX, (uint32_t)INT32_MAX+1ULL, UINT32_MAX};
+uint64_t ValuesU64[] = {0, 1, 77, INT64_MAX, (uint64_t)INT64_MAX+1ULL, UINT64_MAX};
 
 int8_t ValuesS8[] = {0, -1, 1, -99, 99, INT8_MIN, INT8_MAX};
-int16_t ValuesS16[] = {0, -1, 1, INT8_MIN, INT8_MAX, INT8_MIN-1, INT8_MAX+1, INT16_MIN, INT16_MAX};
-int32_t ValuesS32[] = {0, -1, 1, INT16_MIN, INT16_MAX, INT16_MIN-1, INT16_MAX+1, INT32_MIN, INT32_MAX};
-int64_t ValuesS64[] = {0, -1, 1, INT32_MIN, INT32_MAX, (int64_t)INT32_MIN-1, (int64_t)INT32_MAX+1, INT64_MIN, INT64_MAX};
+int16_t ValuesS16[] = {0, -1, 1, -99, 99, INT8_MIN, INT8_MAX, INT8_MIN-1, INT8_MAX+1, INT16_MIN, INT16_MAX};
+int32_t ValuesS32[] = {0, -1, 1, -99, 99, INT16_MIN, INT16_MAX, INT16_MIN-1, INT16_MAX+1, INT32_MIN, INT32_MAX};
+int64_t ValuesS64[] = {0, -1, 1, -99, 99, INT32_MIN, INT32_MAX, (int64_t)INT32_MIN-1, (int64_t)INT32_MAX+1, INT64_MIN, INT64_MAX};
 
 
 int main(int argc, char *argv[])

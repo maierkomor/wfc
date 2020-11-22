@@ -367,9 +367,7 @@ uint32_t Field::getType() const
 	case ft_cptr:
 	case ft_string: {
 		const string &stringtype = getOption("stringtype");
-		if ("C" == stringtype)
-			return ft_cptr;
-		if ("pointer" == stringtype)
+		if (("C" == stringtype) || ("pointer" == stringtype))
 			return ft_cptr;
 		return ft_string;
 		}

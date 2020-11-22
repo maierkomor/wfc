@@ -1,3 +1,17 @@
+Release R2011:
+==============
+- enhancement: AString should be suitable for bytes type
+- enhancement: array needs emplace_back
+- enhancement: per default operator == and operator != generation
+- enhancement: support eraseing repeated elements via setByName
+- fix: astring.h compile error
+- fix: AString needs push_back(char)
+- fix: FString needs some fixes
+- fix: array should only use memmove/memcmp for PODs
+- fix: putparam should respect stringtype
+- fix: setByName(f,0) does not clear valid bit
+- fix: JSON output of unknown enums should be formated as integer
+
 Release R2007:
 ==============
 - enhancement: code optimization for ASCII output

@@ -29,11 +29,13 @@ class FString
 	FString()
 	{
 		str[0] = 0;
+		str[len-1] = 0;
 	}
 
 	FString(const char *s)
 	{
 		strncpy(str,s,len-1);
+		str[len-1] = 0;
 	}
 
 	FString(const char *s, size_t l)
@@ -42,11 +44,13 @@ class FString
 			l = len-1;
 		memcpy(str,s,l);
 		str[l] = 0;
+		str[len-1] = 0;
 	}
 
 	FString(const FString &a)
 	{
 		strcpy(str,a.str);
+		str[len-1] = 0;
 	}
 
 	FString &operator = (const FString &a)
@@ -58,13 +62,12 @@ class FString
 	FString &operator += (const FString &a)
 	{
 		strncat(str,a.str,len-1);
+		str[len-1] = 0;
 		return *this;
 	}
 
 	bool operator == (const FString &a) const
-	{
-		return 0 == strcmp(str,a.str);
-	}
+	{ return 0 == strcmp(str,a.str); }
 
 	bool operator != (const FString &a) const
 	{ return 0 != strcmp(str,a.str); }
@@ -85,7 +88,7 @@ class FString
 	bool operator == (const char *s) const
 	{ return 0 == strcmp(str,s); }
 
-	bool operator != (const char *a) const
+	bool operator != (const char *s) const
 	{ return 0 != strcmp(str,s); }
 
 
@@ -96,7 +99,12 @@ class FString
 	{ return str; }
 
 	void assign(const char *s, size_t l)
-	{ strncpy(str,s,l<len?l:len-1); }
+	{
+		if (l >= len)
+			l = len-1;
+		memcpy(str, s, l);
+		str[l] = 0;
+	}
 
 	void clear()
 	{ str[0] = 0; }

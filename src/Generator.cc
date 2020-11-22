@@ -155,15 +155,15 @@ void Generator::setMode(genmode_t g)
 		if (m_options->getFlag("SinkToTemplate"))
 			setVariable("sink_template","template <class Sink> ");
 	} else if (g == gen_string) {
-		setVariable("wireput","s.push_back($1)");	// explicit function given to call
-		setVariable("putarg","s");
-		setVariable("putparam","std::string &s");
-		setVariable("write_varint","send_varint(s,$1)");
-		setVariable("write_xvarint","send_xvarint(s,$1)");
-		setVariable("u16_wire","send_u16(s,$1)");
-		setVariable("u32_wire","send_u32(s,$1)");
-		setVariable("u64_wire","send_u64(s,$1)");
-		setVariable("write_bytes","s.append((const char *)$1,$2)");
+		setVariable("wireput","put.push_back($1)");	// explicit function given to call
+		setVariable("putarg","put");
+		setVariable("putparam","$stringtype &put");
+		setVariable("write_varint","send_varint(put,$1)");
+		setVariable("write_xvarint","send_xvarint(put,$1)");
+		setVariable("u16_wire","send_u16(put,$1)");
+		setVariable("u32_wire","send_u32(put,$1)");
+		setVariable("u64_wire","send_u64(put,$1)");
+		setVariable("write_bytes","put.append((const char *)$1,$2)");
 		setVariable("toX",getVariable("toString"));
 	} else if (toIdentifier(wireput)) {
 		setVariable("wireput",wireput);	// explicit function given to call

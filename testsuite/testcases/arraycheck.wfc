@@ -1,0 +1,24 @@
+option header=<astring.h>;
+option header=<fstring.h>;
+
+message SM
+{
+	int i = 1;
+	unsigned u = 2;
+	string s = 3;
+	float f = 4;
+	bytes b = 5;
+	string a = 6 [ stringtype = AString ];
+	string x = 7 [ stringtype = "FString<8>" ];
+}
+
+message M
+{
+	repeated string s = 1	[ arraysize=8 ];
+	repeated bytes b = 2	[ arraysize=8 ];
+	repeated SM m = 3	[ arraysize=8 ];
+	repeated float f = 4	[ arraysize=8 ];
+	repeated int i = 5	[ arraysize=8 ];
+	repeated string a = 6	[ arraysize=8, stringtype=AString ];
+	repeated string x = 7	[ arraysize=8, stringtype="FString<8>" ];
+}

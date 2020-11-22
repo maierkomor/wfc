@@ -1,6 +1,7 @@
 // varints are used in this message only for tags and only with optmode review
 
 option withUnequal=true;
+option withEqual=true;
 
 message NoVarint
 {
