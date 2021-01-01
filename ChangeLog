@@ -1,3 +1,8 @@
+Release R2012:
+==============
+- fix: usage=obsolete produces uncompilable code
+- fix: resolved compile issues related to array.h
+
 Release R2011:
 ==============
 - enhancement: AString should be suitable for bytes type

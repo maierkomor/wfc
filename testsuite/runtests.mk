@@ -30,7 +30,7 @@ TESTCASES = \
 	corruption enumtest empty_test tttest vbittest xvarint \
 	cstrtest stringtest recursion json_hs lt1 skiptest reftest \
 	vbittest2 tttest fixed_test novi_test pack_test comp_test \
-	ref_byname byname_test inv_def_test arraycheck
+	ref_byname byname_test inv_def_test arraycheck reftestv2
 
 COMPILETESTS = \
 	unused
@@ -86,6 +86,9 @@ $(ODIR)/skiptest: $(ODIR)/skiptest.o $(ODIR)/skip_s.o $(ODIR)/skip_r.o  $(WFCOBJ
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
 $(ODIR)/reftest: $(ODIR)/reftest.o $(ODIR)/reference.o  $(WFCOBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
+
+$(ODIR)/reftestv2: $(ODIR)/reftestv2.o $(ODIR)/referencev2.o  $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
 $(ODIR)/vbittest2: $(ODIR)/vbittest2.o $(ODIR)/validbits2.o  $(WFCOBJS)

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017-2019, Thomas Maier-Komor
+#  Copyright (C) 2017-2020, Thomas Maier-Komor
 #
 #  This source file belongs to Wire-Format-Compiler.
 #

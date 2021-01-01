@@ -48,7 +48,9 @@ const char *InstallDir = 0;
 
 void printVersion(ostream &out)
 {
-	out << "Wire Format Compiler (WFC), Version " VERSION "\nCopyright 2015-2020, Thomas Maier-Komor\n";
+	out <<	"Wire Format Compiler (WFC), Version " VERSION "\n"
+		"Copyright 2015-2020, Thomas Maier-Komor\n"
+		"License: GPLv3 (see file LICENSE for details)\n";
 }
 
 
@@ -254,7 +256,7 @@ int main(int argc, char *argv[])
 	setenv("POSIXLY_CORRECT","1",1);
 #endif
 	while (optind < argc) {
-		int opt = getopt(argc,argv,PCORRECT "d:f:ghI:lm:O:o:p:st:Vvx:y");
+		int opt = getopt(argc,argv,PCORRECT ":d:f:ghI:lm:O:o:p:st:Vvx:y");
 		if (opt == -1) {
 			if (optind == argc) 
 				break;
@@ -326,8 +328,14 @@ int main(int argc, char *argv[])
 		case 'y':
 			yydebug = true;
 			break;
+		case ':':
+			fatal("missing argument to option %s",argv[optind-1]);
+			break;
+		case '?':
+			fatal("unknown option %s",argv[optind-1]);
+			break;
 		default:
-			fatal("unknown option -%c",opt);
+			fatal("unhandled option -%c",opt);
 		}
 	}
 	string sharedir0 = InstallDir;

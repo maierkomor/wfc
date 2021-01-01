@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#  Copyright (C) 2019, Thomas Maier-Komor
+#  Copyright (C) 2019-2020, Thomas Maier-Komor
 #
 #  This file belongs to Wire-Format-Compiler.
 #
@@ -20,6 +20,7 @@
 
 export WFC=`pwd`/../bin/wfc
 MAKE=`which gmake||which make`
+SIZE=`which gsize||which size`
 #echo make is $MAKE
 
 declare -A flagsets cxxflags
@@ -114,7 +115,7 @@ cd ..
 tmpfile=`mktemp`
 for flagset in "${!flagsets[@]}"; do
 	cd $flagset
-	size $wfcs 2>/dev/null | grep -v filename | awk "{printf(\"%s(%s): %d\n\",\$6,\"$flagset\",\$1);}" >> $tmpfile
+	$SIZE $wfcs 2>/dev/null | grep -v filename | awk "{printf(\"%s(%s): %d\n\",\$6,\"$flagset\",\$1);}" >> $tmpfile
 	cd ..
 done
 sort < $tmpfile

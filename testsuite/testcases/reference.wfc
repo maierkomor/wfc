@@ -6,6 +6,19 @@ option toString="toString";
 option toJSON="toJSON";
 option header="cstring.h";
 
+option rev2 {
+	withEqual=true;
+	withUnequal=true;
+	//SortMembers=name;
+	SortMembers=type;
+	toString=toString;
+	toJSON=toJSON;
+	header="cstring.h";
+	/TestBench/VI32:	usage = obsolete;
+	/TestBench/STR:		usage = obsolete;
+	/TestBench/STRV:	usage = obsolete;
+}
+
 enum packable_enum {
 	pe_0 = 0;
 	pe_1 = 0xa;

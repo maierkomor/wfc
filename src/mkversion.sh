@@ -43,7 +43,8 @@ elif [ -f ../.hg_archival.txt ]; then
 else
 	# Bail out with an error, if no version information an be gathered.
 	echo no version information available
-	exit 1
+	VER="<unknown>"
+	echo "#define VERSION \"$VER\"" > version.h.new
 fi
 
 echo version $VER

@@ -28,13 +28,14 @@ WFCSRCS = testcases/empty_elements.wfc testcases/enumtest.wfc testcases/validbit
 	  testcases/inv_def.wfc testcases/arraycheck.wfc
 
 
-CXXSRCS	= $(WFCSRCS:testcases/%.wfc=$(ODIR)/%.cpp)
+CXXSRCS	= $(WFCSRCS:testcases/%.wfc=$(ODIR)/%.cpp) $(ODIR)/referencev2.cpp
 
 $(ODIR)/%.cpp: testcases/%.wfc
 	"$(WFC)" $(WFCFLAGS) $< -o $(@:.cpp=)
 
 
 all: $(CXXSRCS) $(ODIR)/skip_s.cpp $(ODIR)/comp_v1.cpp $(ODIR)/comp_v2.cpp
+
 
 
 $(ODIR)/hostscope.cpp: testcases/hostscope.wfc
@@ -54,3 +55,6 @@ $(ODIR)/comp_v1.cpp: testcases/compatibility.wfc
 
 $(ODIR)/comp_v2.cpp: testcases/compatibility.wfc
 	"$(WFC)" $(WFCFLAGS) -tV2 -o $(ODIR)/comp_v2 testcases/compatibility.wfc
+
+$(ODIR)/referencev2.cpp: testcases/reference.wfc
+	"$(WFC)" $(WFCFLAGS) -trev2 -o $(ODIR)/referencev2 $^

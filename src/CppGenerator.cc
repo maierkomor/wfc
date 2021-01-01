@@ -1865,7 +1865,7 @@ void CppGenerator::writeSetByName(Generator &G, Message *m)
 	unsigned n = 0;
 	for (auto i : m->getFields()) {
 		Field *f = i.second;
-		if ((f == 0) || !f->isUsed())
+		if ((f == 0) || !f->isUsed() || f->isObsolete())
 			continue;
 		uint32_t t = f->getType();
 		if ((t == ft_bytes) || (t == ft_cptr))
@@ -2045,7 +2045,7 @@ void CppGenerator::writeCalcSize(Generator &G, Field *f)
 	const char *packed = "";
 	if (quan != q_required) {
 		char buf[32];
-		sprintf(buf," + %d /* tag(id) 0x%x */",ts,f->getId()<<3);
+		sprintf(buf," + %d /* tag($fname) 0x%x */",ts,f->getId()<<3);
 		tstr = buf;
 	}
 	if (quan == q_repeated) {
@@ -2292,7 +2292,7 @@ void CppGenerator::writeCalcSize(Generator &G, Message *m)
 	size_t n = 0;
 	for (auto i : m->getFields()) {
 		Field *f = i.second;
-		if (f == 0)
+		if ((f == 0) || (!f->isUsed()) || f->isObsolete())
 			continue;
 		if (f->getQuantifier() == 1) {
 			size_t ts = f->getTagSize();
@@ -2500,6 +2500,8 @@ void CppGenerator::writeFromMemory(Generator &G, Field *f)
 	if (!f->isUsed() || f->isObsolete()) {
 		G << "case $(field_tag):\t// $(fname) id $(field_id), type $typestr\n";
 		writeSkipContent(G,f->getEncoding());
+		G.setField(0);
+		return;
 	}
 	if (f->isPacked()) {
 		G.setVariableHex("field_tag",(int64_t)id<<3|2);
@@ -3649,7 +3651,7 @@ void CppGenerator::writeUnequal(Generator &G, Message *m)
 		"{\n";
 	for (auto i : m->getFields()) {
 		Field *f = i.second;
-		if ((f == 0) || (!f->isUsed()))
+		if ((f == 0) || (!f->isUsed()) || f->isObsolete())
 			continue;
 		G.setField(f);
 		quant_t q = f->getQuantifier();
@@ -3712,6 +3714,11 @@ void CppGenerator::writeEqual(Generator &G, Message *m)
 		if ((f == 0) || (!f->isUsed()))
 			continue;
 		G.setField(f);
+		if (f->isObsolete()) {
+			G <<	"// nothing to do for obsolete $fname\n";
+			G.setField(0);
+			continue;
+		}
 		quant_t q = f->getQuantifier();
 		if (f->isVirtual()) {
 			G <<	"if ($(field_value)() != r.$(field_value)())\n"
@@ -4271,9 +4278,11 @@ void CppGenerator::writeFromMemory_early(Generator &G, Field *f)
 	G.setField(f);
 	uint32_t type = f->getTypeClass();
 	uint32_t id = f->getId();
-	if (!f->isUsed()) {
+	if (!f->isUsed() || f->isObsolete()) {
 		G << "case $(field_tag):\t// $(fname) id $(field_id), type $typestr\n";
 		writeSkipContent(G,f->getEncoding());
+		G.setField(0);
+		return;
 	}
 	if (f->isPacked()) {
 		G.setVariableHex("field_tag",(int64_t)id<<3|2);
