@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -44,21 +44,8 @@ XmlGenerator::XmlGenerator(class PBFile *f, class Options *o)
 }
 
 
-void XmlGenerator::init(const vector<string> &msgs)
+void XmlGenerator::init()
 {
-	bool all = msgs.empty();
-	for (unsigned i = 0, n = file->numMessages(); i != n; ++i) {
-		Message *m = file->getMessage(i);
-		m->setUsed(all);
-	}
-	for (auto i = msgs.begin(), e = msgs.end(); i != e; ++i) {
-		const char *name = i->c_str();
-		if (Message *m = file->getMessage(name))
-			m->setUsed(true);
-		else
-			error("unable to select message %s for code generation: no such message",name);
-	}
-
 }
 
 void XmlGenerator::setTarget(const char *target)

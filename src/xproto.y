@@ -1,6 +1,6 @@
 %{
 /*
- *  Copyright (C) 2017-2020, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -36,7 +36,7 @@ using namespace std;
 %}
 
 %locations
-%define parser_class_name {ProtoParser}
+%define api.parser.class {ProtoParser}
 %define parse.trace
 %define parse.error verbose
 

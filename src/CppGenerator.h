@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2020, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -37,7 +37,7 @@ class CppGenerator : public CodeGeneratorImpl
 	public:
 	CppGenerator(PBFile *p, Options *);
 
-	void init(const std::vector<std::string> &);
+	void init();
 	void setTarget(const char *t = "");
 	void writeLib();
 	void writeFiles(const char * = 0);

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2019, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -28,7 +28,7 @@ class XmlGenerator : public CodeGeneratorImpl
 {
 	public:
 	XmlGenerator(class PBFile *, class Options *);
-	void init(const std::vector<std::string> &);
+	void init();
 	void writeFiles(const char *basename = 0);
 	void writeLib();
 	void setTarget(const char *target);

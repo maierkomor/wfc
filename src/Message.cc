@@ -42,6 +42,7 @@ Message::Message(const char *n, unsigned l, bool o)
 , m_maxfid(0)
 , m_numvalid(0)
 , m_used(false)
+, m_generate(false)
 , m_storage(mem_regular)
 , m_sorting(sort_unset)
 {
@@ -189,6 +190,17 @@ void Message::setOption(const char *option, const char *value)
 			m_sorting = sort_none;
 		else
 			error("invalid sorting type %s",value);
+	} else if (!strcmp(option,"used")) {
+		if (!strcmp(value,"false"))
+			m_generate = false;
+		else if (!strcmp(value,"true"))
+			m_generate = true;
+		else if (!strcmp(value,"yes"))
+			m_generate = true;
+		else if (!strcmp(value,"no"))
+			m_generate = false;
+		else
+			error("invalid argument %s for message option 'used'",value);
 	} else {
 		error("invalid message option '%s'",option);
 	}
@@ -392,8 +404,33 @@ void Message::setOptions(Options *o)
 }
 
 
+void Message::setGenerate(bool g)
+{
+	m_generate = g;
+	if (g) {
+		for (auto i(m_fields.begin()), e(m_fields.end()); i != e; ++i) {
+			Field *f = i->second;
+			if ((f == 0) || (!f->isUsed()))
+				continue;
+			unsigned type = f->getType();
+			if (ft_msg != (type & ft_filter))
+				continue;
+			Message *sm = Message::id2msg(type);
+			if (sm != this)
+				sm->setGenerate(true);
+		}
+	} else {
+		for (size_t i = 0, n = m_msgs.size(); i != n; ++i) {
+			m_msgs[i]->setGenerate(false);
+		}
+	}
+}
+
+
 void Message::setUsed(bool u)
 {
+	if (u && !m_generate)
+		warn("message %s is used but requested to be suppressed during generation",m_name.c_str());
 	m_used = u;
 	if (u) {
 		for (auto i(m_fields.begin()), e(m_fields.end()); i != e; ++i) {

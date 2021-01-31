@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2020, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -237,10 +237,10 @@ void CppGenerator::applyNodeOption(const char *nodepath, KVPair *kvp)
 	if (nodepath[0] != '/')
 		error("invalid node path '%s'",nodepath);
 	const char *node = nodepath+1;
-	Message *m = 0;
 	const char *slash = strchr(node,'/');
-	while (slash) {
-		string msgname(node,slash);
+	Message *m = 0;	// needed for '/message' case
+	do {
+		string msgname(node,slash?slash-node:strlen(node));
 		diag("appyNodeOption: msg %s",msgname.c_str());
 		if (m) {
 			m = m->getMessage(msgname.c_str());
@@ -251,25 +251,23 @@ void CppGenerator::applyNodeOption(const char *nodepath, KVPair *kvp)
 			warn("Ignoring unknwon message '%s' in nodepath '%s'",msgname.c_str(),nodepath);
 			return;
 		}
-		node = slash+1;
-		slash = strchr(slash+1,'/');
-	}
-	Enum *e = m ? m->getEnum(node) : file->getEnum(node);
-	if (e) {
+		if (slash) {
+			node = slash+1;
+			slash = strchr(slash+1,'/');
+		}
+	} while (slash);
+	
+	if (Enum *e = m ? m->getEnum(node) : file->getEnum(node)) {
 		diag("appyNodeOption: enum %s",node);
 		e->setOption(kvp->getKey(),kvp->getValue());
-		return;
-	}
-	if ((m == 0) && (e == 0)) {
-		warn("Unable to resolve node path %s. Ignoring option %s",nodepath,kvp->getKey().c_str());
-		return;
-	}
-	if (Field *f = m->getField(node)) {
+	} else if (m == 0) {
+		warn("Unable to resolve node path %s. Ignoring option '%s'.",nodepath,kvp->getKey().c_str());
+	} else if (Field *f = m->getField(node)) {
 		diag("appyNodeOption: field %s",node);
 		f->setOption(kvp->getKey(),kvp->getValue());
-		return;
+	} else {
+		m->setOption(kvp->getKey().c_str(),kvp->getValue().c_str());
 	}
-	warn("Ignoring unknwon node '%s' in nodepath '%s'",node,nodepath);
 }
 
 
@@ -460,26 +458,17 @@ void CppGenerator::initVBits(Message *m)
 }
 
 
-void CppGenerator::init(const vector<string> &msgs)
+void CppGenerator::init()
 {
-	bool all = msgs.empty();
 	usesArrays = false;
 	usesVectors = false;
 	usesBytes = false;
 	usesStringTypes = false;
 	for (unsigned i = 0, n = file->numMessages(); i != n; ++i) {
 		Message *m = file->getMessage(i);
-		m->setUsed(all);
 		m->setOptions(target);
 		initVBits(m);
 		initNames(m,"");
-	}
-	for (auto i = msgs.begin(), e = msgs.end(); i != e; ++i) {
-		const char *name = i->c_str();
-		if (Message *m = file->getMessage(name))
-			m->setUsed(true);
-		else
-			error("unable to select message %s for code generation: no such message",name);
 	}
 }
 
@@ -1233,6 +1222,14 @@ void CppGenerator::writeStaticMembers(Generator &G, Message *m)
 
 void CppGenerator::writeClass(Generator &G, Message *m)
 {
+	if (!m->getGenerate()) {
+		G.setMessage(m);
+		if (m->isUsed())
+			error("message %s is subpressed for generation, but is used",m->getName().c_str());
+		G << "// message $msg_name is not used\n";
+		G.setMessage(0);
+		return;
+	}
 	if (!SubClasses) {
 		for (unsigned i = 0, e = m->numEnums(); i != e; ++i) {
 			Enum *en = m->getEnum(i);
@@ -1520,7 +1517,7 @@ void CppGenerator::writeHeader(const string &bn)
 	}
 	for (unsigned i = 0, n = file->numMessages(); i != n; ++i) {
 		Message *m = file->getMessage(i);
-		if (m->isUsed())
+		if (m->isUsed() || m->getGenerate())
 			writeClass(G,m);
 	}
 	if (target->getOption("wfclib") != "extern") {
@@ -1532,7 +1529,7 @@ void CppGenerator::writeHeader(const string &bn)
 	if (inlineGet || inlineHas || inlineClear || inlineSet || inlineSize || SinkToTemplate) {
 		for (unsigned i = 0, n = file->numMessages(); i != n; ++i) {
 			Message *m = file->getMessage(i);
-			if (m->isUsed())
+			if (m->isUsed() || m->getGenerate())
 				writeInlines(G,m);
 		}
 	}
@@ -3953,6 +3950,8 @@ void CppGenerator::writeConstructor(Generator &G, Message *m)
 
 void CppGenerator::writeFunctions(Generator &G, Message *m)
 {
+	if (!m->getGenerate() && !m->isUsed())
+		return;
 	G.setMessage(m);
 	writeStaticMembers(G,m);
 	writeConstructor(G,m);
@@ -4265,7 +4264,7 @@ void CppGenerator::writeBody(const string &bn)
 		writeEnumDefs(G,e);
 	for (unsigned i = 0, n = file->numMessages(); i != n; ++i) {
 		Message *m = file->getMessage(i);
-		if (m->isUsed())
+		if (m->isUsed()||m->getGenerate())
 			writeFunctions(G,m);
 	}
 	if (!ns.empty())
@@ -4280,7 +4279,6 @@ void CppGenerator::writeFromMemory_early(Generator &G, Field *f)
 	uint32_t id = f->getId();
 	if (!f->isUsed() || f->isObsolete()) {
 		G << "case $(field_tag):\t// $(fname) id $(field_id), type $typestr\n";
-		writeSkipContent(G,f->getEncoding());
 		G.setField(0);
 		return;
 	}

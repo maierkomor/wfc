@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2020, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -21,6 +21,7 @@
 #include "CodeGenerator.h"
 #include "XmlGenerator.h"
 #include "CodeLibrary.h"
+#include "Message.h"
 #include "ProtoDriver.h"
 #include "io.h"
 #include "log.h"
@@ -374,12 +375,24 @@ int main(int argc, char *argv[])
 		cg.writeLib();
 		exit(hadError() ? EXIT_FAILURE : EXIT_SUCCESS);
 	}
+	if (genMsgs.empty()) {
+		for (unsigned i = 0, n = f->numMessages(); i != n; ++i)
+			f->getMessage(i)->setGenerate(true);
+	} else {
+		for (auto &mn : genMsgs) {
+			const char *name = mn.c_str();
+			if (Message *m = f->getMessage(name))
+				m->setGenerate(true);
+			else
+				error("unable to select message %s for code generation: no such message",name);
+		}
+	}
 	if (target) {
 		cg.setTarget(target);
 		if (hadError())
 			exit(EXIT_FAILURE);
 	}
-	cg.init(genMsgs);
+	cg.init();
 	if (hadError())
 		exit(EXIT_FAILURE);
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2020, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -45,6 +45,7 @@ class Message
 	, m_maxfid(0)
 	, m_numvalid(0)
 	, m_used(false)
+	, m_generate(false)
 	, m_storage(mem_regular)
 	, m_sorting(sort_unset)
 	{ }
@@ -130,6 +131,11 @@ class Message
 	bool isUsed() const
 	{ return m_used; }
 
+	bool getGenerate() const
+	{ return m_generate; }
+
+	void setGenerate(bool g);
+
 	mem_inst_t getStorage() const
 	{ return m_storage; }
 
@@ -153,7 +159,7 @@ class Message
 	std::vector<Enum*> m_enums;
 	std::vector<unsigned> m_fieldseq;
 	std::vector< std::pair<unsigned,unsigned> > m_reservations;
-	bool m_used;
+	bool m_used, m_generate;	// m_used is calculated by dependencies, m_generate is option/command-line setting
 	mem_inst_t m_storage;
 	msg_sorting_t m_sorting;
 };

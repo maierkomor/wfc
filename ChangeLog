@@ -1,3 +1,9 @@
+Release R2101:
+==============
+- enhancement: support option used for messages
+- fix: obsolete field handling with early decoding
+- fix: yacc deprecation warning
+
 Release R2012:
 ==============
 - fix: usage=obsolete produces uncompilable code

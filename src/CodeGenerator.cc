@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2019, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -113,10 +113,10 @@ CodeGeneratorImpl::~CodeGeneratorImpl()
 }
 
 
-void CodeGenerator::init(const vector<string> &msgs)
+void CodeGenerator::init()
 {
 	assert(impl);
-	impl->init(msgs);
+	impl->init();
 }
 
 

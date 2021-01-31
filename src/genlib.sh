@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#  Copyright (C) 2017-2020, Thomas Maier-Komor
+#  Copyright (C) 2017-2021, Thomas Maier-Komor
 #
 #  This source file belongs to Wire-Format-Compiler.
 #
@@ -17,6 +17,7 @@
 #  You should have received a copy of the GNU General Public License
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+XXD=${XXD:=xxd}
 
 if [ -f template_lib.h.new ]; then
 	rm template_lib.h.new
@@ -27,7 +28,7 @@ if [ -f template_lib.cc.new ]; then
 fi
 
 if [ "$CCTSRC" == "" ]; then
-	cd src
+	pwd | grep 'src$' > /dev/null || cd src
 	if [ -d ../.hg ]; then
 		CCTSRC=`hg st -a -c -m -n ../share`
 	else

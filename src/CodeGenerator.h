@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2019, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -31,7 +31,7 @@ class CodeGeneratorImpl
 {
 	public:
 	virtual ~CodeGeneratorImpl();
-	virtual void init(const std::vector<std::string> &) = 0;
+	virtual void init() = 0;
 	virtual void writeFiles(const char *basename = 0) = 0;
 	virtual void writeLib() = 0;
 	virtual void setTarget(const char *target) = 0;
@@ -48,7 +48,7 @@ class CodeGenerator
 	public:
 	CodeGenerator(PBFile *, Options *);
 
-	void init(const std::vector<std::string> &);
+	void init();
 	void writeFiles(const char *basename);
 	void writeLib(const char *basename = 0);
 	void setTarget(const char *);
