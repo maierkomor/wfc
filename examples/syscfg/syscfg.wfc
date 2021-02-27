@@ -21,15 +21,18 @@ option embedded_dyn : embedded {
 
 option embedded_fix : embedded {
 	header=<fstring.h>;
-	/Config/hostname : stringtype = "FString<16>";
-	/Config/wifi_ssid: stringtype = "FString<32>";
-	/Config/wifi_pass: stringtype = "FString<32>";
+	/Config/hostname :	stringtype = "FString<16>";
+	/Config/wifi_ssid:	stringtype = "FString<32>";
+	/Config/wifi_pass:	stringtype = "FString<32>";
 }
 
 option pc {
 	toASCII = toASCII;
 	endian = little;
 	optimize = speed;
+	header="ip4ascii.h";
+	/Config/ipv4: 		to_ascii = ip4_ascii, parse_ascii = parse_ipv4;
+	/Config/gateway: 	to_ascii = ip4_ascii, parse_ascii = parse_ipv4;
 }
 
 message Config

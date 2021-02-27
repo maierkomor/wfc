@@ -75,15 +75,18 @@ int main()
 
 	// print ASCII representation
 	nc.toASCII(cout);
+	cout << endl;
 
 	// modification of contents can also be done by setting by name
 	nc.setByName("hostname","myhost");
 	nc.setByName("degC","19.8");
 	nc.toASCII(cout);
+	cout << endl;
+	cout << endl;
 
 	// binary output:
 	cout << "encoded binary has " << nc.calcSize() << " bytes\n"
-		"binary output:\n\n";
+		"binary output:\n";
 
 	uint8_t buf[nc.calcSize()];
 	nc.toMemory(buf,sizeof(buf));	// serialze to buffer

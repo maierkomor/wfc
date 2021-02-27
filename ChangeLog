@@ -1,3 +1,16 @@
+Release R2102:
+==============
+- fix: potential bus error with write_u64 on little endian
+- fix: do not set valid flag when parsing ascii fails
+- fix: stringtype handling may fallback to C type
+- fix: multiple options handling
+- fix: return type must be ssize_t if function returns <0
+- fix: build fixes for examples
+- enhancement: support for setting bytes with hex encoded data
+- enhancement: updated syscfg example to demo setByName
+- enhancement: added doxygen comments to the generated files
+- enhancement: opimization for use of empty string as invalid value
+
 Release R2101:
 ==============
 - enhancement: support option used for messages

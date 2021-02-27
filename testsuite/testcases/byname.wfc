@@ -1,4 +1,5 @@
 //option toASCII=toASCII;
+option header = "ip4funcs.h";
 
 message Pair
 {
@@ -32,4 +33,10 @@ message M
 
 	bool B = 11;
 	repeated bool RB = 12;
+
+	bytes data = 13;
+
+	fixed32 ipv4 = 14	[ to_ascii = ip4_ascii, parse_ascii = parse_ipv4 ];
+
+	repeated bytes sectors = 15;
 }

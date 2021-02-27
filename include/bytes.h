@@ -21,6 +21,7 @@
 #define _BYTES_H
 
 #include <inttypes.h>
+#include <stdlib.h>
 
 struct Bytes
 {
@@ -29,14 +30,43 @@ struct Bytes
 	, len(0)
 	{ }
 
-	Bytes(const char *d, size_t l)
-	: bytes(d)
-	, len(l)
-	{ }
+	explicit Bytes(const char *d)
+	: len(strlen(d))
+	{
+		bytes = (char *)malloc(len);
+		memcpy(bytes,d,len);
+	}
 
+	Bytes(const char *d, size_t l)
+	: bytes((char *)malloc(l))
+	, len(l)
+	{ memcpy(bytes,d,l); }
+
+	Bytes(const Bytes &b)
+	: bytes((char *)malloc(b.len))
+	, len(b.len)
+	{ memcpy(bytes,b.bytes,len); }
+	
+	~Bytes()
+	{ free(bytes); }
+
+	Bytes &operator = (const Bytes &b)
+	{
+		assign(b.bytes,b.len);
+		return *this;
+	}
+	
+	Bytes &operator = (const char *cstr)
+	{
+		size_t l = strlen(cstr);
+		assign(cstr,l);
+		return *this;
+	}
+	
 	void assign(const char *d, size_t l)
 	{
-		bytes = d;
+		bytes = (char*)realloc((void*)bytes,l);
+		memcpy(bytes,d,l);
 		len = l;
 	}
 
@@ -51,15 +81,39 @@ struct Bytes
 
 	void clear()
 	{
+		free((void*)bytes);
 		bytes = 0;
 		len = 0;
+	}
+
+	void push_back(char c)
+	{
+		size_t at = len;
+		++len;
+		bytes = (char *) realloc((void*)bytes,len);
+		bytes[at] = c;
 	}
 
 	bool operator != (const Bytes &r) const
 	{ return (len != r.len) || (0 != memcmp(bytes,r.bytes,len)); }
 
+	bool operator == (const Bytes &r) const
+	{ return (len == r.len) && (0 == memcmp(bytes,r.bytes,len)); }
+
+	bool operator == (const char *cstr) const
+	{
+		size_t l = strlen(cstr);
+		return (l == len) && (0 == memcmp(bytes,cstr,l));
+	}
+
+	bool operator != (const char *cstr) const
+	{
+		size_t l = strlen(cstr);
+		return (l != len) || (0 != memcmp(bytes,cstr,l));
+	}
+
 	private:
-	const char *bytes;
+	char *bytes;
 	size_t len;
 };
 

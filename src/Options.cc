@@ -1080,8 +1080,7 @@ KVPair::~KVPair()
 
 void KVPair::setNext(KVPair *n)
 {
-	assert(n->next == 0);
-	n->next = next;
+	assert(next == 0);
 	next = n;
 }
 

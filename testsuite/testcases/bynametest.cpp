@@ -30,6 +30,18 @@ int main()
 	assert(x > 0);
 	assert(tb.kvpair1().key() == "key");
 	runcheck(tb);
+	x = tb.setByName("BYTESO","deadbeef feed\raa\n00\tcc");
+	assert(x > 0);
+	uint8_t data[] = {0xde,0xad,0xbe,0xef,0xfe,0xed,0xaa,0x00,0xcc};
+	assert(tb.BYTESO().size() == sizeof(data));
+	assert(0 == memcmp(tb.BYTESO().data(),data,sizeof(data)));
+	runcheck(tb);
+	x = tb.setByName("ipv4","10.158.66.3");
+	assert(x > 0);
+	runcheck(tb);
+	stringstream ss;
+	ip4_ascii(ss,tb.ipv4());
+	assert(ss.str() == "10.158.66.3");
 
 	// invalid settings
 	x = tb.setByName("SI8","-129");
@@ -45,6 +57,8 @@ int main()
 	assert(x > 0);
 	assert(tb.PackedMsg().Bool() == false);
 	runcheck(tb);
+	x = tb.setByName("BYTESO","deanbeeffeedaa00cc");
+	assert(x < 0);
 
 	// arrays
 	x = tb.setByName("kvpairs[+]","");

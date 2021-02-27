@@ -195,6 +195,9 @@ class Field
 	const std::string &getJsonFunction() const
 	{ return json_value_func; }
 
+	const std::string &getParseAsciiFunction() const
+	{ return parse_ascii_func; }
+
 	const char *getInvalidValue() const
 	{ return invvalue.empty() ? 0 : invvalue.c_str(); }
 

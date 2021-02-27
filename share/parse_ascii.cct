@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -27,14 +27,12 @@ int parse_ascii_u8(uint8_t *v, const char *ascii)
 {
 	char *eptr;
 	long d = strtol(ascii,&eptr,0);
-	if ((d < 0) || (d > UINT8_MAX)) {
+	if (eptr == ascii)
 		$handle_error;
-	}
-	if (eptr != ascii) {
-		*v = (uint8_t) d;
-		return eptr-ascii;
-	}
-	$handle_error;
+	if ((d < 0) || (d > UINT8_MAX))
+		$handle_error;
+	*v = (uint8_t) d;
+	return eptr-ascii;
 }
 
 
@@ -46,14 +44,12 @@ int parse_ascii_u16(uint16_t *v, const char *ascii)
 {
 	char *eptr;
 	long d = strtol(ascii,&eptr,0);
-	if ((d < 0) || (d > UINT16_MAX)) {
+	if (eptr == ascii)
 		$handle_error;
-	}
-	if (eptr != ascii) {
-		*v = (uint16_t) d;
-		return eptr-ascii;
-	}
-	$handle_error;
+	if ((d < 0) || (d > UINT16_MAX))
+		$handle_error;
+	*v = (uint16_t) d;
+	return eptr-ascii;
 }
 
 
@@ -65,13 +61,12 @@ int parse_ascii_u32(uint32_t *v, const char *ascii)
 {
 	char *eptr;
 	long long d = strtoll(ascii,&eptr,0);
+	if (eptr == ascii)
+		$handle_error;
 	if ((d < 0) || (d > UINT32_MAX))
 		$handle_error;
-	if (eptr != ascii) {
-		*v = (uint32_t) d;
-		return eptr-ascii;
-	}
-	$handle_error;
+	*v = (uint32_t) d;
+	return eptr-ascii;
 }
 
 
@@ -83,11 +78,10 @@ int parse_ascii_u64(uint64_t *v, const char *ascii)
 {
 	char *eptr;
 	unsigned long long d = strtoull(ascii,&eptr,0);
-	if (eptr != ascii) {
-		*v = (uint64_t) d;
-		return eptr-ascii;
-	}
-	$handle_error;
+	if (eptr == ascii)
+		$handle_error;
+	*v = (uint64_t) d;
+	return eptr-ascii;
 }
 
 
@@ -99,14 +93,12 @@ int parse_ascii_s8(int8_t *v, const char *ascii)
 {
 	char *eptr;
 	long d = strtol(ascii,&eptr,0);
-	if ((d < INT8_MIN) || (d > INT8_MAX)) {
+	if (eptr == ascii)
 		$handle_error;
-	}
-	if (eptr != ascii) {
-		*v = (uint8_t) d;
-		return eptr-ascii;
-	}
-	$handle_error;
+	if ((d < INT8_MIN) || (d > INT8_MAX))
+		$handle_error;
+	*v = (uint8_t) d;
+	return eptr-ascii;
 }
 
 
@@ -118,14 +110,12 @@ int parse_ascii_s16(int16_t *v, const char *ascii)
 {
 	char *eptr;
 	long d = strtol(ascii,&eptr,0);
-	if ((d < INT16_MIN) || (d > INT16_MAX)) {
+	if (eptr == ascii)
 		$handle_error;
-	}
-	if (eptr != ascii) {
-		*v = (uint16_t) d;
-		return eptr-ascii;
-	}
-	$handle_error;
+	if ((d < INT16_MIN) || (d > INT16_MAX))
+		$handle_error;
+	*v = (uint16_t) d;
+	return eptr-ascii;
 }
 
 
@@ -137,14 +127,12 @@ int parse_ascii_s32(int32_t *v, const char *ascii)
 {
 	char *eptr;
 	long long d = strtoll(ascii,&eptr,0);
-	if ((d < INT32_MIN) || (d > INT32_MAX)) {
+	if (eptr == ascii)
 		$handle_error;
-	}
-	if (eptr != ascii) {
-		*v = (uint32_t) d;
-		return eptr-ascii;
-	}
-	$handle_error;
+	if ((d < INT32_MIN) || (d > INT32_MAX))
+		$handle_error;
+	*v = (uint32_t) d;
+	return eptr-ascii;
 }
 
 
@@ -156,11 +144,10 @@ int parse_ascii_s64(int64_t *v, const char *ascii)
 {
 	char *eptr;
 	unsigned long long d = strtoull(ascii,&eptr,0);
-	if (eptr != ascii) {
-		*v = (int64_t) d;
-		return eptr-ascii;
-	}
-	$handle_error;
+	if (eptr == ascii)
+		$handle_error;
+	*v = (int64_t) d;
+	return eptr-ascii;
 }
 
 
@@ -172,11 +159,10 @@ int parse_ascii_flt(float *v, const char *ascii)
 {
 	char *eptr;
 	float f = strtof(ascii,&eptr);
-	if (eptr != ascii) {
-		*v = f;
-		return eptr-ascii;
-	}
-	$handle_error;
+	if (eptr == ascii)
+		$handle_error;
+	*v = f;
+	return eptr-ascii;
 }
 
 
@@ -188,11 +174,10 @@ int parse_ascii_dbl(double *v, const char *ascii)
 {
 	char *eptr;
 	double d = strtod(ascii,&eptr);
-	if (eptr != ascii) {
-		*v = d;
-		return eptr-ascii;
-	}
-	$handle_error;
+	if (eptr == ascii)
+		$handle_error;
+	*v = d;
+	return eptr-ascii;
 }
 
 
@@ -269,11 +254,9 @@ int parse_ascii_bool(bool *v, const char *ascii)
  */
 int parse_enum(varint_t *v, const char *n)
 {
-	if ((n[0] >= '0') && (n[0] <= '9')) {
-		char *e;
-		long ll = strtoll(n,&e,0);
-		if ((ll == 0) && (e == n))
-			$handle_error;
+	char *e;
+	long ll = strtoll(n,&e,0);
+	if (e != n) {
 		*v = ll;
 		return e-n;
 	}
@@ -282,4 +265,44 @@ int parse_enum(varint_t *v, const char *n)
 		return -1;
 	*v = i->second;
 	return strlen(n);
+}
+
+/* wfc-template:
+ * function: parse_ascii_bytes
+ * sysinclude: map
+ */
+template <typename T>
+int parse_ascii_bytes(T &b, const char *ascii)
+{
+	const char *at = ascii;
+	while (*at) {
+		char c0 = *at++;
+		while ((c0 == ' ') || (c0 == '\t') || (c0 == '\n') || (c0 == '\r'))
+			c0 = *at++;
+		char c1 = *at++;
+		while ((c1 == ' ') || (c1 == '\t') || (c1 == '\n') || (c1 == '\r'))
+			c1 = *at++;
+		if (c1 == 0)
+			$handle_error;
+		uint8_t v;
+		if ((c0 >= '0') && (c0 <= '9'))
+			v = c0-'0';
+		else if ((c0 >= 'a') && (c0 <= 'f'))
+			v = c0-'a'+10;
+		else if ((c0 >= 'A') && (c0 <= 'F'))
+			v = c0-'A'+10;
+		else
+			return at-ascii-1;
+		v <<= 4;
+		if ((c1 >= '0') && (c1 <= '9'))
+			v |= c1-'0';
+		else if ((c1 >= 'a') && (c1 <= 'f'))
+			v |= c1-'a'+10;
+		else if ((c1 >= 'A') && (c1 <= 'F'))
+			v |= c1-'A'+10;
+		else
+			$handle_error;
+		b.push_back(v);
+	}
+	return at-ascii;
 }

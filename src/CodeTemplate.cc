@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2020, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -44,6 +44,7 @@ const char *Functions[] = {
 	"decode_early",
 	"decode_union",
 	"parse_ascii_bool",
+	"parse_ascii_bytes",
 	"parse_ascii_dbl",
 	"parse_ascii_flt",
 	"parse_ascii_s16",

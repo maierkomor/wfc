@@ -5,6 +5,7 @@ option SortMembers=type;
 option toString="toString";
 option toJSON="toJSON";
 option header="cstring.h";
+option header="ip4funcs.h";
 
 option rev2 {
 	withEqual=true;
@@ -14,6 +15,7 @@ option rev2 {
 	toString=toString;
 	toJSON=toJSON;
 	header="cstring.h";
+	header="ip4funcs.h";
 	/TestBench/VI32:	usage = obsolete;
 	/TestBench/STR:		usage = obsolete;
 	/TestBench/STRV:	usage = obsolete;
@@ -149,4 +151,6 @@ message TestBench
 	sint16 SI16 = 0x75;
 	sint32 SI32 = 0x76;
 	sint64 SI64 = 0x77;
+
+	fixed32 ipv4 = 0x80	[ to_ascii = ip4_ascii, parse_ascii = parse_ipv4 ];
 }

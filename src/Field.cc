@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2020, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -935,18 +935,23 @@ static bool is_xid(const string &v)
 	else if (c == '_');
 	else
 		return false;
+	unsigned nest = 0;
 	while (*s) {
 		c = *s++;
 		if ((c >= 'a') && (c <= 'z'));
 		else if ((c >= 'A') && (c <= 'Z'));
 		else if ((c >= '0') && (c <= '9'));
 		else if (c == '_');
-		else if (c == '>');
-		else if (c == '<');
+		else if (c == '>')
+			--nest;
+		else if (c == '<')
+			++nest;
+		else if (c == ',');
+		else if (c == ':');
 		else
 			return false;
 	}
-	return true;
+	return nest == 0;
 }
 
 
@@ -1004,6 +1009,19 @@ void Field::setOption(const string &option, const string &value)
 			} else {
 				stringtype = st_class;
 				type = ft_string;
+				size_t n = value.size();
+				const char *d = value.data();
+				string v;
+				if (d[0] == '"') {
+					assert(d[n-1] == '"');	// must be true due to lexical analysis
+					v.assign(d+1,n-2);
+				} else {
+					v = value;
+				}
+				
+				if (!is_xid(v))
+					error("invalid argument to stringtype: %s",value.c_str());
+				options->setOption("stringtype",v.c_str());
 			}
 		} else
 			error("invalid option stringtype for field '%s' of type '%s'",name.c_str(),getTypeName());

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -38,12 +38,23 @@ union mangle_double
 
 /* wfc-template:
  * function: write_u64
+ * endian: little
+ * Optimize: speed
+ */
+#define write_u64_le(w,v) (*(uint64_t*)w) = v
+
+
+/* wfc-template:
+ * function: write_u64
  */
 void write_u64_generic(uint8_t *wire, uint64_t v)
 {
 #if defined __BYTE_ORDER__ && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
-	*(uint64_t*)wire = v;
-#else
+	if (((off_t)wire & 0x7) == 0) {
+		*(uint64_t*)wire = v;
+		return;
+	}
+#endif
 	*wire++ = v & 0xff;
 	v >>= 8;
 	*wire++ = v & 0xff;
@@ -59,7 +70,6 @@ void write_u64_generic(uint8_t *wire, uint64_t v)
 	*wire++ = v & 0xff;
 	v >>= 8;
 	*wire++ = v;
-#endif
 }
 
 
@@ -142,14 +152,6 @@ void write_u64_Os2(uint8_t *wire, uint64_t v)
 /* wfc-template:
  * function: write_u64
  * endian: little
- * Optimize: speed
- */
-#define write_u64_le(w,v) (*(uint64_t*)w) = v
-
-
-/* wfc-template:
- * function: write_u64
- * endian: little
  */
 void write_u64_le_fun(uint8_t *wire, uint64_t v)
 {
@@ -162,6 +164,12 @@ void write_u64_le_fun(uint8_t *wire, uint64_t v)
  */
 void write_u32_0(uint8_t *wire, uint32_t v)
 {
+#if defined __BYTE_ORDER__ && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+	if (((off_t)wire & 0x3) == 0) {
+		*(uint32_t*)wire = v;
+		return;
+	}
+#endif
 	*wire++ = v & 0xff;
 	v >>= 8;
 	*wire++ = v & 0xff;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2020, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -107,6 +107,8 @@ void Message::addReservation(unsigned lb, unsigned ub)
 
 Field *Message::getField(const char *n) const
 {
+	if (n == 0)
+		return 0;
 	for (auto i(m_fields.begin()), e(m_fields.end()); i != e; ++i) {
 		Field *f = i->second;
 		if ((f != 0) && (0 == strcmp(n, f->getName())))

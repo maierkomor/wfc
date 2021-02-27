@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2020, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -35,6 +35,7 @@ typedef enum {
 	ct_decode_early,
 	ct_decode_union,
 	ct_parse_ascii_bool,
+	ct_parse_ascii_bytes,
 	ct_parse_ascii_dbl,
 	ct_parse_ascii_flt,
 	ct_parse_ascii_s16,

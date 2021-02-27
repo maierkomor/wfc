@@ -3,6 +3,7 @@
 
 option header="math.h";
 option header="cstring.h";
+option header="bytes.h";
 option withEqual=true;
 option withUnequal=true;
 
@@ -25,8 +26,8 @@ message M
 	string s3i = 6		[ stringtype=CString, unset="" ];
 	bytes b1e = 11		[ bytestype=std::string ];
 	bytes b1i = 12		[ bytestype=std::string, unset="" ];
-	bytes b2e = 13		[ bytestype=CString];
-	bytes b2i = 14		[ bytestype=CString, unset="" ];
+	bytes b2e = 13		[ bytestype=Bytes];
+	bytes b2i = 14		[ bytestype=Bytes, unset="" ];
 	finger_t e1e = 20;
 	finger_t e1i = 21	[ unset=nofinger ];
 	float f1e = 30;

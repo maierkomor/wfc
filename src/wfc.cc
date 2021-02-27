@@ -50,7 +50,7 @@ const char *InstallDir = 0;
 void printVersion(ostream &out)
 {
 	out <<	"Wire Format Compiler (WFC), Version " VERSION "\n"
-		"Copyright 2015-2020, Thomas Maier-Komor\n"
+		"Copyright 2015-2021, Thomas Maier-Komor\n"
 		"License: GPLv3 (see file LICENSE for details)\n";
 }
 

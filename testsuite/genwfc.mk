@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019-2020, Thomas Maier-Komor
+#  Copyright (C) 2019-2021, Thomas Maier-Komor
 #
 #  This file belongs to Wire-Format-Compiler.
 #
@@ -25,7 +25,7 @@ WFCSRCS = testcases/empty_elements.wfc testcases/enumtest.wfc testcases/validbit
 	  testcases/reference.wfc testcases/validbits2.wfc testcases/tt.wfc \
 	  testcases/unused.wfc testcases/fixed_only.wfc testcases/novarint.wfc \
 	  testcases/packed.wfc testcases/virtual.wfc testcases/byname.wfc \
-	  testcases/inv_def.wfc testcases/arraycheck.wfc
+	  testcases/inv_def.wfc testcases/arraycheck.wfc testcases/binformats.wfc
 
 
 CXXSRCS	= $(WFCSRCS:testcases/%.wfc=$(ODIR)/%.cpp) $(ODIR)/referencev2.cpp
@@ -58,3 +58,9 @@ $(ODIR)/comp_v2.cpp: testcases/compatibility.wfc
 
 $(ODIR)/referencev2.cpp: testcases/reference.wfc
 	"$(WFC)" $(WFCFLAGS) -trev2 -o $(ODIR)/referencev2 $^
+
+$(ODIR)/binformats.cpp: testcases/binformats.wfc
+	"$(WFC)" $(WFCFLAGS) -tpc -o $(ODIR)/binformats_pc $^
+	"$(WFC)" $(WFCFLAGS) -tesp8266 -o $(ODIR)/binformats_esp8266 $^
+	"$(WFC)" $(WFCFLAGS) -tesp32 -o $(ODIR)/binformats_esp32 $^
+

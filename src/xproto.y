@@ -153,7 +153,7 @@ OptionList_P
 	: Option_P
 	{ $$ = $1; }
 	| OptionList_P COMMA Option_P
-	{ $1->setNext($3); $$ = $1; }
+	{ $3->setNext($1); $$ = $3; }
 	;
 
 OptionArg_P

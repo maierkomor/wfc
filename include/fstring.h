@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2020, Thomas Maier-Komor
+ *  Copyright (C) 2020-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -44,13 +44,11 @@ class FString
 			l = len-1;
 		memcpy(str,s,l);
 		str[l] = 0;
-		str[len-1] = 0;
 	}
 
 	FString(const FString &a)
 	{
 		strcpy(str,a.str);
-		str[len-1] = 0;
 	}
 
 	FString &operator = (const FString &a)
@@ -61,8 +59,8 @@ class FString
 
 	FString &operator += (const FString &a)
 	{
-		strncat(str,a.str,len-1);
-		str[len-1] = 0;
+		size_t l = strlen(str);
+		strncat(str,a.str,len-l-1);
 		return *this;
 	}
 

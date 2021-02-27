@@ -221,7 +221,8 @@ void CppGenerator::setTarget(const char *t)
 	do {
 		const map<string,KVPair*> &nodeopts = no->getNodeOptions();
 		for (map<string,KVPair*>::const_iterator i(nodeopts.begin()),e(nodeopts.end()); i != e; ++i) {
-			applyNodeOption(i->first.c_str(),i->second);
+			KVPair *p = i->second;
+			applyNodeOption(i->first.c_str(),p);
 		}
 		no = no->getParent();
 	} while (no);
@@ -233,40 +234,52 @@ void CppGenerator::setTarget(const char *t)
 
 void CppGenerator::applyNodeOption(const char *nodepath, KVPair *kvp)
 {
-	diag("appyNodeOption(%s,[%s,%s])",nodepath,kvp->getKey().c_str(),kvp->getValue().c_str());
+	diag("appyNodeOption(%s,[%s,%s,...])",nodepath,kvp->getKey().c_str(),kvp->getValue().c_str());
 	if (nodepath[0] != '/')
 		error("invalid node path '%s'",nodepath);
 	const char *node = nodepath+1;
-	const char *slash = strchr(node,'/');
 	Message *m = 0;	// needed for '/message' case
 	do {
-		string msgname(node,slash?slash-node:strlen(node));
+		char *slash = strchr((char*)node,'/');
+		string msgname(node,slash ? slash-node : strlen(node));
 		diag("appyNodeOption: msg %s",msgname.c_str());
-		if (m) {
-			m = m->getMessage(msgname.c_str());
-		} else {
+		if (m == 0) {
 			m = file->getMessage(msgname.c_str());
+		} else if (Message *sm = m->getMessage(msgname.c_str())) {
+			m = sm;
+		} else {
+			// this is a field or a enum
+			break;
 		}
 		if (m == 0) {
 			warn("Ignoring unknwon message '%s' in nodepath '%s'",msgname.c_str(),nodepath);
 			return;
 		}
-		if (slash) {
+		if (slash == 0)
+			node = 0;
+		else
 			node = slash+1;
-			slash = strchr(slash+1,'/');
-		}
-	} while (slash);
+	} while (node);
 	
 	if (Enum *e = m ? m->getEnum(node) : file->getEnum(node)) {
 		diag("appyNodeOption: enum %s",node);
-		e->setOption(kvp->getKey(),kvp->getValue());
+		do {
+			e->setOption(kvp->getKey(),kvp->getValue());
+			kvp = kvp->getNext();
+		} while (kvp);
 	} else if (m == 0) {
 		warn("Unable to resolve node path %s. Ignoring option '%s'.",nodepath,kvp->getKey().c_str());
 	} else if (Field *f = m->getField(node)) {
-		diag("appyNodeOption: field %s",node);
-		f->setOption(kvp->getKey(),kvp->getValue());
+		do {
+			diag("appyNodeOption: field %s, key %s",node,kvp->getKey().c_str());
+			f->setOption(kvp->getKey(),kvp->getValue());
+			kvp = kvp->getNext();
+		} while (kvp);
 	} else {
-		m->setOption(kvp->getKey().c_str(),kvp->getValue().c_str());
+		do {
+			m->setOption(kvp->getKey().c_str(),kvp->getValue().c_str());
+			kvp = kvp->getNext();
+		} while (kvp);
 	}
 }
 
@@ -290,13 +303,17 @@ string CppGenerator::getValid(Field *f, bool invalid)
 	}
 	int vbit = f->getValidBit();
 	if (const char *invValue = f->getInvalidValue()) {
-		assert(vbit < 0);
-		ret += "m_$(fname)";
-		if (invalid)
-			ret += " == ";
-		else
-			ret += " != ";
-		ret += invValue;
+			assert(vbit < 0);
+		if ((type == ft_string) && (!strcmp(invValue,"\"\""))) {
+			ret += "!m_$(fname).empty()";
+		} else {
+			ret += "m_$(fname)";
+			if (invalid)
+				ret += " == ";
+			else
+				ret += " != ";
+			ret += invValue;
+		}
 		return ret;
 	}
 	assert(vbit >= 0);
@@ -475,6 +492,8 @@ void CppGenerator::init()
 
 void CppGenerator::scanRequirements(Message *m)
 {
+	if (!m->getGenerate())
+		return;
 	if (optmode == optreview)
 		hasVarInt = true;	// tags are then always generated as varint
 	for (auto i : m->getFields()) {
@@ -685,6 +704,7 @@ static void allHelpers(vector<unsigned> &funcs, bool VarIntBits64)
 	funcs.push_back(ct_to_dblstr);
 
 	funcs.push_back(ct_parse_ascii_bool);
+	funcs.push_back(ct_parse_ascii_bytes);
 	funcs.push_back(ct_parse_ascii_dbl);
 	funcs.push_back(ct_parse_ascii_flt);
 	funcs.push_back(ct_parse_ascii_s8);
@@ -1252,32 +1272,67 @@ void CppGenerator::writeClass(Generator &G, Message *m)
 		G << "bool operator != (const $(msg_name) &r) const;\n";
 	if (target->getFlag("withEqual"))
 		G << "bool operator == (const $(msg_name) &r) const;\n";
-	G <<	"void $(msg_clear)();\n"
+	G <<	"\n"
+		"//! function for resetting all members to their default values\n"
+		"void $(msg_clear)();\n"
+		"\n"
+		"//! Calculate the required number of bytes for serializing this object.\n"
+		"//! If the data of the object change, the number ob bytes needed for\n"
+		"//! serialization, may change, too.\n"
 		"size_t $calcSize() const;\n";
 	if (G.hasValue("fromMemory"))
-		G << "ssize_t $(fromMemory)(const void *b, ssize_t s);\n";
+		G <<	"\n"
+			"//! Function for parsing memory with serialized data to append and update this object.\n"
+			"//! @param b buffer of serialized data\n"
+			"//! @param s number of bytes available in the buffer\n"
+			"//! @return number of bytes parsed or negative value if an error occured\n"
+			"ssize_t $(fromMemory)(const void *b, ssize_t s);\n";
 	if (G.hasValue("toMemory"))
-		G << "size_t $(toMemory)(uint8_t *, ssize_t) const;\n";
+		G << 	"\n"
+			"\t//! Serialize the object to memory.\n"
+			"\t//! param b buffer the data should be written to\n"
+			"\t//! param s number of bytes available in the buffer\n"
+			"\t//! return number of bytes written\n"
+			"ssize_t $(toMemory)(uint8_t *, ssize_t) const;\n";
 	if (G.hasValue("toWire")) {
 		G.setMode(gen_wire);
-		G <<	"void $(toWire)($putparam) const;\n";
+		G <<	"\n"
+			"//! Serialize the object using a function for transmitting individual bytes.\n"
+			"//! @param put function to put individual bytes for transmission on the wire\n"
+			"void $(toWire)($putparam) const;\n";
 	}
 	if (G.hasValue("toSink")) {
 		G.setMode(gen_sink);
-		G <<	"$(sink_template)void $(toSink)($putparam) const;\n";
+		G <<	"\n"
+			"//! Function for serializing the object using the Sink class.\n"
+			"$(sink_template)void $(toSink)($putparam) const;\n";
 	}
 	if (G.hasValue("toString")) {
 		G.setMode(gen_string);
-		G <<	"void $(toString)($putparam) const;\n";
+		G <<	"\n"
+			"//! Function for serializing the object to a string.\n"
+			"void $(toString)($putparam) const;\n";
 	}
 	if (G.hasValue("toJSON"))
-		G << "void $(toJSON)($(streamtype) &json, unsigned indLvl = 0) const;\n";
+		G <<	"\n"
+			"//! Function for writing the JSON representation of this object to a stream.\n"
+			"void $(toJSON)($(streamtype) &json, unsigned indLvl = 0) const;\n";
 	if (PrintOut)
-		G << "void $(toASCII)($(streamtype) &o, size_t indent = 0) const;\n";
+		G <<	"\n"
+			"//! Function for writing an ASCII representation of this object to a stream.\n"
+			"void $(toASCII)($(streamtype) &o, size_t indent = 0) const;\n";
 	if (G.hasValue("getMaxSize"))
-		G << "static size_t $getMaxSize();\n";
+		G <<	"\n"
+			"//! Function for determining the maximum size that the object may need for\n"
+		       	"//! its serialized representation\n"
+			"static size_t $getMaxSize();\n";
 	if (target->getOption("SetByName") != "")
-		G << "int $(set_by_name)(const char *, const char *);\n";
+		G <<	"\n"
+			"//! Function for setting a parameter by its ASCII name using an ASCII representation of value.\n"
+			"//! @param param parameter name\n"
+			"//! @param value ASCII representation of the value\n"
+			"//! @return number of bytes parsed from value or negative value if an error occurs\n"
+			"int $(set_by_name)(const char *param, const char *value);\n";
 	G << '\n';
 	if (SubClasses) {
 		for (unsigned i = 0, e = m->numEnums(); i != e; ++i) {
@@ -1502,13 +1557,24 @@ void CppGenerator::writeHeader(const string &bn)
 			"{\n"
 			"	public:\n"
 			"	virtual ~" << bcn << "() = 0;\n"
+			"\n"
+			"	//! calculate the number ob bytes needed for a serialized representation\n"
 			"	virtual size_t $calcSize() const = 0;\n";
 		if (G.hasValue("toString"))
-			G << 	"\tvirtual void $toString($(stringtype) &) const = 0;\n";
+			G << 	"\n"
+				"\t//! serialize the object to a string\n"
+				"\tvirtual void $toString($(stringtype) &) const = 0;\n";
 		if (G.hasValue("toSink") && !SinkToTemplate)
-			G << 	"\tvirtual void $toSink(Sink &) const = 0;\n";
+			G << 	"\n"
+				"\t//! serialize the object to an object derived from class Sink\n"
+				"\tvirtual void $toSink(Sink &) const = 0;\n";
 		if (G.hasValue("toMemory"))
-			G << 	"\tvirtual size_t $toMemory(uint8_t *, ssize_t) const = 0;\n";
+			G << 	"\n"
+				"\t//! serialize the object to memory\n"
+				"\t//! @param b buffer the data should be written to\n"
+				"\t//! @param s number of bytes available in the buffer\n"
+				"\t//! @return number of bytes written\n"
+				"\tvirtual ssize_t $toMemory(uint8_t *, ssize_t) const = 0;\n";
 		G <<	"};\n\n";
 	}
 	for (unsigned i = 0, n = file->numEnums(); i != n; ++i) {
@@ -1756,7 +1822,7 @@ void CppGenerator::writeSetByNameR(Generator &G, Field *f)
 			"}\n";
 		return;
 	}
-	if (!f->getOption("parse_ascii").empty()) {
+	if (!f->getParseAsciiFunction().empty()) {
 		G <<	"return $parse_ascii(&m_$fname[x],value);\n"
 			"}\n"
 			"}\n";
@@ -1857,7 +1923,14 @@ void CppGenerator::writeSetByName(Generator &G, Message *m)
 {
 	if (target->getOption("SetByName").empty())
 		return;
-	G <<	"int $(prefix)$(msg_name)::$(set_by_name)(const char *name, const char *value)\n"
+	G <<	"/*\n"
+		" * Function for setting an element in dot notation with an ASCII value.\n"
+		" * It will call the specified parse_ascii function for parsing the value.\n"
+		" *\n"
+		" * @return number of bytes successfully parsed or negative value indicating\n"
+		" *         an error.\n"
+		" */\n"
+		"int $(prefix)$(msg_name)::$(set_by_name)(const char *name, const char *value)\n"
 		"{\n";
 	unsigned n = 0;
 	for (auto i : m->getFields()) {
@@ -1865,15 +1938,18 @@ void CppGenerator::writeSetByName(Generator &G, Message *m)
 		if ((f == 0) || !f->isUsed() || f->isObsolete())
 			continue;
 		uint32_t t = f->getType();
-		if ((t == ft_bytes) || (t == ft_cptr))
+		if (t == ft_cptr)
 			continue;
-		G.setField(f);
 		++n;
 		if (q_repeated == f->getQuantifier()) {
+			if (t == ft_bytes)
+				continue;
+			G.setField(f);
 			writeSetByNameR(G,f);
 			G.setField(0);
 			continue;
 		}
+		G.setField(f);
 		if ((t & ft_filter) == ft_msg) {
 			if (f->getValidBit() >= 0) {
 				G <<	"if (0 == memcmp(name,\"$(fname)\",$fnamelen)) {\n"
@@ -1903,9 +1979,11 @@ void CppGenerator::writeSetByName(Generator &G, Message *m)
 				"return 0;\n"
 				"}\n";
 		}
-		if (!f->getOption("parse_ascii").empty()) {
+		if (!f->getParseAsciiFunction().empty()) {
+			G <<	"int r = $parse_ascii(&m_$fname,value);\n"
+				"if (r > 0)\n";
 			writeSetValid(G,f->getValidBit());
-			G <<	"return $parse_ascii(&m_$fname,value);\n"
+			G <<	"return r;\n"
 				"}\n";
 			G.setField(0);
 			continue;
@@ -1932,62 +2010,67 @@ void CppGenerator::writeSetByName(Generator &G, Message *m)
 			G.setField(0);
 			continue;
 		}
-		writeSetValid(G,f->getValidBit());
 		switch (t) {
 		case ft_string:
 			G <<	"m_$fname = value;\n"
-				"return m_$(fname).size();\n";
+				"int r = m_$(fname).size();\n";
+			break;
+		case ft_bytes:
+			G <<	"int r = parse_ascii_bytes(m_$(fname),value);\n";
 			break;
 		case ft_float:
-			G <<	"return parse_ascii_flt(&m_$(fname),value);\n";
+			G <<	"int r = parse_ascii_flt(&m_$(fname),value);\n";
 			break;
 		case ft_double:
-			G <<	"return parse_ascii_dbl(&m_$(fname),value);\n";
+			G <<	"int r = parse_ascii_dbl(&m_$(fname),value);\n";
 			break;
 		case ft_int8:
 		case ft_sint8:
 		case ft_sfixed8:
-			G <<	"return parse_ascii_s8(&m_$(fname),value);\n";
+			G <<	"int r = parse_ascii_s8(&m_$(fname),value);\n";
 			break;
 		case ft_int16:
 		case ft_sint16:
 		case ft_sfixed16:
-			G <<	"return parse_ascii_s16(&m_$(fname),value);\n";
+			G <<	"int r = parse_ascii_s16(&m_$(fname),value);\n";
 			break;
 		case ft_int32:
 		case ft_sint32:
 		case ft_sfixed32:
-			G <<	"return parse_ascii_s32(&m_$(fname),value);\n";
+			G <<	"int r = parse_ascii_s32(&m_$(fname),value);\n";
 			break;
 		case ft_int64:
 		case ft_sint64:
 		case ft_sfixed64:
-			G <<	"return parse_ascii_s64(&m_$(fname),value);\n";
+			G <<	"int r = parse_ascii_s64(&m_$(fname),value);\n";
 			break;
 		case ft_fixed8:
 		case ft_uint8:
-			G <<	"return parse_ascii_u8(&m_$(fname),value);\n";
+			G <<	"int r = parse_ascii_u8(&m_$(fname),value);\n";
 			break;
 		case ft_uint16:
 		case ft_fixed16:
-			G <<	"return parse_ascii_u16(&m_$(fname),value);\n";
+			G <<	"int r = parse_ascii_u16(&m_$(fname),value);\n";
 			break;
 		case ft_uint32:
 		case ft_fixed32:
-			G <<	"return parse_ascii_u32(&m_$(fname),value);\n";
+			G <<	"int r = parse_ascii_u32(&m_$(fname),value);\n";
 			break;
 		case ft_uint64:
 		case ft_fixed64:
-			G <<	"return parse_ascii_u64(&m_$(fname),value);\n";
+			G <<	"int r = parse_ascii_u64(&m_$(fname),value);\n";
 			break;
 		case ft_bool:
-			G <<	"return parse_ascii_bool(&m_$(fname),value);\n";
+			G <<	"int r = parse_ascii_bool(&m_$(fname),value);\n";
 			break;
 		case ft_signed:
 		case ft_unsigned:
 		default:
 			abort();
 		}
+		G << "if (r > 0)\n";
+		writeSetValid(G,f->getValidBit());
+		G << "return r;\n";
 		G.setField(0);
 		G <<	"}\n";
 	}
@@ -2000,8 +2083,12 @@ void CppGenerator::writeClear(Generator &G, Field *f)
 	uint8_t q = f->getQuantifier();
 	if (q == q_required)
 		return;
-	G	<< "$(inline)void $(prefix)$(msg_name)::$(field_clear)()\n"
-		   "{\n";
+	G <<	"/*!\n"
+		" * Function for clearing the associated member variable.\n"
+		" * It will reset the value to the default value.\n"
+		" */\n"
+		"$(inline)void $(prefix)$(msg_name)::$(field_clear)()\n"
+		"{\n";
 	uint32_t type = f->getType();
 	int vbit = f->getValidBit();
 	if (vbit >= 0) {
@@ -2284,8 +2371,13 @@ void CppGenerator::writeCalcSize(Generator &G, Field *f)
 
 void CppGenerator::writeCalcSize(Generator &G, Message *m)
 {
-	G	<< "size_t $(prefix)$(msg_name)::$calcSize() const\n"
-		<< "{\n";
+	G <<	"/*!\n"
+		" * Function for calculating the number of bytes needed for serializing\n"
+		" * the related object with its associated data.\n"
+		" * Changing the data may change the size of the serialized object.\n"
+		" */\n"
+		"size_t $(prefix)$(msg_name)::$calcSize() const\n"
+		"{\n";
 	size_t n = 0;
 	for (auto i : m->getFields()) {
 		Field *f = i.second;
@@ -3229,7 +3321,14 @@ void CppGenerator::writeToX(Generator &G, Field *f)
 
 void CppGenerator::writeFromMemory(Generator &G, Message *m)
 {
-	G <<	"ssize_t $(prefix)$(msg_name)::$(fromMemory)(const void *b, ssize_t s)\n"
+	G <<	"/*!\n"
+		" * Function for parsing an object from serialized data.\n"
+		" * @param b buffer containg the data to be parsed\n"
+		" * @param s number of bytes in buffer\n"
+		" * @return number of bytes successfully parsed (can be < s)\n"
+		" *         or a negative value indicating the error encountered\n"
+		" */\n"
+		"ssize_t $(prefix)$(msg_name)::$(fromMemory)(const void *b, ssize_t s)\n"
 		"{\n"
 		"const uint8_t *a = (const uint8_t *)b;\n"
 		"const uint8_t *e = a + s;\n";
@@ -3328,7 +3427,13 @@ void CppGenerator::writeFromMemory(Generator &G, Message *m)
 
 void CppGenerator::writeToMemory(Generator &G, Message *m)
 {
-	G <<	"size_t $(prefix)$(msg_name)::$toMemory(uint8_t *b, ssize_t s) const\n"
+	G <<	"/*!\n"
+		" * Function for serializing the object to memory.\n"
+		" * @param b buffer to serialize the object to\n"
+		" * @param s number of bytes available in the buffer\n"
+		" * @return number of bytes successfully serialized\n"
+		" */\n"
+		"ssize_t $(prefix)$(msg_name)::$toMemory(uint8_t *b, ssize_t s) const\n"
 		"{\n";
 	if (Debug)
 		G << "std::cout << \"$(prefix)$(msg_name)::$toMemory(\" << (void*)b << \", \" << s << \")\\n\";\n";
@@ -3546,7 +3651,12 @@ void CppGenerator::writeToJson(Generator &G, Message *m)
 		break;
 	}
 	G.addVariable("json_indent",resolve_esc(target->getOption("json_indent")));
-	G <<	"void $(prefix)$(msg_name)::$(toJSON)($(streamtype) &json, unsigned indLvl) const\n"
+	G <<	"/*!\n"
+		" * Function for writing a JSON representation of the object to a stream.\n"
+		" * @param json stream object the data should be serialized to\n"
+		" * @param indLvl the indention level that should be used\n"
+		" */\n"
+		"void $(prefix)$(msg_name)::$(toJSON)($(streamtype) &json, unsigned indLvl) const\n"
 		"{\n";
 	if (fsep == 0)
 		G <<	"char fsep = '{';\n";
@@ -3604,7 +3714,10 @@ void CppGenerator::writeToX(Generator &G, Message *m)
 
 void CppGenerator::writeClear(Generator &G, Message *m)
 {
-	G <<	"void $(prefix)$(msg_name)::$(msg_clear)()\n"
+	G <<	"/*!\n"
+		" * Function for resetting all members of this object to their default values.\n"
+		" */\n"
+		"void $(prefix)$(msg_name)::$(msg_clear)()\n"
 		"{\n";
 	for (auto i : m->getFields()) {
 		Field *f = i.second;
@@ -3818,7 +3931,6 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 		} else
 			G <<	"o << $(field_value) << ';';\n";
 	} else if (!f->getAsciiFunction().empty()) {
-		G << ";\n";
 		G << f->getAsciiFunction() << "(o,$(field_value));\n";
 		G << "o << ';';\n";
 	} else switch (type) {
@@ -3972,15 +4084,29 @@ void CppGenerator::writeFunctions(Generator &G, Message *m)
 	if (G.hasValue("toWire")) {
 		G.setMode(gen_wire);
 		G.setVariable("toX",G.getVariable("toWire"));
+		G << 	"/*!\n"
+			" * Function for serializing the object directly to a transmission stream.\n"
+			" * @param put function for putting a byte on the transmitting wire\n"
+			" */\n";
 		writeToX(G,m);
 	}
 	if (G.hasValue("toSink") && !SinkToTemplate) {
 		G.setMode(gen_sink);
+		G << 	"/*!\n"
+			" * Function for serializing the object using a Sink object.\n"
+			" * Derive a class from the Sink base class to provide custom methods\n"
+			" * for sending the objects' data.\n"
+			" * @param s object of the class derived from Sink\n"
+			" */\n";
 		G.setVariable("toX",G.getVariable("toSink"));
 		writeToX(G,m);
 	}
 	if (G.hasValue("toString")) {
 		G.setMode(gen_string);
+		G << 	"/*!\n"
+			" * Function for serializing the object to a string.\n"
+			" * @param s string object the data should be written to\n"
+			" */\n";
 		G.setVariable("toX",G.getVariable("toString"));
 		writeToX(G,m);
 	}
@@ -4066,6 +4192,8 @@ void CppGenerator::writeHelpers(vector<unsigned> &funcs)
 			funcs.push_back(ct_parse_ascii_s16);
 		if (hasS8)
 			funcs.push_back(ct_parse_ascii_s8);
+		if (hasBytes)
+			funcs.push_back(ct_parse_ascii_bytes);
 		if (hasBool)
 			funcs.push_back(ct_parse_ascii_bool);
 	}
