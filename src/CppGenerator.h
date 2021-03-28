@@ -91,7 +91,7 @@ class CppGenerator : public CodeGeneratorImpl
 	void writeSize(Generator &, Field *f);
 	void writeStaticMember(Generator &G, Field *f, const char *n);
 	void writeStaticMembers(Generator &G, Message *m);
-	void writeTagToMemory(Generator &out, Field *f);
+	void writeTagToMemory(Generator &out, Field *f, unsigned = 0);
 	void writeTagToX(Generator &out, Field *f);
 	void writeToJson(Generator &out, Field *f, char fsep);
 	void writeToJson(Generator &out, Message *m);
@@ -130,7 +130,7 @@ class CppGenerator : public CodeGeneratorImpl
 	     hasBool, hasFloat, hasFloats, hasDouble, hasDoubles,
 	     hasS8, hasS16, hasS32, hasS64, hasU8, hasU16, hasU32, hasU64,
 	     hasWT8, hasWT16, hasWT32, hasWT64, hasEnums,
-	     hasBytes, hasString, hasLenPfx, hasUnused,
+	     hasBytes, hasString, hasLenPfx, hasRBytes, hasRString, hasUnused,
 	     needJsonString, needCalcSize, needSendVarSInt;
 	unsigned VarIntBits, WireputArg;
 	std::string ErrorHandling, license;

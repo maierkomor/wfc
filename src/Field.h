@@ -207,6 +207,9 @@ class Field
 	bool isDeprecated() const
 	{ return usage == use_deprecated; }
 
+	bool hasCustomStringtype() const
+	{ return stringtype != st_std; }
+
 	private:
 	Field(const Field &);
 	Field &operator = (const Field &);

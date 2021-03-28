@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2019, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -99,6 +99,7 @@ void fail(const char *msg, const Message *l, const Message *r = 0)
 	if (r) {
 		std::cout << "\nr:\n";
 		r->toASCII(std::cout);
+		std::cout << '\n';
 	}
 #else
 	std::cout << "cannot output as ascii: toASCII support missing\n";
@@ -150,6 +151,18 @@ void runcheck(const Message &tb)
 	if (tb != fw) {
 		hexdump(buf,s);
 		fail("fromMemory",&tb,&fw);
+	}
+
+	++NumToMem;
+	m = tb.toMemory(buf,s);
+	if (m != s)
+		fail("toMemory2",&tb);
+	++NumFromMem;
+	fw.clear();
+	fw.fromMemory(buf,s);
+	if (tb != fw) {
+		hexdump(buf,s);
+		fail("fromMemory2",&tb,&fw);
 	}
 
 #ifdef HAVE_TO_SINK

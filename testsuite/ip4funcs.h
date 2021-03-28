@@ -7,7 +7,7 @@ inline void ip4_ascii(std::ostream &str, uint32_t ip)
 }
 
 
-static int parse_ipv4(uint32_t *ip, const char *str)
+inline int parse_ipv4(uint32_t *ip, const char *str)
 {
 	uint8_t b[4];
 	int n = sscanf(str,"%hhu.%hhu.%hhu.%hhu",b+0,b+1,b+2,b+3);

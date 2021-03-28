@@ -1,3 +1,10 @@
+Release R2103:
+==============
+- enhancement: further size optimization
+- enhancement: make use of c++11 syntax
+- fix: array.h has buggy end()
+- fix: erroneous control flow in setByName without valid bit
+
 Release R2102:
 ==============
 - fix: potential bus error with write_u64 on little endian

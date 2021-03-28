@@ -34,6 +34,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include <algorithm>
 #include <sstream>
 
 using namespace std;
@@ -329,6 +330,10 @@ void CodeLibrary::add_dependencies(vector<unsigned> &funcs, const Options *optio
 		if (id == ct_invalid) {
 			warn("unable to find depency %s",n.c_str());
 		} else if (all.insert(id).second) {
+			funcs.insert(funcs.begin(),id);
+		} else {
+			// dependency already exists => move it to front
+			funcs.erase(find(funcs.begin(),funcs.end(),(unsigned)id));
 			funcs.insert(funcs.begin(),id);
 		}
 	}

@@ -41,6 +41,8 @@ const char *Functions[] = {
 	"json_string",
 	"mangle_double",
 	"mangle_float",
+	"decode_bytes",
+	"decode_bytes_element",
 	"decode_early",
 	"decode_union",
 	"parse_ascii_bool",
@@ -84,6 +86,7 @@ const char *Functions[] = {
 	"write_varint",
 	"write_xvarint",
 	"CStrLess",
+	"encode_bytes",
 	0
 };
 
@@ -330,7 +333,7 @@ bool CodeTemplate::isDefine() const
 bool CodeTemplate::isTemplate() const
 {
 	const char *c = code.c_str();
-	if (!strncmp(c,"template",8) && isspace(c[8]))
+	if (!strncmp(c,"template",8) && (isspace(c[8]) || (c[8] == '<')))
 		return true;
 	return false;
 }
@@ -391,13 +394,18 @@ void CodeTemplate::write_h(Generator &G, libmode_t m)
 	switch (m) {
 	case libinline:
 		writeComment(G);
-		G << "inline " << code << "\n\n\n";
+		if (!isTemplate())
+			G << "inline ";
+		G << code << "\n\n\n";
 		break;
 	case libstatic:
 		break;
 	case libextern:
 		writeComment(G);
-		G << "extern " << string(c,end_of_decl(c)) << ";\n\n\n";
+		if (isTemplate())
+			G << code << "\n\n\n";
+		else
+			G << "extern " << string(c,end_of_decl(c)) << ";\n\n\n";
 		break;
 	default:
 		abort();
@@ -457,7 +465,8 @@ void CodeTemplate::write_cpp(Generator &G, libmode_t m)
 	const char *eod = end_of_decl(c);
 	switch (m) {
 	case libstatic:
-		G << "static ";
+		if (!isTemplate())
+			G << "static ";
 		G << code;
 		break;
 	case libextern:
@@ -483,6 +492,7 @@ void CodeTemplate::addDependencies(char *deps)
 			c = *deps++;
 		}
 		if (!dep.empty()) {
+			dbug("%s depends on %s",function.c_str(),dep.c_str());
 			dependencies.push_back(dep);
 			dep.clear();
 		}

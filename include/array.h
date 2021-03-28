@@ -99,13 +99,13 @@ class array
 	{ return data; }
 
 	T *end()
-	{ return data+maxsize; }
+	{ return data+n; }
 
 	const T *begin() const
 	{ return data; }
 
 	const T *end() const
-	{ return data+maxsize; }
+	{ return data+n; }
 
 	bool empty() const
 	{ return n == 0; }
@@ -207,13 +207,13 @@ class array<T,maxsize,true>
 	{ return data; }
 
 	T *end()
-	{ return data+maxsize; }
+	{ return data+n; }
 
 	const T *begin() const
 	{ return data; }
 
 	const T *end() const
-	{ return data+maxsize; }
+	{ return data+n; }
 
 	bool empty() const
 	{ return n == 0; }
