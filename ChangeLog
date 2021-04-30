@@ -1,3 +1,9 @@
+Release R2104:
+==============
+- enhancement: encode/decode functions for custom string types
+- fix: invalid generation of set(const char*) for repeated strings
+- fix: fix indention issue for JSON
+
 Release R2103:
 ==============
 - enhancement: further size optimization

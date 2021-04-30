@@ -780,7 +780,9 @@ void CppGenerator::writeLib()
 		"#define _" << defname << "_H\n\n\n";
 	if (Asserts || (target->getOption("UnknownField") == "assert"))
 		lhg << "#include <assert.h>\n";
-	if (PrintOut)
+	if (target->isId("toJSON") && (target->getOption("streamtype") == "std::ostream"))
+		lhg << "#include <ostream>\n";
+	else if (PrintOut)
 		lhg <<	"#define OUTPUT_TO_ASCII 1\n"
 			"#include <iosfwd>\n";
 	if (target->StringSerialization() || usesStringTypes || PrintOut || WithJson)
@@ -987,7 +989,7 @@ static void writeSetDecl(Generator &G, uint32_t type, uint8_t q, bool v)
 			G << "(unsigned x, $(fullrtype)v)$(vimpl);\n";
 		else
 			G << "($(rtype) v)$(vimpl);\n";
-		if (type == ft_string)
+		if ((type == ft_string) && (q != q_repeated))
 			G << "$(virtual)void $(field_set)(const char *);\n";
 	}
 }
@@ -1492,9 +1494,12 @@ void CppGenerator::writeHeader(const string &bn)
 		out << "#include <assert.h>\n";
 	if (PrintOut) {
 		out <<	"#define OUTPUT_TO_ASCII 1\n";
-		if (target->getOption("streamtype") == "std::ostream")
+		if (target->getOption("streamtype") == "std::ostream") {
 			out << "#include <iosfwd>\n";
+		}
 	}
+	if (target->isId("toJSON") && (target->getOption("streamtype") == "std::ostream"))
+		out << "#include <ostream>\n";
 	if (target->StringSerialization() || usesStringTypes || PrintOut || WithJson)
 		out <<	"#include <string>\n";
 	else
@@ -2546,7 +2551,7 @@ void CppGenerator::decodeMessage(Generator &G, Field *f)
 
 void CppGenerator::decodeByteArray(Generator &G, Field *f)
 {
-	if ((optmode == optspeed) || f->hasCustomStringtype() || (target->getOption("stringtype") == "C")) {
+	if ((optmode == optspeed) || (target->getOption("stringtype") == "C")) {
 		G <<	"{\n"
 			"varint_t v;\n"
 			"int n = read_varint(a,e-a,&v);\n"
@@ -3178,7 +3183,7 @@ void CppGenerator::writeToMemory(Generator &G, Field *f)
 				"	*a++ = 0;\n"
 				"}\n";
 		} else {
-			if ((optmode == optspeed) || f->hasCustomStringtype() || (target->getOption("stringtype") == "C")) {
+			if ((optmode == optspeed) || (target->getOption("stringtype") == "C")) {
 				G <<	"ssize_t $(fname)_s = $(field_value).size();\n"
 					"n = write_varint(a,e-a,$(fname)_s);\n"
 					"a += n;\n"
@@ -3639,14 +3644,17 @@ void CppGenerator::writeToJson(Generator &G, Field *f, char fsep)
 		}
 		G <<	"indLvl += 2;\n"
 			"json << \"\\\"$(fname)\\\":[\\n\";\n"
-			"for (size_t i = 0; i < s;) {\n"
+			"size_t i = 0;\n"
+			"for (;;) {\n"
 			"$json_indent(json,indLvl,0);\n"
 			<< writevalue <<
 			"++i;\n"
-			"if (i != s)\n"
-			"json.write(\",\\n\",2);\n"
+			"if (i == s)\n"
+			"break;\n"
+			"json << \",\\n\";\n"
 			"}\n"
 			"indLvl -= 2;\n"
+			"json.put('\\n');\n"
 			"$json_indent(json,indLvl,0);\n"
 			"json.put(']');\n"
 			"}\n";

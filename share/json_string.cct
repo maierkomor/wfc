@@ -24,9 +24,9 @@
 
 /* wfc-template:
  * function: json_semi
- * sysinclude: ostream
  */
-void json_semi(ostream &json)
+template <typename streamtype>
+void json_semi(streamtype &json)
 {
 	json.put(';');
 }
@@ -34,9 +34,9 @@ void json_semi(ostream &json)
 
 /* wfc-template:
  * function: json_indent
- * sysinclude: ostream
  */
-void json_indent($streamtype &json, unsigned indLvl, char fsep, const char *fname = 0)
+template <typename streamtype>
+void json_indent(streamtype &json, unsigned indLvl, char fsep, const char *fname = 0)
 {
 	if (fsep) {
 		json.put(fsep);
@@ -44,14 +44,12 @@ void json_indent($streamtype &json, unsigned indLvl, char fsep, const char *fnam
 	}
 	while (indLvl) {
 		--indLvl;
-		json.put(' ');
-		json.put(' ');
+		json.write("  ",2);
 	}
 	if (fname) {
 		json.put('"');
 		json << fname;
-		json.put('"');
-		json.put(':');
+		json.write("\":",2);
 	}
 }
 
