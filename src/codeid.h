@@ -26,6 +26,7 @@ typedef enum {
 	ct_invalid = 0,
 	ct_ascii_bytes,
 	ct_ascii_indent,
+	ct_ascii_numeric,
 	ct_ascii_string,
 	ct_json_cstr,
 	ct_json_indent,

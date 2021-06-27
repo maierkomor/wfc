@@ -237,5 +237,53 @@ int main(int argc, char *argv[])
 	tb.set_kvpairs(1,kvp);
 	runcheck(tb);
 
+	for (size_t i = 0; i < sizeof(ValuesU8)/sizeof(ValuesU8[0]); ++i)
+		tb.add_PU8V(ValuesU8[i]);
+	runcheck(tb);
+
+	for (size_t i = 0; i < sizeof(ValuesU16)/sizeof(ValuesU16[0]); ++i)
+		tb.add_PU16V(ValuesU16[i]);
+	runcheck(tb);
+
+	for (size_t i = 0; i < sizeof(ValuesU32)/sizeof(ValuesU32[0]); ++i)
+		tb.add_PU32V(ValuesU32[i]);
+	runcheck(tb);
+
+	for (size_t i = 0; i < sizeof(ValuesU64)/sizeof(ValuesU64[0]); ++i)
+		tb.add_PU64V(ValuesU64[i]);
+	runcheck(tb);
+
+	for (size_t i = 0; i < sizeof(ValuesS8)/sizeof(ValuesS8[0]); ++i)
+		tb.add_PI8V(ValuesS8[i]);
+	runcheck(tb);
+
+	for (size_t i = 0; i < sizeof(ValuesS16)/sizeof(ValuesS16[0]); ++i)
+		tb.add_PI16V(ValuesS16[i]);
+	runcheck(tb);
+
+	for (size_t i = 0; i < sizeof(ValuesS32)/sizeof(ValuesS32[0]); ++i)
+		tb.add_PI32V(ValuesS32[i]);
+	runcheck(tb);
+
+	for (size_t i = 0; i < sizeof(ValuesS64)/sizeof(ValuesS64[0]); ++i)
+		tb.add_PI64V(ValuesS64[i]);
+	runcheck(tb);
+
+	for (size_t i = 0; i < sizeof(ValuesS8)/sizeof(ValuesS8[0]); ++i)
+		tb.add_PS8V(ValuesS8[i]);
+	runcheck(tb);
+
+	for (size_t i = 0; i < sizeof(ValuesS16)/sizeof(ValuesS16[0]); ++i)
+		tb.add_PS16V(ValuesS16[i]);
+	runcheck(tb);
+
+	for (size_t i = 0; i < sizeof(ValuesS32)/sizeof(ValuesS32[0]); ++i)
+		tb.add_PS32V(ValuesS32[i]);
+	runcheck(tb);
+
+	for (size_t i = 0; i < sizeof(ValuesS64)/sizeof(ValuesS64[0]); ++i)
+		tb.add_PS64V(ValuesS64[i]);
+	runcheck(tb);
+
 	printf("%s: %s\n",argv[0],testcnt());
 }

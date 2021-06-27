@@ -36,7 +36,7 @@ void json_semi(streamtype &json)
  * function: json_indent
  */
 template <typename streamtype>
-void json_indent(streamtype &json, unsigned indLvl, char fsep, const char *fname = 0)
+char json_indent(streamtype &json, unsigned indLvl, char fsep, const char *fname = 0)
 {
 	if (fsep) {
 		json.put(fsep);
@@ -51,6 +51,7 @@ void json_indent(streamtype &json, unsigned indLvl, char fsep, const char *fname
 		json << fname;
 		json.write("\":",2);
 	}
+	return ',';
 }
 
 

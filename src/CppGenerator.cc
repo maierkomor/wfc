@@ -703,6 +703,7 @@ static void allHelpers(vector<unsigned> &funcs, bool VarIntBits64)
 	funcs.push_back(ct_ascii_indent);
 	funcs.push_back(ct_ascii_bytes);
 	funcs.push_back(ct_ascii_string);
+	funcs.push_back(ct_ascii_numeric);
 
 	funcs.push_back(ct_json_string);
 	funcs.push_back(ct_json_indent);
@@ -1165,6 +1166,15 @@ void CppGenerator::writeEnumDefs(Generator &G, Enum *en)
 }
 
 
+struct sort_field_size
+{
+	bool operator () (const Field *l, const Field *r) const
+	{
+		return l->getMemberSize() > r->getMemberSize();
+	}
+};
+
+
 void CppGenerator::writeMembers(Generator &G, Message *m, bool def_not_init)
 {
 	msg_sorting_t sorting = m->getSorting();
@@ -1185,34 +1195,19 @@ void CppGenerator::writeMembers(Generator &G, Message *m, bool def_not_init)
 				first = writeMember(G,f,def_not_init,first);
 		}
 	} else if (sorting == sort_size) {
-		unsigned size = 32;
-		do {
-			for (auto i : fields) {
-				Field *f = i.second; 
-				if ((f == 0) || (!f->isRepeated()))
-					continue;
-				if (f->getMemberSize() == size)
-					first = writeMember(G,f,def_not_init,first);
-			}
-			size >>= 1;
-		} while (size);
-		size = 32;
-		do {
-			for (auto i : fields) {
-				Field *f = i.second; 
-				if ((f == 0) || (f->isRepeated()))
-					continue;
-				if (f->getMemberSize() == size)
-					first = writeMember(G,f,def_not_init,first);
-			}
-			size >>= 1;
-		} while (size);
+		vector<Field *> sorted;
+		for (auto i : fields)
+			sorted.push_back(i.second);
+		sort(sorted.begin(),sorted.end(),sort_field_size());
+		for (auto i : sorted)
+			first = writeMember(G,i,def_not_init,first);
 	} else if (sorting == sort_type) {
 		set<string> tns;
 		for (auto i : fields) {
 			if (Field *f = i.second)
 				tns.insert(f->getTypeName());
 		}
+		unsigned cnt = 0;
 		for (auto ti = tns.begin(), te = tns.end(); ti != te; ++ti) {
 			const string &tn = *ti;
 			for (auto i : fields) {
@@ -1220,17 +1215,22 @@ void CppGenerator::writeMembers(Generator &G, Message *m, bool def_not_init)
 				if ((f == 0) || (tn != f->getTypeName()))
 					continue;
 				first = writeMember(G,f,def_not_init,first);
+				++cnt;
 			}
 		}
+		assert(cnt == fields.size());
 	} else if (sorting == sort_name) {
 		map<string,Field*> names;
 		for (auto i : fields) {
-			Field *f = i.second; 
-			if (f)
+			if (Field *f = i.second)
 				names.insert(make_pair(f->getName(),f));
 		}
-		for (auto ni = names.begin(), ne = names.end(); ni != ne; ++ni)
+		unsigned cnt = 0;
+		for (auto ni = names.begin(), ne = names.end(); ni != ne; ++ni) {
 			first = writeMember(G,ni->second,def_not_init,first);
+			++cnt;
+		}
+		assert(cnt == fields.size());
 	} else
 		abort();
 }
@@ -2644,6 +2644,8 @@ void CppGenerator::writeFromMemory(Generator &G, Field *f)
 		case ft_unsigned:
 		case ft_int:
 		case ft_enum:
+		case ft_int8:
+		case ft_uint8:
 		case ft_int16:
 		case ft_uint16:
 		case ft_int32:
@@ -2660,8 +2662,6 @@ void CppGenerator::writeFromMemory(Generator &G, Field *f)
 			decodeSVarint(G,f);
 			break;
 		case ft_bool:
-		case ft_int8:
-		case ft_uint8:
 		case ft_fixed8:
 		case ft_sfixed8:
 			decode8bit(G,f);
@@ -2975,7 +2975,7 @@ void CppGenerator::writeToMemory(Generator &G, Field *f)
 			G.setVariableHex("field_tag",f->getId()<<3|2);
 			G.addVariable("index","x");
 			writeTagToMemory(G,f);
-			if (((type&ft_filter) == ft_enum) ||  (type == ft_uint16) || (type == ft_uint32) || (type == ft_uint64) || (type == ft_int64)) {
+			if (((type&ft_filter) == ft_enum) || (type == ft_uint8) ||  (type == ft_uint16) || (type == ft_uint32) || (type == ft_uint64) || (type == ft_int64)) {
 				G <<	"ssize_t $(fname)_ws = 0;\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x)\n"
 					"	$(fname)_ws += $(wiresize_u)($(field_value));\n"
@@ -3009,7 +3009,7 @@ void CppGenerator::writeToMemory(Generator &G, Field *f)
 					"	$handle_error;\n"
 					"for (size_t x = 0; x != $(fname)_ne; ++x)\n"
 					"	a += write_varint(a,e-a,sint_varint($(field_value)));\n";
-			} else if ((type == ft_bool) || (type == ft_fixed8) ||  (type == ft_sfixed8) || (type == ft_uint8)) {
+			} else if ((type == ft_bool) || (type == ft_fixed8) ||  (type == ft_sfixed8)) {
 				G <<	"ssize_t $(fname)_ws = $(fname)_ne * sizeof($typestr);\n"
 					"n = write_varint(a,e-a,$(fname)_ws);\n"
 					"a += n;\n"
@@ -3618,8 +3618,7 @@ void CppGenerator::writeToJson(Generator &G, Field *f, char fsep)
 		if (fsep) {
 			G <<	"$json_indent(json,indLvl,'" << fsep << "',\"$fname\");\n";
 		} else {
-			G <<	"$json_indent(json,indLvl,fsep,\"$fname\");\n"
-				"fsep = ',';\n";
+			G <<	"fsep = $json_indent(json,indLvl,fsep,\"$fname\");\n";
 		}
 		G <<	writevalue
 		<<	"}\n";
@@ -3628,8 +3627,7 @@ void CppGenerator::writeToJson(Generator &G, Field *f, char fsep)
 		if (fsep) {
 			G <<	"$json_indent(json,indLvl,'" << fsep << "',\"$fname\");\n";
 		} else {
-			G <<	"$json_indent(json,indLvl,fsep,\"$fname\");\n"
-				"fsep = ',';\n";
+			G <<	"fsep = $json_indent(json,indLvl,fsep,\"$fname\");\n";
 		}
 		G <<	writevalue;
 		break;
@@ -3639,8 +3637,7 @@ void CppGenerator::writeToJson(Generator &G, Field *f, char fsep)
 		if (fsep) {
 			G <<	"$json_indent(json,indLvl,'" << fsep << "');\n";
 		} else {
-			G <<	"$json_indent(json,indLvl,fsep);\n"
-				"fsep = ',';\n";
+			G <<	"fsep = $json_indent(json,indLvl,fsep);\n";
 		}
 		G <<	"indLvl += 2;\n"
 			"json << \"\\\"$(fname)\\\":[\\n\";\n"
@@ -3990,13 +3987,15 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 	G.setField(f);
 	uint8_t quan = f->getQuantifier();
 	uint32_t type = f->getType();
+	const string &asciifun = f->getAsciiFunction();
 	switch (quan) {
 	case q_optional:
-		G <<	//"if ($(field_has)()) {\n"
-			"$ascii_indent(o,indent,\"$fname\");\n";
+		if (!f->isInteger() || f->isVirtual() || !asciifun.empty())
+			G <<	"$ascii_indent(o,indent,\"$fname\");\n";
 		break;
 	case q_required:
-		G <<	"$ascii_indent(o,indent,\"$fname\");\n";
+		if (!f->isInteger() || f->isVirtual() || !asciifun.empty())
+			G <<	"$ascii_indent(o,indent,\"$fname\");\n";
 		break;
 	case q_repeated:
 		G <<	"$ascii_indent(o,indent);\n"
@@ -4020,19 +4019,19 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 				"o << ';';\n";
 		} else
 			G <<	"o << $(field_value) << ';';\n";
-	} else if (!f->getAsciiFunction().empty()) {
-		G << f->getAsciiFunction() << "(o,$(field_value));\n";
+	} else if (!asciifun.empty()) {
+		G << asciifun << "(o,$(field_value));\n";
 		G << "o << ';';\n";
 	} else switch (type) {
 	case ft_uint8:
 	case ft_fixed8:
-		G << "o << (unsigned) $(field_value) << ';';\n";
+		G << "ascii_numeric(o, indent, \"$fname\", (unsigned) $(field_value));\n";
 		break;
 
 	case ft_int8:
 	case ft_sint8:
 	case ft_sfixed8:
-		G << "o << (signed) $(field_value) << ';';\n";
+		G << "ascii_numeric(o, indent, \"$fname\", (signed) $(field_value));\n";
 		break;
 
 	case ft_int32:
@@ -4052,7 +4051,7 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 	case ft_fixed64:
 	case ft_sfixed64:
 	case ft_double:
-		G << "o << $(field_value) << ';';\n";
+		G << "ascii_numeric(o, indent, \"$fname\", $(field_value));\n";
 		break;
 
 	case ft_bytes:
@@ -4261,6 +4260,8 @@ void CppGenerator::writeHelpers(vector<unsigned> &funcs)
 			funcs.push_back(ct_ascii_bytes);
 		if (hasString && (target->getOption("ascii_string") == "ascii_string"))
 			funcs.push_back(ct_ascii_string);
+		if (target->getOption("ascii_numeric") == "ascii_numeric")
+			funcs.push_back(ct_ascii_numeric);
 	}
 
 	if (target->isId("SetByName")) {
@@ -4679,7 +4680,14 @@ void CppGenerator::writeFromMemory_early(Generator &G, Field *f)
 
 void CppGenerator::writeFromMemory_early(Generator &G, Message *m)
 {
-	G <<	"ssize_t $(prefix)$(msg_name)::$(fromMemory)(const void *b, ssize_t s)\n"
+	G <<	"/*!\n"
+		" * Function for parsing an object from serialized data.\n"
+		" * @param b buffer containg the data to be parsed\n"
+		" * @param s number of bytes in buffer\n"
+		" * @return number of bytes successfully parsed (can be < s)\n"
+		" *         or a negative value indicating the error encountered\n"
+		" */\n"
+		"ssize_t $(prefix)$(msg_name)::$(fromMemory)(const void *b, ssize_t s)\n"
 		"{\n"
 		"const uint8_t *a = (const uint8_t *)b;\n"
 		"const uint8_t *e = a + s;\n";

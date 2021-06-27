@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2020, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -34,9 +34,7 @@ void ascii_indent($streamtype &out, ssize_t n, const char *fname = 0)
 	}
 	if (fname) {
 		out << fname;
-		out.put(' ');
-		out.put('=');
-		out.put(' ');
+		out.write(" = ",3);
 	}
 }
 
@@ -136,4 +134,23 @@ void ascii_bytes($streamtype &out, const uint8_t *str, size_t len, size_t indent
 	}
 	out << '}';
 }
+
+
+/* wfc-template:
+ * function: ascii_numeric
+ */
+template <typename T>
+void ascii_numeric($streamtype &out, ssize_t n, const char *fname, T v)
+{
+	out.put('\n');
+	while (n > 0) {
+		out.put('\t');
+		--n;
+	}
+	out << fname;
+	out.write(" = ",3);
+	out << v;
+	out << ';';
+}
+
 

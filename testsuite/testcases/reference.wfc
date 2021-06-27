@@ -153,4 +153,19 @@ message TestBench
 	sint64 SI64 = 0x77;
 
 	fixed32 ipv4 = 0x80	[ to_ascii = ip4_ascii, parse_ascii = parse_ipv4 ];
+
+	repeated int8 PI8V = 0x90	[ packed = true ];
+	repeated int16 PI16V = 0x91	[ packed = true ];
+	repeated int32 PI32V = 0x92	[ packed = true ];
+	repeated int64 PI64V = 0x93	[ packed = true ];
+
+	repeated uint8 PU8V = 0x94	[ packed = true ];
+	repeated uint16 PU16V = 0x95	[ packed = true ];
+	repeated uint32 PU32V = 0x96	[ packed = true ];
+	repeated uint64 PU64V = 0x97	[ packed = true ];
+
+	repeated sint8 PS8V = 0x98	[ packed = true ];
+	repeated sint16 PS16V = 0x99	[ packed = true ];
+	repeated sint32 PS32V = 0x9a	[ packed = true ];
+	repeated sint64 PS64V = 0x9b	[ packed = true ];
 }

@@ -693,7 +693,9 @@ bool Field::isNumeric() const
 
 bool Field::isInteger() const
 {
-	if ((type < ft_int32) || (type == ft_float) || (type == ft_double))
+	if ((type & ft_filter) != ft_native)
+		return false;
+	if ((type < ft_int32) || (type == ft_float) || (type == ft_double) || (type == ft_bool))
 		return false;
 	return true;
 }

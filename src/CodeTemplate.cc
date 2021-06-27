@@ -35,6 +35,7 @@ const char *Functions[] = {
 	"$invalid_template",
 	"ascii_bytes",
 	"ascii_indent",
+	"ascii_numeric",
 	"ascii_string",
 	"json_cstr",
 	"json_indent",

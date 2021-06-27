@@ -371,6 +371,11 @@ int main(int argc, char *argv[])
 	*dot = 0;
 
 	CodeGenerator cg(f,&options);
+	if (target) {
+		cg.setTarget(target);
+		if (hadError())
+			exit(EXIT_FAILURE);
+	}
 	if (genLib) {
 		cg.writeLib();
 		exit(hadError() ? EXIT_FAILURE : EXIT_SUCCESS);
@@ -386,11 +391,6 @@ int main(int argc, char *argv[])
 			else
 				error("unable to select message %s for code generation: no such message",name);
 		}
-	}
-	if (target) {
-		cg.setTarget(target);
-		if (hadError())
-			exit(EXIT_FAILURE);
 	}
 	cg.init();
 	if (hadError())

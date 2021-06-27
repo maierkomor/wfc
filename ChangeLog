@@ -1,3 +1,10 @@
+ Release R2106:
+ ==============
+- fix: target must be applied before generating standalone lib
+- fix: member size sorting may lose members
+- fix: false marshalling for uint8/int8
+- enhancement: optimizations for toJSON and toASCII
+
 Release R2104:
 ==============
 - enhancement: encode/decode functions for custom string types

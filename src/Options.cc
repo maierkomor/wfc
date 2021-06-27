@@ -238,6 +238,7 @@ void Options::initDefaults()
 	m_TextOptions["toASCII"] = "toASCII";
 	m_TextOptions["ascii_bytes"] = "ascii_bytes";
 	m_TextOptions["ascii_string"] = "ascii_string";
+	m_TextOptions["ascii_numeric"] = "ascii_numeric";
 	m_TextOptions["ascii_indent"] = "ascii_indent";
 	m_TextOptions["toMemory"] = "toMemory";
 	m_TextOptions["toSink"] = "";
