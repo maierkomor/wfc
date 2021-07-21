@@ -18,7 +18,7 @@ jobs:
     - name: make
       run: make
     - name: install libjson-c
-      run: sudo apt-get install libjson-c-dev
+      run: sudo apt-get install libjson-c-dev libjson-c4
     - name: make check
       run: make test
 
