@@ -21,6 +21,6 @@ jobs:
       run: sudo apt-get install libjson-c-dev libjson-c4
     - name: make check
       env:
-        LIBS="-L/usr/pkg/lib -ljson-c -Wl,-R/usr/pkg/lib"
+        LIBS: "-L/usr/pkg/lib -ljson-c -Wl,-R/usr/pkg/lib"
       run: make test
 
