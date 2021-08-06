@@ -1697,9 +1697,12 @@ void CppGenerator::writeMutable(Generator &G, Field *f)
 		G.setVariable("index","[x]");
 		G <<	"$(inline)$(fulltype) $(T)$(prefix)$(msg_name)::$(field_mutable)(unsigned x)\n"
 			"{\n"
-			"if (x >= $(field_size))\n"
-			"m_$(fname).resize(x+1);\n"
-			"return $(R)m_$(fname)$(index);\n"
+			"if (x >= $(field_size))\n";
+		if (const char *def = f->getDefaultValue())
+			G <<	"m_$(fname).resize(x+1," << def << ");\n";
+		else
+			G <<	"m_$(fname).resize(x+1);\n";
+		G <<	"return $(R)m_$(fname)$(index);\n"
 			"}\n\n"
 			;
 	}
