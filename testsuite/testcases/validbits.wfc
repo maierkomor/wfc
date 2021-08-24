@@ -3,7 +3,7 @@ option withEqual=true;
 option withUnequal=true;
 option id0=true;
 
-message OptionalFields
+message OptionalFields71
 {
 	optional bool ob0 = 0;
 	optional bool ob1 = 1;
@@ -86,6 +86,239 @@ message OptionalFields
 	optional double odouble_6 = 70;
 	optional double odouble_7 = 71;
 
+}
+
+
+message OptionalFields63
+{
+	optional bool ob0 = 0;
+	optional bool ob1 = 1;
+	optional bool ob2 = 2;
+	optional bool ob3 = 3;
+	optional bool ob4 = 4;
+	optional bool ob5 = 5;
+	optional bool ob6 = 6;
+	optional bool ob7 = 7;
+
+	optional int32 oi32_0 = 8;
+	optional int32 oi32_1 = 9;
+	optional int32 oi32_2 = 10;
+	optional int32 oi32_3 = 11;
+	optional int32 oi32_4 = 12;
+	optional int32 oi32_5 = 13;
+	optional int32 oi32_6 = 14;
+	optional int32 oi32_7 = 15;
+
+	optional fixed32 of32_0 = 16;
+	optional fixed32 of32_1 = 17;
+	optional fixed32 of32_2 = 18;
+	optional fixed32 of32_3 = 19;
+	optional fixed32 of32_4 = 20;
+	optional fixed32 of32_5 = 21;
+	optional fixed32 of32_6 = 22;
+	optional fixed32 of32_7 = 23;
+
+	optional int64 oi64_0 = 24;
+	optional int64 oi64_1 = 25;
+	optional int64 oi64_2 = 26;
+	optional int64 oi64_3 = 27;
+	optional int64 oi64_4 = 28;
+	optional int64 oi64_5 = 29;
+	optional int64 oi64_6 = 30;
+	optional int64 oi64_7 = 31;
+
+	optional fixed64 of64_0 = 32;
+	optional fixed64 of64_1 = 33;
+	optional fixed64 of64_2 = 34;
+	optional fixed64 of64_3 = 35;
+	optional fixed64 of64_4 = 36;
+	optional fixed64 of64_5 = 37;
+	optional fixed64 of64_6 = 38;
+	optional fixed64 of64_7 = 39;
+
+	optional fixed16 of16_0 = 40;
+	optional fixed16 of16_1 = 41;
+	optional fixed16 of16_2 = 42;
+	optional fixed16 of16_3 = 43;
+	optional fixed16 of16_4 = 44;
+	optional fixed16 of16_5 = 45;
+	optional fixed16 of16_6 = 46;
+	optional fixed16 of16_7 = 47;
+
+	optional fixed8 of8_0 = 48;
+	optional fixed8 of8_1 = 49;
+	optional fixed8 of8_2 = 50;
+	optional fixed8 of8_3 = 51;
+	optional fixed8 of8_4 = 52;
+	optional fixed8 of8_5 = 53;
+	optional fixed8 of8_6 = 54;
+	optional fixed8 of8_7 = 55;
+
+	optional float ofloat_0 = 56;
+	optional float ofloat_1 = 57;
+	optional float ofloat_2 = 58;
+	optional float ofloat_3 = 59;
+	optional float ofloat_4 = 60;
+	optional float ofloat_5 = 61;
+	optional float ofloat_6 = 62;
+	optional float ofloat_7 = 63;
+
+}
+
+
+message OptionalFields39
+{
+	optional bool ob0 = 0;
+	optional bool ob1 = 1;
+	optional bool ob2 = 2;
+	optional bool ob3 = 3;
+	optional bool ob4 = 4;
+	optional bool ob5 = 5;
+	optional bool ob6 = 6;
+	optional bool ob7 = 7;
+
+	optional int32 oi32_0 = 8;
+	optional int32 oi32_1 = 9;
+	optional int32 oi32_2 = 10;
+	optional int32 oi32_3 = 11;
+	optional int32 oi32_4 = 12;
+	optional int32 oi32_5 = 13;
+	optional int32 oi32_6 = 14;
+	optional int32 oi32_7 = 15;
+
+	optional fixed32 of32_0 = 16;
+	optional fixed32 of32_1 = 17;
+	optional fixed32 of32_2 = 18;
+	optional fixed32 of32_3 = 19;
+	optional fixed32 of32_4 = 20;
+	optional fixed32 of32_5 = 21;
+	optional fixed32 of32_6 = 22;
+	optional fixed32 of32_7 = 23;
+
+	optional int64 oi64_0 = 24;
+	optional int64 oi64_1 = 25;
+	optional int64 oi64_2 = 26;
+	optional int64 oi64_3 = 27;
+	optional int64 oi64_4 = 28;
+	optional int64 oi64_5 = 29;
+	optional int64 oi64_6 = 30;
+	optional int64 oi64_7 = 31;
+
+	optional fixed64 of64_0 = 32;
+	optional fixed64 of64_1 = 33;
+	optional fixed64 of64_2 = 34;
+	optional fixed64 of64_3 = 35;
+	optional fixed64 of64_4 = 36;
+	optional fixed64 of64_5 = 37;
+	optional fixed64 of64_6 = 38;
+	optional fixed64 of64_7 = 39;
+
+}
+
+
+message OptionalFields31
+{
+	optional bool ob0 = 0;
+	optional bool ob1 = 1;
+	optional bool ob2 = 2;
+	optional bool ob3 = 3;
+	optional bool ob4 = 4;
+	optional bool ob5 = 5;
+	optional bool ob6 = 6;
+	optional bool ob7 = 7;
+
+	optional int32 oi32_0 = 8;
+	optional int32 oi32_1 = 9;
+	optional int32 oi32_2 = 10;
+	optional int32 oi32_3 = 11;
+	optional int32 oi32_4 = 12;
+	optional int32 oi32_5 = 13;
+	optional int32 oi32_6 = 14;
+	optional int32 oi32_7 = 15;
+
+	optional fixed32 of32_0 = 16;
+	optional fixed32 of32_1 = 17;
+	optional fixed32 of32_2 = 18;
+	optional fixed32 of32_3 = 19;
+	optional fixed32 of32_4 = 20;
+	optional fixed32 of32_5 = 21;
+	optional fixed32 of32_6 = 22;
+	optional fixed32 of32_7 = 23;
+
+	optional int64 oi64_0 = 24;
+	optional int64 oi64_1 = 25;
+	optional int64 oi64_2 = 26;
+	optional int64 oi64_3 = 27;
+	optional int64 oi64_4 = 28;
+	optional int64 oi64_5 = 29;
+	optional int64 oi64_6 = 30;
+	optional int64 oi64_7 = 31;
+}
+
+
+message OptionalFields23
+{
+	optional bool ob0 = 0;
+	optional bool ob1 = 1;
+	optional bool ob2 = 2;
+	optional bool ob3 = 3;
+	optional bool ob4 = 4;
+	optional bool ob5 = 5;
+	optional bool ob6 = 6;
+	optional bool ob7 = 7;
+
+	optional int32 oi32_0 = 8;
+	optional int32 oi32_1 = 9;
+	optional int32 oi32_2 = 10;
+	optional int32 oi32_3 = 11;
+	optional int32 oi32_4 = 12;
+	optional int32 oi32_5 = 13;
+	optional int32 oi32_6 = 14;
+	optional int32 oi32_7 = 15;
+
+	optional fixed32 of32_0 = 16;
+	optional fixed32 of32_1 = 17;
+	optional fixed32 of32_2 = 18;
+	optional fixed32 of32_3 = 19;
+	optional fixed32 of32_4 = 20;
+	optional fixed32 of32_5 = 21;
+	optional fixed32 of32_6 = 22;
+	optional fixed32 of32_7 = 23;
+}
+
+
+message OptionalFields15
+{
+	optional bool ob0 = 0;
+	optional bool ob1 = 1;
+	optional bool ob2 = 2;
+	optional bool ob3 = 3;
+	optional bool ob4 = 4;
+	optional bool ob5 = 5;
+	optional bool ob6 = 6;
+	optional bool ob7 = 7;
+
+	optional int32 oi32_0 = 8;
+	optional int32 oi32_1 = 9;
+	optional int32 oi32_2 = 10;
+	optional int32 oi32_3 = 11;
+	optional int32 oi32_4 = 12;
+	optional int32 oi32_5 = 13;
+	optional int32 oi32_6 = 14;
+	optional int32 oi32_7 = 15;
+}
+
+
+message OptionalFields7
+{
+	optional bool ob0 = 0;
+	optional bool ob1 = 1;
+	optional bool ob2 = 2;
+	optional bool ob3 = 3;
+	optional bool ob4 = 4;
+	optional bool ob5 = 5;
+	optional bool ob6 = 6;
+	optional bool ob7 = 7;
 }
 
 

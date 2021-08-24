@@ -1398,7 +1398,9 @@ void CppGenerator::writeClass(Generator &G, Message *m)
 	unsigned numValid = m->getNumValid();
 	if (numValid > 0) {
 		G << "\nprivate:\n";
-		if (numValid <= 8) {
+		if (numValid > VarIntBits) {
+			G	<< "uint8_t p_validbits[$numvalidbytes];\n";
+		} else if (numValid <= 8) {
 			G	<< "uint8_t p_validbits;\n";
 		} else if (numValid <= 16) {
 			G	<< "uint16_t p_validbits;\n";
@@ -1407,7 +1409,7 @@ void CppGenerator::writeClass(Generator &G, Message *m)
 		} else if (numValid <= 64) {
 			G	<< "uint64_t p_validbits;\n";
 		} else {
-			G	<< "uint8_t p_validbits[$(numvalidbytes)];\n";
+			abort();
 		}
 	}
 	G <<	"};\n\n\n";
@@ -3856,7 +3858,7 @@ void CppGenerator::writeClear(Generator &G, Message *m)
 	unsigned nv = m->getNumValid();
 	diag("message %s: %u valid bits",m->getName().c_str(),nv);
 	if (nv == 0);
-	else if (nv <= 64)
+	else if (nv <= VarIntBits)
 		G << "p_validbits = 0;\n";
 	else {
 		for (unsigned n = 0; n < nv; n += 8)
@@ -3876,7 +3878,7 @@ void CppGenerator::writeUnequal(Generator &G, Message *m)
 		unsigned nv = m->getNumValid();
 		if (nv == 0) {
 
-		} else if (nv <= 64) {
+		} else if (nv <= VarIntBits) {
 			G <<	"if (p_validbits != r.p_validbits)\n"
 				"	return true;\n";
 		} else {
@@ -3938,7 +3940,6 @@ void CppGenerator::writeUnequal(Generator &G, Message *m)
 	}
 	G <<	"return false;\n"
 		"}\n\n\n";
-
 }
 
 
@@ -3950,7 +3951,7 @@ void CppGenerator::writeEqual(Generator &G, Message *m)
 		unsigned nv = m->getNumValid();
 		if (nv == 0) {
 
-		} else if (nv <= 64) {
+		} else if (nv <= VarIntBits) {
 			G <<	"if (p_validbits != r.p_validbits)\n"
 				"	return false;\n";
 		} else {
@@ -4199,7 +4200,7 @@ void CppGenerator::writeConstructor(Generator &G, Message *m)
 		G << "$(msg_name)::$(msg_name)()\n";
 	writeMembers(G,m,false);
 	unsigned nv = m->getNumValid();
-	if (nv > 64)
+	if (nv > VarIntBits)
 		G << ", p_validbits {@}\n";
 	else if (nv > 0)
 		G << ", p_validbits(0)\n";
