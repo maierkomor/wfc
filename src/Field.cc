@@ -894,15 +894,15 @@ unsigned Field::getFixedSize(bool tag) const
 const char *Field::getUsage() const
 {
 	if (!used)
-		return "unused";
+		return " unused";
 	switch (usage)
 	{
 	case use_obsolete:
-		return "obsolete";
+		return " obsolete";
 	case use_deprecated:
-		return "deprecated";
+		return " deprecated";
 	case use_regular:
-		return 0;
+		return "";
 	default:
 		abort();
 	}

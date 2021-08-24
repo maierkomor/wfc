@@ -1,6 +1,7 @@
 Release R2108:
 ==============
 - fix: mutable element access must init with default value
+- fix: comments flag was mostly ignored
 
 Release R2106:
 ==============

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2020, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -69,6 +69,9 @@ class Generator
 	void sync()
 	{ m_out.flush(); }
 
+	bool skipComments() const
+	{ return m_skipComments; }
+
 	private:
 	std::string evaluate(const std::string &p);
 
@@ -81,7 +84,7 @@ class Generator
 	const Field *m_field;
 	const Enum *m_enum;
 	std::string m_linebuf, m_errstr;
-	bool m_skipAsserts,m_ind1line,m_afternl;
+	bool m_skipAsserts, m_ind1line, m_afternl, m_skipComments, m_inComment;
 	class FoldCompounds *m_folder;
 };
 

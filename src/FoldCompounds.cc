@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2020, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -25,6 +25,7 @@ void FoldCompounds::process(const char *s)
 {
 	char c = *s;
 	while (c) {
+		++s;
 		bool deleted = false;
 		if (skip) {
 			switch (c) {
@@ -45,6 +46,14 @@ void FoldCompounds::process(const char *s)
 					out += '}';
 				}
 				--nesting;
+				break;
+			case '/':
+				if ((*s == '/') && (!comments)) {
+					do ++s;
+					while ((*s != '\n') && (*s != 0));
+				} else {
+					out += c;
+				}
 				break;
 			case ' ':
 			case '\t':
@@ -72,11 +81,19 @@ void FoldCompounds::process(const char *s)
 				}
 				--nesting;
 				break;
+			case '/':
+				if ((*s == '/') && (!comments)) {
+					do ++s;
+					while ((*s != '\n') && (*s != 0));
+				} else {
+					out += c;
+				}
+				break;
 			default:
 				out += c;
 			}
 		}
-		if (deleted && (s[1] == '\n')) {
+		if (deleted && (*s == '\n')) {
 			//while (!out.empty() && (out.back() == '\t'))
 				//out.pop_back();
 			size_t n = out.size();
@@ -85,7 +102,7 @@ void FoldCompounds::process(const char *s)
 			if ((n != 0) && (out[n] == '\n'))
 				++s;
 		}
-		c = *(++s);
+		c = *s;
 	}
 }
 

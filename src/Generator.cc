@@ -83,14 +83,15 @@ Generator::Generator(ostream &str, const Options *o)
 , m_message(0)
 , m_field(0)
 , m_enum(0)
-, m_skipAsserts(false)
 , m_ind1line(false)
 , m_afternl(false)
-, m_folder(new FoldCompounds)
+, m_inComment(false)
 {
 	if (o == 0)
 		m_options = Options::getDefaults();
 	m_skipAsserts = !m_options->getFlag("Asserts");
+	m_skipComments = !m_options->getFlag("comments");
+	m_folder = new FoldCompounds(!m_skipComments);
 	const string &vib = m_options->getOption("VarIntBits");
 	addVariable("VarIntBits",vib);
 	addVariable("wiresize_s","wiresize_s");

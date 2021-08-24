@@ -224,6 +224,8 @@ CodeTemplate::CodeTemplate(char *f, char *sl, char *eoc, char *eofunc)
 
 void CodeTemplate::writeComment(Generator &G) const
 {
+	if (G.skipComments())
+		return;
 	string fn;
 	size_t il = strlen(InstallDir);
 	if (0 == strncmp(filename.c_str(),InstallDir,il)) {

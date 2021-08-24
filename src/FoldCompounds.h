@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -27,10 +27,11 @@
 class FoldCompounds
 {
 	public:
-	FoldCompounds()
+	explicit FoldCompounds(bool c)
 	: out()
 	, nesting(0)
 	, skip(false)
+	, comments(c)
 	{ }
 
 	void process(const char *);
@@ -42,7 +43,7 @@ class FoldCompounds
 	std::string out;
 	std::stack<unsigned> toskip;
 	unsigned nesting;
-	bool skip;
+	bool skip, comments;
 };
 
 

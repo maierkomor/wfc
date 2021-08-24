@@ -124,7 +124,7 @@ class CppGenerator : public CodeGeneratorImpl
 	endian_t Endian;
 	bool usesArrays, usesVectors, usesStringTypes, usesBytes,
 	     Asserts, Debug, PrintOut, SubClasses, Checks, PaddedMsgSize, SinkToTemplate,
-	     WithJson, EarlyDecode,
+	     WithComments, WithJson, EarlyDecode,
 	     inlineClear, inlineHas, inlineGet, inlineMaxSize, inlineSet, inlineSize,
 	     hasVarInt, hasVarSInt, hasInt, hasSInt, hasUInt, hasCStr,
 	     hasBool, hasFloat, hasFloats, hasDouble, hasDoubles,
