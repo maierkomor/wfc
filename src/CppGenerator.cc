@@ -3552,9 +3552,9 @@ void CppGenerator::writeToMemory(Generator &G, Message *m)
 	if (optmode == optspeed) {
 		for (auto i : fields) {
 			Field *f = i.second;
-			if ((f == 0) || (!f->isUsed()))
+			if ((f == 0) || (!f->isUsed()) || f->isDeprecated() || f->isObsolete())
 				continue;
-			if ((f->getTagSize() > 1) || !f->hasFixedSize() || f->isRepeated()) {
+			if (!f->hasFixedSize() || (f->isRepeated() && f->isPacked())) {
 				needN = true;
 				break;
 			}
@@ -3562,23 +3562,37 @@ void CppGenerator::writeToMemory(Generator &G, Message *m)
 	} else if (optmode == optsize) {
 		for (auto i : fields) {
 			Field *f = i.second;
-			if ((f == 0) || (!f->isUsed()))
+			if ((f == 0) || (!f->isUsed()) || f->isDeprecated() || f->isObsolete())
 				continue;
-			if ((f->getTagSize() > 2) || !f->hasFixedSize() || f->isRepeated()) {
+			if ((f->getTagSize() > 2) || !f->hasFixedSize() || (f->isRepeated() && f->isPacked())) {
 				needN = true;
 				break;
 			}
 		}
 	} else {
-		needN = true;
+		for (auto i : fields) {
+			Field *f = i.second;
+			if ((f != 0) && f->isUsed() && !f->isDeprecated() && !f->isObsolete()) {
+				needN = true;
+				break;
+			}
+		}
 	}
 	if (needN)
 		G <<	"signed n;\n";
 	for (auto i : fields) {
 		Field *f = i.second;
-		if ((f == 0) || (!f->isUsed()))
+		if (f == 0)
 			continue;
-		writeToMemory(G,f);
+		if (!f->isUsed() || f->isDeprecated() || f->isObsolete()) {
+			if (WithComments) {
+				G.setField(f);
+				G << "// '$(fname)' is" << f->getUsage() << ". Therefore no data will be written.\n";
+				G.setField(0);
+			}
+		} else {
+			writeToMemory(G,f);
+		}
 	}
 	//if (Asserts)
 		//G <<	"assert((a-b) == (signed)$calcSize());\n";

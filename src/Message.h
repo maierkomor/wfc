@@ -65,10 +65,12 @@ class Message
 	void setOption(const char *o, const char *v);
 	void setParent(Message *m);
 	void setName(const char *n, unsigned l);
-	unsigned getId() const;
 	unsigned getMaxSize() const;
 	Enum *getEnum(unsigned i) const;
 	Enum *getEnum(const char *e) const;
+
+	unsigned getMaxId() const
+	{ return m_maxfid; }
 
 	const std::vector<Enum*> &getEnums() const
 	{ return m_enums; }
