@@ -908,7 +908,7 @@ bool CppGenerator::writeMember(Generator &G, Field *f, bool def_not_init, bool f
 	}
 	if (def_not_init) {
 		if (WithComments)
-			G << "// " << f->getWfcType() << " $(fname), id $(field_id)\n";
+			G << "//! " << f->getWfcType() << " $(fname), id $(field_id)\n";
 		switch (f->getQuantifier()) {
 		case q_optional:
 		case q_required:
@@ -1003,24 +1003,41 @@ static void writeFieldComment(Generator &G, Field *f, const char *x = "\n")
 }
 
 
-static void writeSetDecl(Generator &G, uint32_t type, uint8_t q, bool v)
+static void writeSetDecl(Generator &G, uint32_t type, uint8_t q, bool v, bool comments)
 {
-	if ((q_repeated != q) && ((type == ft_bytes) || (type == ft_string) || ((type & ft_filter) == ft_msg)))
+	if ((q_repeated != q) && ((type == ft_bytes) || (type == ft_string) || ((type & ft_filter) == ft_msg))) {
+		if (comments) {
+			if (type == ft_msg) {
+				G <<	"/*!\n"
+					" * Function for setting members of $fname using data from a serialized object.\n";
+			} else {
+				G <<	"/*!\n"
+					" * Function for setting $fname using binary data.\n";
+			}
+			G <<	" * @param data pointer to binary data\n"
+				" * @param s number of bytes at data pointer\n"
+				" */\n";
+		}
 		G <<	"$(virtual)void $(field_set)(const void *data, size_t s)$(vimpl);\n";
+	}
 	if (!v || (q_repeated != q)) {
-		// set
+		if (comments)
+			G << "//! Set $fname using a constant reference\n";
 		G << "$(virtual)void $(field_set)";
 		if (q_repeated == q)
 			G << "(unsigned x, $(fullrtype)v)$(vimpl);\n";
 		else
 			G << "($(rtype)v)$(vimpl);\n";
-		if ((type == ft_string) && (q != q_repeated))
+		if ((type == ft_string) && (q != q_repeated)) {
+			if (comments)
+				G << "//! Set $fname using a pointer to a null-terminated C-string.\n";
 			G << "$(virtual)void $(field_set)(const char *);\n";
+		}
 	}
 }
 
 
-static void writeProtDecl(Generator &G, Field *f, bool c)
+static void writeProtDecl(Generator &G, Field *f, bool comments)
 {
 	if (!f->isDeprecated())
 		return;
@@ -1033,9 +1050,9 @@ static void writeProtDecl(Generator &G, Field *f, bool c)
 		G.addVariable("virtual","");
 		G.addVariable("vimpl", "");
 	}
-	if (c)
+	if (comments)
 		G << "//" << f->getUsage() << ' ' << f->getWfcType() << " $(fname), id $(field_id)\n";
-	writeSetDecl(G,f->getType(),f->getQuantifier(),f->isVirtual());
+	writeSetDecl(G,f->getType(),f->getQuantifier(),f->isVirtual(),comments);
 	G.clearVariable("virtual");
 	G.clearVariable("vimpl");
 	G.setField(0);
@@ -1068,45 +1085,93 @@ void CppGenerator::writeHeaderDecls(Generator &G, Field *f)
 	bool simpletype = f->hasSimpleType();
 	uint32_t type = f->getType();
 	uint8_t q = f->getQuantifier();
-	if (q == q_optional)
-		G	<< "$(virtual)bool $(field_has)() const$(vimpl);\n";
+	if (q == q_optional) {
+		if (WithComments)
+			G <<	"/*!\n"
+				" * Function for querying if $fname has been set.\n"
+				" * @return true if $fname is set.\n"
+				" */\n";
+		G <<	"$(virtual)bool $(field_has)() const$(vimpl);\n";
+	}
 	if (q_repeated == q) {
-		G <<	"const " << f->getRepeatedType() << " &$(field_get)() const$(gnux);\n"
-			"$(virtual)size_t $(fname)_size() const$(vimpl)$(gnux);\n";
+		if (WithComments)
+			G <<	"//! Function get const-access to the elements of $fname.\n";
+		G <<	"const " << f->getRepeatedType() << " &$(field_get)() const$(gnux);\n";
+		if (WithComments)
+			G <<	"//! Function to get the number of elements in $fname.\n";
+		G <<	"$(virtual)size_t $(fname)_size() const$(vimpl)$(gnux);\n";
+		if (WithComments)
+			G <<	"/*!\n"
+				"* Function to append a element to $fname.\n"
+				"* @return point to newly added element.\n"
+				"*/\n";
 		if (f->hasMessageType())
 			G << "$(virtual)$(typestr)* $(field_add)()$(vimpl)$(gnux);\n";
 		else if (simpletype)
 			G << "$(virtual)void $(field_add)($(typestr) v)$(vimpl)$(gnux);\n";
 		else
 			G << "$(virtual)void $(field_add)(const $(typestr) &v)$(vimpl)$(gnux);\n";
-		if (v && ((type == ft_string) || (type == ft_bytes) || ((type & ft_filter) == ft_msg)))
+		if (v && ((type == ft_string) || (type == ft_bytes) || ((type & ft_filter) == ft_msg))) {
+			if (WithComments)
+				G <<	"//! Function to append an element to $fname initialized by a buffer.\n";
 			G <<	"virtual void $(field_add)(const void *, size_t) = 0;\n";
-		if (type == ft_string)
+		}
+		if (type == ft_string) {
+			if (WithComments)
+				G <<	"//! Function to append an element to $fname initialized by a C-string.\n";
 			G <<	"$(virtual)void $(field_add)(const char*);\n";
+		}
 	}
-	if ((q != q_required) || v)
+	if ((q != q_required) || v) {
+		if (WithComments)
+			G <<	"//! Function to reset $fname to its default/unset value.\n";
 		G << "$(virtual)void $(field_clear)()$(vimpl);\n";
-	if ((q == q_repeated) && v)
+	}
+	if ((q == q_repeated) && v) {
+		if (WithComments)
+			G <<	"//! Function to access all elements of $fname.\n";
 		G << "virtual const std::vector<$(typestr)> &$(field_get)() const = 0$(gnux);\n";
-	if (q_repeated == q)
-		G << "$(virtual)$(fullrtype)$(field_get)(unsigned x) const$(vimpl)$(gnux);\n";
-	else
-		G << "$(virtual)$(fullrtype)$(field_get)() const$(vimpl)$(gnux);\n";
+	}
+
+	if (q_repeated == q) {
+		G.addVariable("index","unsigned x");
+		G.addVariable("idxvar","unsigned x, ");
+		if (WithComments)
+			G <<	"//! Get value of element x of $fname.\n";
+	} else {
+		G.addVariable("index","");
+		G.addVariable("idxvar","");
+		if (WithComments)
+			G <<	"//! Get value of $fname.\n";
+	}
+	G << "$(virtual)$(fullrtype)$(field_get)($index) const$(vimpl)$(gnux);\n";
+	G.clearVariable("index");
+	G.clearVariable("idxvar");
 	if (!f->isDeprecated())
-		writeSetDecl(G,type,q,v);
+		writeSetDecl(G,type,q,v,WithComments);
 	if (!v && !f->isDeprecated()) {
-		// mutable
-		if ((target->getOption("MutableType") == "pointer") || (target->getOption("MutableType") == "*"))
+		if (WithComments)
+			G <<	"/*!\n"
+				"* Provide mutable access to $fname.\n";
+		if ((target->getOption("MutableType") == "pointer") || (target->getOption("MutableType") == "*")) {
+			if (WithComments)
+				G <<	"* @return pointer to member variable of $fname.\n"
+					"*/\n";
 			G << "$(virtual)$(ptype)$(field_mutable)";
-		else if ((target->getOption("MutableType") == "reference") || (target->getOption("MutableType") == "&"))
+		} else if ((target->getOption("MutableType") == "reference") || (target->getOption("MutableType") == "&")) {
+			if (WithComments)
+				G <<	"* @return reference to member variable of $fname.\n"
+					"*/\n";
 			G << "$(virtual)$(typestr) &$(field_mutable)";
-		else
+		} else
 			abort();
 		if (q_repeated == q)
 			G << "(unsigned x)$(vimpl);\n";
 		else
 			G << "()$(vimpl);\n";
 		if (q_repeated == q) {
+			if (WithComments)
+				G << "//! Function to get mutable access to all elements of $fname.\n";
 			G << "$(virtual)";
 			if (unsigned s = f->getArraySize())
 				G << "array<$(typestr)," << s << "> ";
@@ -1121,12 +1186,14 @@ void CppGenerator::writeHeaderDecls(Generator &G, Field *f)
 			G << "$(field_mutable)()$(vimpl);\n";
 		}
 	} else if (v) {
+		if (WithComments)
+			G << "//! Function to check if $fname has no elements.\n";
 		G << "virtual bool $(fname)_empty() const = 0;\n";
 	}
 	if (v && PrintOut && ((type & ft_filter) == ft_msg))
 		G << "virtual void $(fname)_$(toASCII)($(streamtype) &o, size_t indent = 0) const = 0;\n";
-	G << '\n';
 	G.setField(0);
+	G << '\n';
 	G.clearVariable("virtual");
 	G.clearVariable("vimpl");
 	G.clearVariable("gnux");
@@ -1142,12 +1209,14 @@ void CppGenerator::writeEnumDecl(Generator &G, Enum *e, bool inclass)
 		diag("enum-value %s %ld",i->second.c_str(),i->first);
 		G << i->second << " = " << i->first << ",\n";
 	}
-	G	<< "} $(ename);\n\n";
+	G	<< "} $(ename);\n";
 	const string &strfun = e->getStringFunction();
 	if (!strfun.empty()) {
+		if (WithComments)
+			G << "//! Function to get an ASCII string from a value of a $ename.\n";
 		if (inclass)
 			G << "static ";
-		G << "const char *$(strfun)($(ename) e);\n\n";
+		G << "const char *$(strfun)($(ename) e);\n";
 	}
 	G.setEnum(0);
 }
@@ -1309,35 +1378,46 @@ void CppGenerator::writeClass(Generator &G, Message *m)
 		G << "bool operator == (const $(msg_name) &r) const;\n";
 	G <<	"\n";
 	if (WithComments)
-		G << "//! function for resetting all members to their default values\n";
+		G << "//! Function for resetting all members to their default values.\n";
 	G <<	"void $(msg_clear)();\n"
 		"\n";
 	if (WithComments)
-		G <<	"//! Calculate the required number of bytes for serializing this object.\n"
-			"//! If the data of the object change, the number ob bytes needed for\n"
-			"//! serialization, may change, too.\n";
+		G <<	"/*!\n"
+			" * Calculates the required number of bytes for serializing this object.\n"
+			" * If member variables of the object are modified, the number of bytes\n"
+			" * needed for serialization may change, too.\n"
+			" * @return bytes needed for a serialized object representation\n"
+			" */\n";
 	G <<	"size_t $calcSize() const;\n\n";
 	if (G.hasValue("fromMemory")) {
 		if (WithComments)
-			G <<	"//! Function for parsing memory with serialized data to append and update this object.\n"
-				"//! @param b buffer of serialized data\n"
-				"//! @param s number of bytes available in the buffer\n"
-				"//! @return number of bytes parsed or negative value if an error occured\n";
+			G <<	"/*!\n"
+				" * Function for parsing serialized data and update this object accordingly.\n"
+				" * Member variables that are not in the serialized data are not reset.\n"
+				" * @param b buffer of serialized data\n"
+				" * @param s number of bytes available in the buffer\n"
+				" * @return number of bytes successfully parsed (can be < s)\n"
+				" *         or a negative value indicating the error encountered\n"
+				" */\n";
 		G <<	"ssize_t $(fromMemory)(const void *b, ssize_t s);\n\n";
 	}
 	if (G.hasValue("toMemory")) {
 		if (WithComments)
-			G <<	"\t//! Serialize the object to memory.\n"
-				"\t//! param b buffer the data should be written to\n"
-				"\t//! param s number of bytes available in the buffer\n"
-				"\t//! return number of bytes written\n";
+			G <<	"/*!\n"
+				" * Function for serializing the object to memory.\n"
+				" * @param b buffer to serialize the object to\n"
+				" * @param s number of bytes available in the buffer\n"
+				" * @return number of bytes successfully serialized\n"
+				" */\n";
 		G <<	"ssize_t $(toMemory)(uint8_t *, ssize_t) const;\n\n";
 	}
 	if (G.hasValue("toWire")) {
 		G.setMode(gen_wire);
 		if (WithComments)
-			G <<	"//! Serialize the object using a function for transmitting individual bytes.\n"
-				"//! @param put function to put individual bytes for transmission on the wire\n";
+			G <<	"/*!\n"
+				"* Serialize the object using a function for transmitting individual bytes.\n"
+				"* @param put function to put individual bytes for transmission on the wire\n"
+				"*/\n";
 		G <<	"void $(toWire)($putparam) const;\n\n";
 	}
 	if (G.hasValue("toSink")) {
@@ -1354,18 +1434,29 @@ void CppGenerator::writeClass(Generator &G, Message *m)
 	}
 	if (G.hasValue("toJSON")) {
 		if (WithComments)
-			G <<	"//! Function for writing the JSON representation of this object to a stream.\n";
+			G <<	"/*!\n"
+				" * Function for writing a JSON representation of this object to a stream.\n"
+				" * @param json stream object the JSON output shall be written to\n"
+				" * @indLvl current indention level\n"
+				" */\n";
 		G <<	"void $(toJSON)($(streamtype) &json, unsigned indLvl = 0) const;\n\n";
 	}
 	if (PrintOut) {
 		if (WithComments)
-			G <<	"//! Function for writing an ASCII representation of this object to a stream.\n";
+			G <<	"/*!\n"
+				" * Function for writing an ASCII representation of this object to a stream.\n"
+				" * @param o output stream\n"
+				" * @param indent initial indention level\n"
+				" */\n";
 		G <<	"void $(toASCII)($(streamtype) &o, size_t indent = 0) const;\n\n";
 	}
 	if (G.hasValue("getMaxSize")) {
 		if (WithComments)
-			G <<	"//! Function for determining the maximum size that the object may need for\n"
-				"//! its serialized representation\n";
+			G <<	"/*!\n"
+				" * Function for determining the maximum size that the object may need for\n"
+				" * its serialized representation\n"
+				" * @return maximum number of bytes or SIZE_MAX if no limit can be determined\n"
+				"*/\n";
 		G <<	"static size_t $getMaxSize();\n\n";
 	}
 	if (target->getOption("SetByName") != "") {
@@ -1423,7 +1514,8 @@ void CppGenerator::writeHas(Generator &G, Field *f)
 		return;
 	G <<	"$(inline)bool $(prefix)$(msg_name)::$(field_has)() const\n"
 		"{\n"
-		"return " << getValid(f) << ";\n}\n\n";
+		"return " << getValid(f) << ";\n"
+		"}\n\n";
 }
 
 
@@ -1617,13 +1709,16 @@ void CppGenerator::writeHeader(const string &bn)
 			G << 	"\n"
 				"\t//! serialize the object to an object derived from class Sink\n"
 				"\tvirtual void $toSink(Sink &) const = 0;\n";
-		if (G.hasValue("toMemory"))
-			G << 	"\n"
-				"\t//! serialize the object to memory\n"
-				"\t//! @param b buffer the data should be written to\n"
-				"\t//! @param s number of bytes available in the buffer\n"
-				"\t//! @return number of bytes written\n"
-				"\tvirtual ssize_t $toMemory(uint8_t *, ssize_t) const = 0;\n";
+		if (G.hasValue("toMemory")) {
+			if (WithComments)
+				G <<	"/*!\n"
+					" * Function for serializing the object to memory.\n"
+					" * @param b buffer to serialize the object to\n"
+					" * @param s number of bytes available in the buffer\n"
+					" * @return number of bytes successfully serialized\n"
+					" */\n";
+			G << 	"virtual ssize_t $toMemory(uint8_t *, ssize_t) const = 0;\n";
+		}
 		G <<	"};\n\n";
 	}
 	for (unsigned i = 0, n = file->numEnums(); i != n; ++i) {
@@ -1659,7 +1754,7 @@ void CppGenerator::writeResetUnset(Generator &G, Field *f)
 {
 	int v = f->getValidBit();
 	assert(v != -3);	// should be initialized now
-	if (v == -1) 
+	if ((v == -1) || (v == -2))
 		return;
 	G << "if (";
 	writeGetValid(G,f,true);
@@ -2126,9 +2221,9 @@ void CppGenerator::writeSetByName(Generator &G, Message *m)
 			G << "if (r > 0)\n";
 			writeSetValid(G,v);
 		}
-		G << "return r;\n";
+		G <<	"return r;\n"
+			"}\n";
 		G.setField(0);
-		G <<	"}\n";
 	}
 	G <<	"$handle_error;\n}\n\n";
 }
@@ -2344,8 +2439,8 @@ void CppGenerator::writeCalcSize(Generator &G, Field *f)
 		} else
 			abort();
 		G.clearVariable("index");
-		G.setField(0);
 		G	<< "}\n";	// end of if (!m_(fname).empty())
+		G.setField(0);
 		return;
 	} // end of repeated 
 	if (quan == q_optional) {
@@ -2436,12 +2531,6 @@ void CppGenerator::writeCalcSize(Generator &G, Field *f)
 
 void CppGenerator::writeCalcSize(Generator &G, Message *m)
 {
-	if (WithComments)
-		G <<	"/*!\n"
-			" * Function for calculating the number of bytes needed for serializing\n"
-			" * the related object with its associated data.\n"
-			" * Changing the data may change the size of the serialized object.\n"
-			" */\n";
 	G <<	"size_t $(prefix)$(msg_name)::$calcSize() const\n"
 		"{\n";
 	size_t n = 0;
@@ -2831,6 +2920,8 @@ void CppGenerator::writeFromMemory(Generator &G, Field *f)
 		G << "case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding 64bit\n";
 		decode64bit(G,f);
 		break;
+	default:
+		abort();
 	}
 	G << "break;\n";
 	G.setField(0);
@@ -3264,13 +3355,12 @@ void CppGenerator::writeToMemory(Generator &G, Field *f)
 
 void CppGenerator::writeToX(Generator &G, Field *f)
 {
-	G.setField(f);
 	if (f->isDeprecated() || f->isObsolete()) {
 		if (WithComments)
-			G << "// '$(fname)' is deprecated. Therefore no data will be written.\n";
-		G.setField(0);
+			G << "// '" << f->getName() << "' is deprecated. Therefore no data will be written.\n";
 		return;
 	}
+	G.setField(f);
 	uint32_t type = f->getType();
 	uint8_t quan = f->getQuantifier();
 	uint32_t encoding = f->getEncoding();
@@ -3422,14 +3512,6 @@ void CppGenerator::writeToX(Generator &G, Field *f)
 
 void CppGenerator::writeFromMemory(Generator &G, Message *m)
 {
-	if (WithComments)
-		G <<	"/*!\n"
-			" * Function for parsing an object from serialized data.\n"
-			" * @param b buffer containg the data to be parsed\n"
-			" * @param s number of bytes in buffer\n"
-			" * @return number of bytes successfully parsed (can be < s)\n"
-			" *         or a negative value indicating the error encountered\n"
-			" */\n";
 	G <<	"ssize_t $(prefix)$(msg_name)::$(fromMemory)(const void *b, ssize_t s)\n"
 		"{\n"
 		"const uint8_t *a = (const uint8_t *)b;\n"
@@ -3533,13 +3615,6 @@ void CppGenerator::writeFromMemory(Generator &G, Message *m)
 
 void CppGenerator::writeToMemory(Generator &G, Message *m)
 {
-	if (WithComments)
-		G <<	"/*!\n"
-			" * Function for serializing the object to memory.\n"
-			" * @param b buffer to serialize the object to\n"
-			" * @param s number of bytes available in the buffer\n"
-			" * @return number of bytes successfully serialized\n"
-			" */\n";
 	G <<	"ssize_t $(prefix)$(msg_name)::$toMemory(uint8_t *b, ssize_t s) const\n"
 		"{\n";
 	if (Debug)
@@ -3775,12 +3850,6 @@ void CppGenerator::writeToJson(Generator &G, Message *m)
 		break;
 	}
 	G.addVariable("json_indent",resolve_esc(target->getOption("json_indent")));
-	if (WithComments)
-		G <<	"/*!\n"
-			" * Function for writing a JSON representation of the object to a stream.\n"
-			" * @param json stream object the data should be serialized to\n"
-			" * @param indLvl the indention level that should be used\n"
-			" */\n";
 	G <<	"void $(prefix)$(msg_name)::$(toJSON)($(streamtype) &json, unsigned indLvl) const\n"
 		"{\n";
 	if (fsep == 0)
@@ -3842,10 +3911,6 @@ void CppGenerator::writeToX(Generator &G, Message *m)
 
 void CppGenerator::writeClear(Generator &G, Message *m)
 {
-	if (WithComments)
-		G <<	"/*!\n"
-			" * Function for resetting all members of this object to their default values.\n"
-			" */\n";
 	G <<	"void $(prefix)$(msg_name)::$(msg_clear)()\n"
 		"{\n";
 	for (auto i : m->getFields()) {
@@ -3923,10 +3988,7 @@ void CppGenerator::writeUnequal(Generator &G, Message *m)
 			if (q == q_repeated)
 				G << "}\n";
 			G.clearVariable("index");
-			G.setField(0);
-			continue;
-		}
-		switch (q) {
+		} else switch (q) {
 		case q_required:
 		case q_repeated:
 			if (f->isVirtual()) {
@@ -3988,9 +4050,7 @@ void CppGenerator::writeEqual(Generator &G, Message *m)
 		if (f->isVirtual()) {
 			G <<	"if ($(field_value)() != r.$(field_value)())\n"
 					"return false;\n";
-			continue;
-		}
-		if (ft_cptr == f->getType()) {
+		} else if (ft_cptr == f->getType()) {
 			if (q == q_repeated) {
 				G <<	"if ($(field_size) != r.$(field_size))\n"
 					"	return false;\n"
@@ -4007,10 +4067,7 @@ void CppGenerator::writeEqual(Generator &G, Message *m)
 			if (q == q_repeated)
 				G << "}\n";
 			G.clearVariable("index");
-			G.setField(0);
-			continue;
-		}
-		switch (q) {
+		} else switch (q) {
 		case q_required:
 		case q_repeated:
 			G <<	"if (!(m_$(fname) == r.m_$(fname)))\n"
@@ -4059,6 +4116,7 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 	uint8_t quan = f->getQuantifier();
 	uint32_t type = f->getType();
 	const string &asciifun = f->getAsciiFunction();
+	G.addVariable("index","");
 	switch (quan) {
 	case q_optional:
 		if (!f->isInteger() || f->isVirtual() || !asciifun.empty())
@@ -4079,7 +4137,7 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 			//"o << \"$(fname)[\" << i << \"] = \";\n"
 			//"$ascii_indent(o,indent);\n"
 			;
-		G.addVariable("index","i");
+		G.setVariable("index","i");
 		break;
 	default:
 		abort();
@@ -4228,6 +4286,8 @@ void CppGenerator::writeFunctions(Generator &G, Message *m)
 		return;
 	G.setMessage(m);
 	writeStaticMembers(G,m);
+	for (unsigned i = 0, n = m->numEnums(); i != n; ++i)
+		writeEnumDefs(G,m->getEnum(i));
 	writeConstructor(G,m);
 	writeClear(G,m);
 	// ::calcSize needed in all sender functions for writing message/field size into stream
@@ -4246,32 +4306,15 @@ void CppGenerator::writeFunctions(Generator &G, Message *m)
 	if (G.hasValue("toWire")) {
 		G.setMode(gen_wire);
 		G.setVariable("toX",G.getVariable("toWire"));
-		if (WithComments)
-			G << 	"/*!\n"
-				" * Function for serializing the object directly to a transmission stream.\n"
-				" * @param put function for putting a byte on the transmitting wire\n"
-				" */\n";
 		writeToX(G,m);
 	}
 	if (G.hasValue("toSink") && !SinkToTemplate) {
 		G.setMode(gen_sink);
-		if (WithComments)
-			G << 	"/*!\n"
-				" * Function for serializing the object using a Sink object.\n"
-				" * Derive a class from the Sink base class to provide custom methods\n"
-				" * for sending the objects' data.\n"
-				" * @param s object of the class derived from Sink\n"
-				" */\n";
 		G.setVariable("toX",G.getVariable("toSink"));
 		writeToX(G,m);
 	}
 	if (G.hasValue("toString")) {
 		G.setMode(gen_string);
-		if (WithComments)
-			G << 	"/*!\n"
-				" * Function for serializing the object to a string.\n"
-				" * @param s string object the data should be written to\n"
-				" */\n";
 		G.setVariable("toX",G.getVariable("toString"));
 		writeToX(G,m);
 	}
@@ -4290,8 +4333,6 @@ void CppGenerator::writeFunctions(Generator &G, Message *m)
 	G.setMessage(0);
 	for (unsigned i = 0, e = m->numMessages(); i != e; ++i)
 		writeFunctions(G,m->getMessage(i));
-	for (unsigned i = 0, n = m->numEnums(); i != n; ++i)
-		writeEnumDefs(G,m->getEnum(i));
 }
 
 
@@ -4594,6 +4635,7 @@ void CppGenerator::writeFromMemory_early(Generator &G, Field *f)
 			"const uint8_t *ae = a + v;\n"
 			"do {\n";
 		switch (type) {
+		default:
 		case ft_msg:
 		case ft_bytes:
 		case ft_string:
@@ -4750,6 +4792,8 @@ void CppGenerator::writeFromMemory_early(Generator &G, Field *f)
 		G << "case $(field_tag):\t// $(fname) id $(field_id), type $typestr, coding 64bit\n";
 		G.fillField("ud.d");
 		break;
+	default:
+		abort();
 	}
 	G << "break;\n";
 	G.setField(0);
@@ -4758,14 +4802,6 @@ void CppGenerator::writeFromMemory_early(Generator &G, Field *f)
 
 void CppGenerator::writeFromMemory_early(Generator &G, Message *m)
 {
-	if (WithComments)
-		G <<	"/*!\n"
-			" * Function for parsing an object from serialized data.\n"
-			" * @param b buffer containg the data to be parsed\n"
-			" * @param s number of bytes in buffer\n"
-			" * @return number of bytes successfully parsed (can be < s)\n"
-			" *         or a negative value indicating the error encountered\n"
-			" */\n";
 	G <<	"ssize_t $(prefix)$(msg_name)::$(fromMemory)(const void *b, ssize_t s)\n"
 		"{\n"
 		"const uint8_t *a = (const uint8_t *)b;\n"

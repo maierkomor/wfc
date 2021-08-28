@@ -4,6 +4,7 @@ Release R2108:
 - fix: comments flag was mostly ignored
 - fix: inconsitency related to validbits
 - enhancement: suppress superflous "signed n"
+- enhancement: comment updates for doxygen
 
 Release R2106:
 ==============
