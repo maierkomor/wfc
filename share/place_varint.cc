@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2021, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -24,7 +24,7 @@
  * function:place_varint
  * description: place varint_t in memory with full length
  */
-void place_varint(uint8_t *w, varint_t v)
+void place_varint_generic(uint8_t *w, varint_t v)
 {
 	for (size_t x = 0; x < sizeof(varint_t)*8/7; ++x) {
 		*w++ = (v & 0x7f) | 0x80;
@@ -33,4 +33,66 @@ void place_varint(uint8_t *w, varint_t v)
 	*w = v;
 }
 
-			;
+/* wfc-template:
+ * function:place_varint
+ * optimize:speed
+ * VarIntBits:64
+ * description: place varint_t in memory with full length
+ */
+void place_varint_vi64(uint8_t *w, varint_t v)
+{
+	*w++ = (v & 0x7f) | 0x80;
+	v >>= 7;
+	*w++ = (v & 0x7f) | 0x80;
+	v >>= 7;
+	*w++ = (v & 0x7f) | 0x80;
+	v >>= 7;
+	*w++ = (v & 0x7f) | 0x80;
+	v >>= 7;
+	*w++ = (v & 0x7f) | 0x80;
+	v >>= 7;
+	*w++ = (v & 0x7f) | 0x80;
+	v >>= 7;
+	*w++ = (v & 0x7f) | 0x80;
+	v >>= 7;
+	*w++ = (v & 0x7f) | 0x80;
+	v >>= 7;
+	*w++ = (v & 0x7f) | 0x80;
+	v >>= 7;
+	*w = v;
+}
+
+/* wfc-template:
+ * function:place_varint
+ * optimize:speed
+ * VarIntBits:32
+ * description: place varint_t in memory with full length
+ */
+void place_varint_vi32(uint8_t *w, varint_t v)
+{
+	*w++ = (v & 0x7f) | 0x80;
+	v >>= 7;
+	*w++ = (v & 0x7f) | 0x80;
+	v >>= 7;
+	*w++ = (v & 0x7f) | 0x80;
+	v >>= 7;
+	*w++ = (v & 0x7f) | 0x80;
+	v >>= 7;
+	*w++ = (v & 0x7f) | 0x80;
+}
+
+/* wfc-template:
+ * function:place_varint
+ * optimize:speed
+ * VarIntBits:16
+ * description: place varint_t in memory with full length
+ */
+void place_varint_vi16(uint8_t *w, varint_t v)
+{
+	*w++ = (v & 0x7f) | 0x80;
+	v >>= 7;
+	*w++ = (v & 0x7f) | 0x80;
+	v >>= 7;
+	*w++ = (v & 0x7f) | 0x80;
+}
+

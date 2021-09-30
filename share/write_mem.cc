@@ -19,6 +19,12 @@
 
 #include "sysconfig.h"
 
+#if defined _LITTLE_ENDIAN
+#define htole64(x) x
+#else
+#include <endian.h>
+#endif
+
 void write_u32(uint8_t *wire, uint32_t v);
 void write_u64(uint8_t *wire, uint64_t v);
 
@@ -107,7 +113,6 @@ void write_u64_endian_h(uint8_t *wire, uint64_t v)
 }
 
 
-{
 /* wfc-template:
  * function: write_u64
  */

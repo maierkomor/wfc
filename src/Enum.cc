@@ -88,7 +88,9 @@ Enum *Enum::create(const string &name)
 
 Enum *Enum::id2enum(unsigned i)
 {
-	assert(((i & ft_filter) == ft_enum) && ((i & ~ft_enum) < Enums.size()));
+	if ((i & ft_filter) != ft_enum)
+		return 0;
+	assert((i & ~ft_enum) < Enums.size());
 	return Enums[i&~ft_enum];
 }
 
