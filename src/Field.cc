@@ -24,10 +24,12 @@
 #include "Options.h"
 #include "log.h"
 #include "keywords.h"
+#include "wirefuncs.h"
+
 #include <cassert>
 #include <stdlib.h>
-#include "wirefuncs.h"
 #include <set>
+#include <string.h>
 
 using namespace std;
 
@@ -332,6 +334,17 @@ const char *Field::getDefaultValue() const
 	if ((quan == q_required) && (getType() == ft_cptr))
 		return "\"\"";
 	return 0;
+}
+
+
+const char *Field::getInitValue() const
+{
+	if (const char *r = getDefaultValue()) {
+		if ((strcmp(r,"\"\"")) || (type == ft_cptr))
+			return r;
+		return "";
+	}
+	return getInvalidValue();
 }
 
 

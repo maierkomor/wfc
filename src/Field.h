@@ -131,6 +131,7 @@ class Field
 	void setDefaultValue(const char *d, size_t l)
 	{ defvalue = std::string(d,l); }
 
+	const char *getInitValue() const;
 	const char *getDefaultValue() const;
 	bool setValidBit(int v);
 

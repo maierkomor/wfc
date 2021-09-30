@@ -930,10 +930,8 @@ bool CppGenerator::writeMember(Generator &G, Field *f, bool def_not_init, bool f
 		G << " m_$(fname)(";
 		if (f->getQuantifier() == q_repeated)
 			G << ")\n";
-		else if (const char *defv = f->getDefaultValue()) 
-			G << defv << ")\n";
-		else if (const char *inv = f->getInvalidValue())
-			G << inv << ")\n";
+		else if (const char *iv = f->getInitValue()) 
+			G << iv << ")\n";
 		else if (f->getEncoding() == wt_lenpfx)
 			G << ")\n";
 		else 
@@ -2249,9 +2247,19 @@ void CppGenerator::writeClear(Generator &G, Field *f)
 	if ((q == q_repeated) || ((type & ft_filter) == ft_msg)) {
 		G << "m_$(fname).clear();";
 	} else if (const char *invStr = f->getInvalidValue()) {
-		G << "m_$(fname) = " << invStr << ';';
+		if (strcmp(invStr,"\"\""))
+			G << "m_$(fname) = " << invStr << ';';
+		else if (type == ft_cptr)
+			G << "m_$(fname) = \"\";";
+		else
+			G << "m_$(fname).clear();";
 	} else if (const char *defStr = f->getDefaultValue()) {
-		G << "m_$(fname) = " << defStr << ';';
+		if (strcmp(defStr,"\"\""))
+			G << "m_$(fname) = " << defStr << ';';
+		else if (type == ft_cptr)
+			G << "m_$(fname) = \"\";";
+		else
+			G << "m_$(fname).clear();";
 	} else if ((type == ft_string) || (type == ft_bytes)) {
 		G << "m_$(fname).clear();";
 	} else {
@@ -3919,18 +3927,29 @@ void CppGenerator::writeClear(Generator &G, Message *m)
 			continue;
 		G.setField(f);
 		uint8_t q = f->getQuantifier();
-		if (f->isVirtual())
+		if (f->isVirtual()) {
 			G << "$(field_clear)();\n";
-		else if ((q == q_repeated) || f->isVirtual())
+		} else if ((q == q_repeated) || f->isVirtual()) {
 			G << "m_$(fname).$(msg_clear)();\n";
-		else if (const char *inv = f->getInvalidValue())
-			G << "m_$(fname) = " << inv << ";\n";
-		else if (const char *def = f->getDefaultValue())
-			G << "m_$(fname) = " << def << ";\n";
-		else if (!f->hasSimpleType())
+		} else if (const char *inv = f->getInvalidValue()) {
+			if (strcmp(inv,"\"\""))
+				G << "m_$(fname) = " << inv << ";\n";
+			else if (f->getType() == ft_cptr)
+				G << "m_$(fname) = \"\";\n";
+			else
+				G << "m_$(fname).clear();\n";
+		} else if (const char *def = f->getDefaultValue()) {
+			if (strcmp(def,"\"\""))
+				G << "m_$(fname) = " << def << ";\n";
+			else if (f->getType() == ft_cptr)
+				G << "m_$(fname) = \"\";\n";
+			else
+				G << "m_$(fname).clear();\n";
+		} else if (!f->hasSimpleType()) {
 			G << "m_$(fname).$(msg_clear)();\n";
-		else
+		} else {
 			G << "m_$(fname) = 0;\n";
+		}
 		G.setField(0);
 	}
 	G.clearVariable("fname");
