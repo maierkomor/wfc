@@ -312,6 +312,7 @@ void Options::initDefaults()
 	m_BinOptions["devel"] = false;
 	m_BinOptions["PaddedMessageSize"] = false;
 	m_BinOptions["enumnames"] = false;
+	m_BinOptions["padded_message_size"] = false;
 }
 
 
@@ -460,6 +461,8 @@ void Options::printDefines(ostream &out) const
 		out << "#define HAVE_TO_JSON 1\n";
 	if (isId("fromMemory"))
 		out << "#define HAVE_FROM_MEMORY 1\n";
+	if (getFlag("padded_message_size"))
+		out << "#define HAVE_PADDED_MESSAGE_SIZE 1\n";
 	const string &errh = getOption("ErrorHandling");
 	if (errh == "cancel")
 		out << "#define ON_ERROR_CANCEL 1\n";

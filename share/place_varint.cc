@@ -22,19 +22,6 @@
 
 /* wfc-template:
  * function:place_varint
- * description: place varint_t in memory with full length
- */
-void place_varint_generic(uint8_t *w, varint_t v)
-{
-	for (size_t x = 0; x < sizeof(varint_t)*8/7; ++x) {
-		*w++ = (v & 0x7f) | 0x80;
-		v >>= 7;
-	}
-	*w = v;
-}
-
-/* wfc-template:
- * function:place_varint
  * optimize:speed
  * VarIntBits:64
  * description: place varint_t in memory with full length
@@ -94,5 +81,19 @@ void place_varint_vi16(uint8_t *w, varint_t v)
 	*w++ = (v & 0x7f) | 0x80;
 	v >>= 7;
 	*w++ = (v & 0x7f) | 0x80;
+}
+
+
+/* wfc-template:
+ * function:place_varint
+ * description: place varint_t in memory with full length
+ */
+void place_varint_generic(uint8_t *w, varint_t v)
+{
+	for (size_t x = 0; x < sizeof(varint_t)*8/7; ++x) {
+		*w++ = (v & 0x7f) | 0x80;
+		v >>= 7;
+	}
+	*w = v;
 }
 

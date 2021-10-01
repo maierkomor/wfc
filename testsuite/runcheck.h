@@ -88,7 +88,7 @@ extern stringtype Wire;
 extern unsigned NumToASCII, NumToWire, NumToMem, NumFromMem, NumToSink, NumErrThrow;
 
 const char *testcnt();
-void hexdump(uint8_t *a, size_t s);
+void hexdump(const uint8_t *a, size_t s);
 
 template <class Message>
 void fail(const char *msg, const Message *l, const Message *r = 0)
@@ -187,7 +187,9 @@ void runcheck(const Message &tb)
 #ifdef HAVE_TO_STRING
 	stringtype str;
 	tb.toString(str);
-	if (s != (ssize_t)str.size())
+	// place_varint is not used on strings
+	// => toString size may be smaller than calcSize
+	if (s < (ssize_t)str.size())
 		fail("to_str size",&tb);
 	fw.clear();
 	++NumFromMem;
@@ -208,6 +210,7 @@ void runcheck(const Message &tb)
 	++NumToWire;
 	tb.toWire(putwire);
 #endif
+#ifndef HAVE_PADDED_MESSAGE_SIZE
 	if ((Wire.size() != (size_t)s) || memcmp(Wire.data(),buf,s)) {
 		printf("expected:\n");
 		hexdump(buf,s);
@@ -215,6 +218,16 @@ void runcheck(const Message &tb)
 		hexdump((uint8_t*)Wire.data(),(ssize_t)Wire.size());
 		abort();
 	}
+#endif
+#if defined HAVE_TO_STRING
+	if ((Wire.size() != str.size()) || (memcmp(Wire.data(),str.data(),str.size()))) {
+		printf("expected:\n");
+		hexdump((uint8_t*)str.data(),str.size());
+		printf("got:\n");
+		hexdump((uint8_t*)Wire.data(),(ssize_t)Wire.size());
+		abort();
+	}
+#endif
 	fw.clear();
 	++NumFromMem;
 	fw.fromMemory(Wire.data(),Wire.size());

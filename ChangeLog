@@ -3,6 +3,7 @@ Release R2109:
 - enhancement: prefer default contructors and clear method over empty
   string assignments
 - enhancement: optimized placement functions for varint32 and varint16
+- enhancement: added option padded_message_size
  
 Release R2108:
 ==============

@@ -120,7 +120,7 @@ void putwire(uint8_t b)
 }
 
 
-void hexdump(uint8_t *a, size_t s)
+void hexdump(const uint8_t *a, size_t s)
 {
 	size_t off = 0;
 	while (s >= 16) {
