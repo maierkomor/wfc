@@ -1,6 +1,7 @@
 Release R2206:
 ==============
 - enhancement: range check for field options 'unset','default'
+- ASCII output fixes
 
 Release R2109:
 ==============

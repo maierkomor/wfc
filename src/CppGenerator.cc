@@ -703,6 +703,7 @@ static void allHelpers(vector<unsigned> &funcs, bool VarIntBits64)
 	funcs.push_back(ct_skip_content);
 
 	funcs.push_back(ct_ascii_indent);
+	funcs.push_back(ct_ascii_bool);
 	funcs.push_back(ct_ascii_bytes);
 	funcs.push_back(ct_ascii_string);
 	funcs.push_back(ct_ascii_numeric);
@@ -4136,14 +4137,11 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 	uint32_t type = f->getType();
 	const string &asciifun = f->getAsciiFunction();
 	G.addVariable("index","");
+	G.addVariable("elename","");
 	switch (quan) {
 	case q_optional:
-		if (!f->isInteger() || f->isVirtual() || !asciifun.empty())
-			G <<	"$ascii_indent(o,indent,\"$fname\");\n";
-		break;
 	case q_required:
-		if (!f->isInteger() || f->isVirtual() || !asciifun.empty())
-			G <<	"$ascii_indent(o,indent,\"$fname\");\n";
+		G.setVariable("elename","\"$fname = \"");
 		break;
 	case q_repeated:
 		G <<	"$ascii_indent(o,indent);\n"
@@ -4153,9 +4151,8 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 			"for (size_t i = 0, e = s_$fname; i != e; ++i) {\n"
 			"$ascii_indent(o,indent);\n"
 			"o << i << \": \";\n"
-			//"o << \"$(fname)[\" << i << \"] = \";\n"
-			//"$ascii_indent(o,indent);\n"
 			;
+		G.setVariable("elename","0");
 		G.setVariable("index","i");
 		break;
 	default:
@@ -4168,18 +4165,19 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 		} else
 			G <<	"o << $(field_value) << ';';\n";
 	} else if (!asciifun.empty()) {
+		G << "ascii_indent(o, indent, $elename);\n";
 		G << asciifun << "(o,$(field_value));\n";
 		G << "o << ';';\n";
 	} else switch (type) {
 	case ft_uint8:
 	case ft_fixed8:
-		G << "ascii_numeric(o, indent, \"$fname\", (unsigned) $(field_value));\n";
+		G << "ascii_numeric(o, indent, $elename, (unsigned) $(field_value));\n";
 		break;
 
 	case ft_int8:
 	case ft_sint8:
 	case ft_sfixed8:
-		G << "ascii_numeric(o, indent, \"$fname\", (signed) $(field_value));\n";
+		G << "ascii_numeric(o, indent, $elename, (signed) $(field_value));\n";
 		break;
 
 	case ft_int32:
@@ -4199,32 +4197,34 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 	case ft_fixed64:
 	case ft_sfixed64:
 	case ft_double:
-		G << "ascii_numeric(o, indent, \"$fname\", $(field_value));\n";
+		G << "ascii_numeric(o, indent, $elename, $(field_value));\n";
 		break;
 
 	case ft_bytes:
-		G << target->getOption("ascii_bytes") << "(o,(const uint8_t*)$(field_value).data(),$(field_value).size(),indent+2);\no << ';';\n";
+		G << target->getOption("ascii_bytes") << "(o,(const uint8_t*)$(field_value).data(),$(field_value).size(),indent,$elename);\n";
 		break;
 	case ft_string:
 		{
 			const string &filter = target->getOption("ascii_string");
-			if (!filter.empty())
-				G << filter << "(o,$field_value.data(),$field_value.size(),indent+2);\no << ';';\n";
-			else
-				G << "o << $field_value.c_str() << ';';\n";
+			if (!filter.empty()) {
+				G << filter << "(o,indent,$field_value.data(),$field_value.size(),$elename);\n";
+			} else {
+				G <<	"o << ascii_indent(o,indent,$elename);\n"
+					"o << $field_value.c_str() << ';';\n";
+			}
 		}
 		break;
 	case ft_cptr:
 		{
 			const string &filter = target->getOption("StringFilter");
 			if (!filter.empty())
-				G << "o << " << filter << "($(field_value),indent+2) << ';';\n";
+				G << "o << " << filter << "($(field_value),indent) << ';';\n";
 			else
 				G << "o << $(field_value) << ';';\n";
 		}
 		break;
 	case ft_bool:
-		G << "o << ($(field_value) ? \"true\" : \"false\") << ';';\n";
+		G << "ascii_bool(o, indent, $elename, $field_value);\n";
 		break;
 
 	default:
@@ -4254,6 +4254,7 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 			"o << '}';\n"
 			;
 	G.clearVariable("index");
+	G.clearVariable("elename");
 	G.setField(0);
 }
 
@@ -4390,6 +4391,8 @@ void CppGenerator::writeHelpers(vector<unsigned> &funcs)
 	if (PrintOut) {
 		if (target->getOption("ascii_indent") == "ascii_indent")
 			funcs.push_back(ct_ascii_indent);
+		if (target->getOption("ascii_bool") == "ascii_bool")
+			funcs.push_back(ct_ascii_bool);
 		if (hasBytes && (target->getOption("ascii_bytes") == "ascii_bytes"))
 			funcs.push_back(ct_ascii_bytes);
 		if (hasString && (target->getOption("ascii_string") == "ascii_string"))

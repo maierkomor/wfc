@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2021, Thomas Maier-Komor
+ *  Copyright (C) 2017-2022, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -43,8 +43,17 @@ void ascii_indent($streamtype &out, ssize_t n, const char *fname = 0)
  * function: ascii_string
  * sysinclude: string.h
  */
-void ascii_string($streamtype &out, const char *str, size_t len, size_t indent)
+void ascii_string($streamtype &out, size_t indent, const char *str, size_t len, const char *fname = 0)
 {
+	if (fname) {
+		out.put('\n');
+		size_t n = indent;
+		while (n > 0) {
+			out.put('\t');
+			--n;
+		}
+		out << fname;
+	}
 	unsigned cil = 0;
 	out << '"';
 	while (len) {
@@ -89,21 +98,29 @@ void ascii_string($streamtype &out, const char *str, size_t len, size_t indent)
 			out << "\\0" << (unsigned)((c>>6)&0x3) << (unsigned)((c>>3)&0x7) << (unsigned)(c&0x7);
 		}
 	}
-	out << '"';
+	out << "\";";
 }
 
 
 /* wfc-template:
  * function: ascii_bytes
  */
-void ascii_bytes($streamtype &out, const uint8_t *str, size_t len, size_t indent)
+void ascii_bytes($streamtype &out, const uint8_t *str, size_t len, size_t indent, const char *fname = 0)
 {
+	if (fname) {
+		out.put('\n');
+		size_t n = indent;
+		while (n > 0) {
+			out.put('\t');
+			--n;
+		}
+		out << fname;
+	}
 	static char hex_table[] = "0123456789abcdef";
 	unsigned cil = 0;		// charakters in one line
 	bool mline = (len > 16);	// more than one line?
 	out << '{';
 	if (mline) {
-		out << '\n';
 		$ascii_indent(out,indent);
 	} else {
 		out << ' ';
@@ -147,10 +164,28 @@ void ascii_numeric($streamtype &out, ssize_t n, const char *fname, T v)
 		out.put('\t');
 		--n;
 	}
-	out << fname;
-	out.write(" = ",3);
+	if (fname) {
+		out << fname;
+	}
 	out << v;
 	out << ';';
+}
+
+
+/* wfc-template:
+ * function: ascii_bool
+ */
+void ascii_bool($streamtype &out, ssize_t n, const char *fname, bool v)
+{
+	out.put('\n');
+	while (n > 0) {
+		out.put('\t');
+		--n;
+	}
+	if (fname) {
+		out << fname;
+	}
+	out << (v ? "true;" : "false;");
 }
 
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2021, Thomas Maier-Komor
+ *  Copyright (C) 2017-2022, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -24,6 +24,7 @@ typedef enum { libstatic, libinline, libextern } libmode_t;
 
 typedef enum {
 	ct_invalid = 0,
+	ct_ascii_bool,
 	ct_ascii_bytes,
 	ct_ascii_indent,
 	ct_ascii_numeric,

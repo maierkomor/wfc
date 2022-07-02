@@ -80,6 +80,7 @@ static bool init_module()
 	TextOptionList["SetPrefix"] = "prefix to use for set methods";
 	TextOptionList["toSink"] = "name of function for serializing with sink interface; \"\" to omit generation";
 	TextOptionList["ascii_string"] = "function for printing strings in toASCII (default: ascii_string)";
+	TextOptionList["ascii_bool"] = "function for printing bytes in toASCII (default: ascii_bool)";
 	TextOptionList["ascii_bytes"] = "function for printing bytes in toASCII (default: ascii_bytes)";
 	TextOptionList["ascii_indent"] = "function to create indentions in toASCII (default: ascii_indent)";
 	TextOptionList["storage"] = "storage type of message fields";
@@ -236,6 +237,7 @@ void Options::initDefaults()
 	m_TextOptions["UnknownField"] = "skip";
 	m_TextOptions["namespace"] = "";
 	m_TextOptions["toASCII"] = "toASCII";
+	m_TextOptions["ascii_bool"] = "ascii_bool";
 	m_TextOptions["ascii_bytes"] = "ascii_bytes";
 	m_TextOptions["ascii_string"] = "ascii_string";
 	m_TextOptions["ascii_numeric"] = "ascii_numeric";

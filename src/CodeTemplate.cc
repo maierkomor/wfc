@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2021, Thomas Maier-Komor
+ *  Copyright (C) 2017-2022, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -33,6 +33,7 @@ using namespace std;
 
 const char *Functions[] = {
 	"$invalid_template",
+	"ascii_bool",
 	"ascii_bytes",
 	"ascii_indent",
 	"ascii_numeric",
