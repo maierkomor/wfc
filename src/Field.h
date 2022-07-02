@@ -214,6 +214,7 @@ class Field
 	private:
 	Field(const Field &);
 	Field &operator = (const Field &);
+	void checkRange(const char *vs, const char *vname);
 
 	Message *parent;
 	std::string name, defvalue, invvalue, ascii_value_func, json_value_func, parse_ascii_func;

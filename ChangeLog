@@ -1,3 +1,7 @@
+Release R2206:
+==============
+- enhancement: range check for field options 'unset','default'
+
 Release R2109:
 ==============
 - enhancement: prefer default contructors and clear method over empty

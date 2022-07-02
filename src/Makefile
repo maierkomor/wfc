@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017-2020, Thomas Maier-Komor
+#  Copyright (C) 2017-2022, Thomas Maier-Komor
 #
 #  This source file belongs to Wire-Format-Compiler.
 #
@@ -29,7 +29,7 @@ CXXSRC		= $(YSRC:.y=.cc) $(LSRC:.l=_tok.cc) Message.cc PBFile.cc \
 		Generator.cc CodeGenerator.cc CppGenerator.cc \
 		Evaluator.cc CodeLibrary.cc io.cc FoldCompounds.cc \
 		Indenter.cc XmlGenerator.cc CodeTemplate.cc Decoder.cc \
-		template_lib.cc wirefuncs.cc keywords.cc
+		template_lib.cc wirefuncs.cc keywords.cc int128_t.cc
 CCTSRC		=$(shell if [ -d ../.hg ]; then hg st -a -c -m -n ../share; else ls -1 ../share/*.cc*; fi)
 
 BINDIR		= ../bin

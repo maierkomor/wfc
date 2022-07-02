@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2021, Thomas Maier-Komor
+ *  Copyright (C) 2017-2022, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -20,6 +20,7 @@
 #include "Field.h"
 #include "Enum.h"
 #include "Message.h"
+#include "int128_t.h"
 #include "KVPair.h"
 #include "Options.h"
 #include "log.h"
@@ -970,12 +971,123 @@ static bool is_xid(const string &v)
 }
 
 
+void Field::checkRange(const char *vs, const char *vname)
+{
+	int128_t v;
+	const char *e = v.initfrom(vs);
+	bool failed = false;
+	if ((type & ft_filter) == ft_enum)
+		return;
+	if ((type & ft_filter) == ft_msg) {
+		warn("option %s cannot be set on message %s",vname,name.c_str());
+		return;
+	}
+	switch (type) {
+	case ft_bool:
+		if (!strcmp(vs,"true"))
+			e = 0;
+		else if (!strcmp(vs,"false"))
+			e = 0;
+		else
+			failed = (v < 0) || (1 < v);
+		break;
+	case ft_signed:
+		{
+			unsigned b = options->IntSize();
+			--b;
+			int128_t m = 1;
+			m <<= b;
+			failed |= v >= m;
+			m = -m;
+			failed |= v < m;
+		}
+		break;
+	case ft_unsigned:
+		if (v < 0)
+			failed = true;
+		else {
+			unsigned b = options->IntSize();
+			int128_t m = 1;
+			m <<= b;
+			failed = v >= m;
+		}
+		break;
+	case ft_fixed8:
+	case ft_uint8:
+		failed = (v < 0) || (UINT8_MAX < v);
+		break;
+	case ft_fixed16:
+	case ft_uint16:
+		failed = (v < 0) || (UINT16_MAX < v);
+		break;
+	case ft_fixed32:
+	case ft_uint32:
+		failed = (v < 0) || (int128_t(UINT32_MAX) < v);
+		break;
+	case ft_fixed64:
+	case ft_uint64:
+		failed = (v < 0) || (int128_t(UINT64_MAX) < v);
+		break;
+	case ft_sfixed8:
+	case ft_int8:
+	case ft_sint8:
+		failed = (v < INT8_MIN) || (INT8_MAX < v);
+		break;
+	case ft_sfixed16:
+	case ft_int16:
+	case ft_sint16:
+		failed = (v < INT16_MIN) || (INT16_MAX < v);
+		break;
+	case ft_sfixed32:
+	case ft_int32:
+	case ft_sint32:
+		failed = (v < INT32_MIN) || (INT32_MAX < v);
+		break;
+	case ft_sfixed64:
+	case ft_int64:
+	case ft_sint64:
+		failed = (v < int128_t(INT64_MIN)) || (int128_t(INT64_MAX) < v);
+		break;
+	case ft_float:
+		{
+			errno = 0;
+			float f = strtof(vs,(char**)&e);
+			failed = (f == 0) && (errno != 0);
+		}
+		break;
+	case ft_double:
+		{
+			errno = 0;
+			double d = strtod(vs,(char**)&e);
+			failed = (d == 0) && (errno != 0);
+		}
+		break;
+	case ft_bytes:
+	case ft_cptr:
+	case ft_string:
+		e = 0;
+		break;
+	case ft_msg:
+		failed = true;
+		break;
+	default:
+		abort();
+	}
+	if (e && *e)
+		warn("invalid value '%s' for %s in %s",vs,vname,name.c_str());
+	else if (failed)
+		warn("%s value '%s' is out of range for %s",vname,vs,name.c_str());
+}
+
+
 void Field::setOption(const string &option, const string &value)
 {
 	if (option == "default") {
 		defvalue = value;
 		if (!invvalue.empty() && (invvalue != defvalue))
 			warn("If both default and unset are set, both values should be the same, otherwise clear and construction value will differ.");
+		else
+			checkRange(value.c_str(),"default");
 	} else if (option == "storage") {
 		if (value == "virtual")
 			storage = mem_virtual;
@@ -989,6 +1101,8 @@ void Field::setOption(const string &option, const string &value)
 		invvalue = value;
 		if (!defvalue.empty() && (invvalue != defvalue))
 			warn("If both default and unset are set, both values should be the same, otherwise clear and construction value will differ.");
+		else
+			checkRange(value.c_str(),"unset");
 	} else if (option == "packed") {
 		if (quan != q_repeated)
 			error("invalid option 'packed' for non-repated type");
