@@ -345,6 +345,8 @@ const char *Field::getInitValue() const
 			return r;
 		return "";
 	}
+	if (type == ft_cptr)
+		return "0";
 	return getInvalidValue();
 }
 
@@ -1000,6 +1002,14 @@ void Field::checkRange(const char *vs, const char *vname)
 			failed |= v >= m;
 			m = -m;
 			failed |= v < m;
+		}
+		break;
+	case ft_int:
+		{
+			unsigned b = options->IntSize();
+			int128_t m = 1;
+			m <<= (b-1);
+			failed = (v >= (m-1)) || (v <= -m);
 		}
 		break;
 	case ft_unsigned:
