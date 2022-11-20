@@ -1,0 +1,10 @@
+option varintbits=32;
+option intsize=32;
+
+message xint
+{
+	int8 i8 = 1;
+	int16 i16 = 2;
+	sint8 s8 = 3;
+	sint16 s16 = 4;
+}

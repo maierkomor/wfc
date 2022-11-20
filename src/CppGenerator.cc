@@ -508,6 +508,8 @@ void CppGenerator::scanRequirements(Message *m)
 			hasUnused = true;
 			continue;
 		}
+		if (f->isObsolete())
+			continue;
 		int id = f->getId();
 		if ((id == 0) && !target->getFlag("id0"))
 			error("Use of id 0 requires special considerations. Enable support for it with option id0.");
@@ -633,36 +635,28 @@ void CppGenerator::scanRequirements(Message *m)
 			break;
 		// fixed
 		case ft_fixed8:
-			hasU8 = true;
 			hasWT8 = true;
 			break;
 		case ft_fixed16:
-			hasU16 = true;
 			hasWT16 = true;
 			break;
 		case ft_fixed32:
-			hasU32 = true;
 			hasWT32 = true;
 			break;
 		case ft_fixed64:
-			hasU64 = true;
 			hasWT64 = true;
 			break;
 		// sfixed
 		case ft_sfixed8:
-			hasS8 = true;
 			hasWT8 = true;
 			break;
 		case ft_sfixed16:
-			hasS16 = true;
 			hasWT16 = true;
 			break;
 		case ft_sfixed32:
-			hasS32 = true;
 			hasWT32 = true;
 			break;
 		case ft_sfixed64:
-			hasS64 = true;
 			hasWT64 = true;
 			break;
 		default:
@@ -4387,7 +4381,7 @@ void CppGenerator::writeHelpers(vector<unsigned> &funcs)
 		if (hasCStr || hasString)
 			funcs.push_back(ct_json_cstr);
 		funcs.push_back(ct_to_decstr);
-		if (hasFloat|hasDouble)
+		if (hasFloat || hasDouble)
 			funcs.push_back(ct_to_dblstr);
 	}
 
@@ -4409,21 +4403,21 @@ void CppGenerator::writeHelpers(vector<unsigned> &funcs)
 			funcs.push_back(ct_parse_ascii_dbl);
 		if (hasFloat)
 			funcs.push_back(ct_parse_ascii_flt);
-		if (hasU64)
+		if (hasU64||hasWT64)
 			funcs.push_back(ct_parse_ascii_u64);
-		if (hasU32)
+		if (hasU32||hasWT32)
 			funcs.push_back(ct_parse_ascii_u32);
-		if (hasU16)
+		if (hasU16||hasWT16)
 			funcs.push_back(ct_parse_ascii_u16);
-		if (hasU8)
+		if (hasU8||hasWT8)
 			funcs.push_back(ct_parse_ascii_u8);
-		if (hasS64)
+		if (hasS64||hasWT64)
 			funcs.push_back(ct_parse_ascii_s64);
-		if (hasS32)
+		if (hasS32||hasWT32)
 			funcs.push_back(ct_parse_ascii_s32);
-		if (hasS16)
+		if (hasS16||hasWT16)
 			funcs.push_back(ct_parse_ascii_s16);
-		if (hasS8)
+		if (hasS8||hasWT8)
 			funcs.push_back(ct_parse_ascii_s8);
 		if (hasBytes)
 			funcs.push_back(ct_parse_ascii_bytes);
