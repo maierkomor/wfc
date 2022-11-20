@@ -4393,7 +4393,7 @@ void CppGenerator::writeHelpers(vector<unsigned> &funcs)
 	if (PrintOut) {
 		if (target->getOption("ascii_indent") == "ascii_indent")
 			funcs.push_back(ct_ascii_indent);
-		if (target->getOption("ascii_bool") == "ascii_bool")
+		if (hasBool && (target->getOption("ascii_bool") == "ascii_bool"))
 			funcs.push_back(ct_ascii_bool);
 		if (hasBytes && (target->getOption("ascii_bytes") == "ascii_bytes"))
 			funcs.push_back(ct_ascii_bytes);
