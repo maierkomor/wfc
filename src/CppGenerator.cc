@@ -4167,7 +4167,7 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 		} else
 			G <<	"o << $(field_value) << ';';\n";
 	} else if (!asciifun.empty()) {
-		G << "ascii_indent(o, indent, $elename);\n";
+		G << "$ascii_indent(o, indent, $elename);\n";
 		G << asciifun << "(o,$(field_value));\n";
 		G << "o << ';';\n";
 	} else switch (type) {
@@ -4211,7 +4211,7 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 			if (!filter.empty()) {
 				G << filter << "(o,indent,$field_value.data(),$field_value.size(),$elename);\n";
 			} else {
-				G <<	"o << ascii_indent(o,indent,$elename);\n"
+				G <<	"$ascii_indent(o,indent,$elename);\n"
 					"o << $field_value.c_str() << ';';\n";
 			}
 		}
@@ -4238,6 +4238,7 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 			Enum *e = Enum::id2enum(type);
 			assert(e);
 			const string &strfun = e->getStringFunction();
+			G <<	"$ascii_indent(o,indent,$elename);\n";
 			if (strfun.empty())
 				G << "o << $(field_value) << ';';\n";
 			else

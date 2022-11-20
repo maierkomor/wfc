@@ -24,28 +24,28 @@ SIZE=`which gsize||which size`
 #echo make is $MAKE
 
 declare -A flagsets cxxflags
-flagsets[fs_OsLs]="-Os -fwfclib=static -g"
-flagsets[fs_OsLi]="-Os -fwfclib=inline -g"
-flagsets[fs_OsLe]="-Os -fwfclib=extern -g"
-flagsets[fs_O2Ls]="-O2 -fwfclib=static -g"
-flagsets[fs_O2Li]="-O2 -fwfclib=inline -g"
-flagsets[fs_O2Le]="-O2 -fwfclib=extern -g"
-flagsets[fs_OrLs]="-Or -fwfclib=static -g"
-flagsets[fs_OrLi]="-Or -fwfclib=inline -g"
-flagsets[fs_OrLe]="-Or -fwfclib=extern -g"
-flagsets[fs_O2s]="-O2 -s"
-flagsets[fs_O2sp]="-O2 -fpadded_message_size"
-flagsets[fs_Ors]="-Or -s"
-flagsets[fs_Oss]="-Os -s"
+flagsets[fs_OsLi]='-Os -fwfclib=inline -g'
+flagsets[fs_OsLe]='-Os -fwfclib=extern -g'
+flagsets[fs_O2Li]='-O2 -fwfclib=inline -g'
+flagsets[fs_O2Le]='-O2 -fwfclib=extern -g'
+flagsets[fs_OrLi]='-Or -fwfclib=inline -g'
+flagsets[fs_OrLe]='-Or -fwfclib=extern -g'
+flagsets[fs_O2s]='-O2 -s'
+flagsets[fs_O2sp]='-O2 -fpadded_message_size'
+flagsets[fs_Ors]='-Or -s'
+flagsets[fs_Oss]='-Os -s'
+flagsets[fs_O2B]='-O2 -fwfclib=extern -fBaseClass="Message"'
+flagsets[fs_OrB]='-Or -fwfclib=extern -fBaseClass="Message"'
+flagsets[fs_OsB]='-Os -fwfclib=extern -fBaseClass="Message"'
 flagsets[fs_O2C]='-O2 -fStringType=C -ftoString=""'
 flagsets[fs_OsC]='-Os -fStringType=C -ftoString=""'
 flagsets[fs_OrC]='-Or -fStringType=C -ftoString=""'
-flagsets[fs_O2A]="-O2 -fStringType=AString '-fheader=\"astring.h\"'"
-flagsets[fs_OsA]="-O2 -fStringType=AString '-fheader=\"astring.h\"'"
-flagsets[fs_OrA]="-O2 -fStringType=AString '-fheader=\"astring.h\"'"
-flagsets[fs_O2ALe]="-O2 -fStringType=AString '-fheader=\"astring.h\"'"
-flagsets[fs_OsALe]="-O2 -fStringType=AString '-fheader=\"astring.h\"'"
-flagsets[fs_OrALe]="-O2 -fStringType=AString '-fheader=\"astring.h\"'"
+flagsets[fs_O2A]='-O2 -fStringType=AString -fheader=\"astring.h\"'
+flagsets[fs_OsA]='-O2 -fStringType=AString -fheader=\"astring.h\"'
+flagsets[fs_OrA]='-O2 -fStringType=AString -fheader=\"astring.h\"'
+flagsets[fs_O2ALe]='-O2 -fStringType=AString -fheader=\"astring.h\"'
+flagsets[fs_OsALe]='-O2 -fStringType=AString -fheader=\"astring.h\"'
+flagsets[fs_OrALe]='-O2 -fStringType=AString -fheader=\"astring.h\"'
 if [ `uname -m` != "armv7l" ]; then
 	flagsets[fs_O2le]="-O2 -fendian=little -g"
 fi
@@ -73,6 +73,38 @@ cxxflags[fs_OsALe]="-Dstringtype=AString"
 cxxflags[fs_OrALe]="-Dstringtype=AString"
 cxxflags[fs_O2le]="-Dstringtype=string"
 
+defaulttests="corruption enumtest empty_test tttest vbittest \
+	stringtest recursion json_hs lt1 skiptest reftest \
+	vbittest2 tttest fixed_test novi_test pack_test comp_test \
+	ref_byname byname_test inv_def_test arraycheck reftestv2"
+
+# tests that need special settings
+# TODO: cstrtest
+extratests="cstrtest xvarint xint"
+
+testcases[fs_OsLs]="$defaulttests xvarint xint"
+testcases[fs_OsLi]="$defaulttests xint"
+testcases[fs_OsLe]="$defaulttests"
+testcases[fs_O2Ls]="$defaulttests xvarint xint"
+testcases[fs_O2Li]="$defaulttests xint"
+testcases[fs_O2Le]="$defaulttests"
+testcases[fs_OrLs]="$defaulttests xvarint xint"
+testcases[fs_OrLi]="$defaulttests xint"
+testcases[fs_OrLe]="$defaulttests"
+testcases[fs_O2s]="$defaulttests xint"
+testcases[fs_Ors]="$defaulttests xint"
+testcases[fs_Oss]="$defaulttests xint"
+testcases[fs_O2C]="$defaulttests xint"
+testcases[fs_OsC]="$defaulttests xint"
+testcases[fs_OrC]="$defaulttests xint"
+testcases[fs_O2A]="$defaulttests xint"
+testcases[fs_OsA]="$defaulttests xint"
+testcases[fs_OrA]="$defaulttests xint"
+testcases[fs_O2ALe]="$defaulttests"
+testcases[fs_OsALe]="$defaulttests"
+testcases[fs_OrALe]="$defaulttests"
+testcases[fs_O2le]="$defaulttests"
+
 
 CXXFLAGS0=$CXXFLAGS
 if [ "" == "$CXXFLAGS0" ]; then
@@ -84,10 +116,12 @@ fi
 for flagset in "${!flagsets[@]}"; do
 	echo testing with flagset $flagset
 	echo CXXFLAGS=${cxxflags[$flagset]}
+	echo TESTCASES=${testcases[$flagset]}
 
 	#ODIR=`pwd`/"$flagset"
 	ODIR="$flagset"
 	WFCFLAGS="${flagsets[$flagset]}"
+	TESTCASES="${testcases[$flagset]}"
 	CXXFLAGS="$CXXFLAGS0 -I../include -I. -I$ODIR -I/usr/pkg/include ${cxxflags[$flagset]}"
 	if [ -d "$ODIR" ]; then
 		rm -r "$ODIR"
@@ -101,7 +135,7 @@ for flagset in "${!flagsets[@]}"; do
 	else
 		WFCOBJS=
 	fi
-	export ODIR WFCFLAGS CXXFLAGS WFCOBJS
+	export ODIR WFCFLAGS CXXFLAGS WFCOBJS TESTCASES
 	echo compiling wfc files
 	echo MAKEFLAGS=$MAKEFLAGS
 	$MAKE -f genwfc.mk -e || exit

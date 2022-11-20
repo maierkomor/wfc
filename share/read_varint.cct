@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2018, Thomas Maier-Komor
+ *  Copyright (C) 2017-2022, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -38,7 +38,6 @@ unsigned read_varint_default(const uint8_t *wire, ssize_t wl, varint_t *r)
 	if (($varintbits != 64) && (u8 & 0x80)) {
 		while (*wire++ & 0x80)
 			++n;
-		++n;
 	}
 	return n;
 }

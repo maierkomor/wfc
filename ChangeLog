@@ -1,8 +1,10 @@
 Release R2211:
 ==============
+- fixes for sign-extended wire-format
 - support setByName array element addition with argument
 - fix regressions/bugs in ASCII output
 - reduce cases of defined but not used warnings
+- testsuite updates
 
 Release R2206:
 ==============

@@ -38,7 +38,6 @@ void send_xvarint_16($putparam, varint_t v)
 	if (fill64) {
 		for (int i = 0; i < 6; ++i)
 			$wireput(0xff);
-		$wireput(0x1);
 	}
 }
 
@@ -60,9 +59,8 @@ void send_xvarint_32($putparam, varint_t v)
 		$wireput(u8);
 	} while (v);
 	if (fill64) {
-		for (int i = 0; i < 4; ++i)
+		for (int i = 0; i < 5; ++i)
 			$wireput(0xff);
-		$wireput(0x1);
 	}
 }
 
@@ -86,9 +84,8 @@ int write_xvarint_16(uint8_t *wire, ssize_t wl, varint_t v)
 	} while (v);
 	if (fill64) {
 		w[-1] |= 0xfc;
-		for (int i = 0; i < 6; ++i)
+		for (int i = 0; i < 7; ++i)
 			*w++ = 0xff;
-		*w++ = 0x1;
 	}
 	return w-wire;
 }
@@ -113,9 +110,8 @@ int write_xvarint_32(uint8_t *wire, ssize_t wl, varint_t v)
 	} while (v);
 	if (fill64) {
 		w[-1] |= 0xf0;
-		for (int i = 0; i < 4; ++i)
+		for (int i = 0; i < 5; ++i)
 			*w++ = 0xff;
-		*w++ = 0x1;
 	}
 	return w-wire;
 }

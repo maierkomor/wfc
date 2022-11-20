@@ -26,11 +26,12 @@ CXXOBJS	= $(CXXSRCS:%.cpp=%.o) $(WFCOBJS)
 LIBS	= -L/usr/pkg/lib -ljson-c -Wl,-R/usr/pkg/lib
 
 
-TESTCASES = \
-	corruption enumtest empty_test tttest vbittest xvarint \
-	cstrtest stringtest recursion json_hs lt1 skiptest reftest \
-	vbittest2 tttest fixed_test novi_test pack_test comp_test \
-	ref_byname byname_test inv_def_test arraycheck reftestv2
+#TESTCASES = \
+#	corruption enumtest empty_test tttest vbittest xvarint \
+#	cstrtest stringtest recursion json_hs lt1 skiptest reftest \
+#	vbittest2 tttest fixed_test novi_test pack_test comp_test \
+#	ref_byname byname_test inv_def_test arraycheck reftestv2 \
+#	enumtest_map bitsets
 
 COMPILETESTS = \
 	unused
@@ -56,6 +57,9 @@ $(ODIR)/corruption: $(ODIR)/corruption.o $(ODIR)/hostscope.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
 $(ODIR)/enumtest: $(ODIR)/enumtest.o $(ODIR)/enumtest1.o $(WFCOBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
+
+$(ODIR)/enumtest_map: $(ODIR)/enumtest_map.o $(ODIR)/enumtest1.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
 $(ODIR)/empty_test: $(ODIR)/empty_test.o $(ODIR)/empty_elements.o  $(WFCOBJS)
@@ -123,3 +127,10 @@ $(ODIR)/inv_def_test: $(ODIR)/inv_def_test.o $(ODIR)/inv_def.o $(WFCOBJS)
 
 $(ODIR)/arraycheck: $(ODIR)/checkarray.o $(ODIR)/arraycheck.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
+
+$(ODIR)/bitsets: $(ODIR)/bitsets.o $(ODIR)/bittest1.o $(WFCOBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
+
+$(ODIR)/xint: $(ODIR)/xint.o $(ODIR)/xint_test.o $(WFCOBJS)
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
+
