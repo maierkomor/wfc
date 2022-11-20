@@ -1,3 +1,7 @@
+Release R2211:
+==============
+- fix regressions/bugs in ASCII output
+
 Release R2206:
 ==============
 - enhancement: range check for field options 'unset','default'

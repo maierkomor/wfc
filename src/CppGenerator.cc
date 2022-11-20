@@ -4141,6 +4141,8 @@ void CppGenerator::writePrint(Generator &G, Field *f)
 	switch (quan) {
 	case q_optional:
 	case q_required:
+		if (!f->isInteger() || f->isVirtual() || !asciifun.empty())
+			G <<   "$ascii_indent(o,indent,\"$fname\");\n";
 		G.setVariable("elename","\"$fname = \"");
 		break;
 	case q_repeated:
