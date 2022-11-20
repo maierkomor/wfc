@@ -1947,7 +1947,7 @@ void CppGenerator::writeSetByNameR(Generator &G, Field *f)
 		"	x = m_$fname.size();\n"
 		"	m_$fname.resize(x+1);\n"
 		"	idxe = (char*)(name + $($fnamelen+2));\n"
-		"	if (idxe[1] == 0)\n"
+		"	if (value == 0)\n"
 		"		return 0;\n"
 		"} else {\n"
 	       	"	x = strtoul(name+$($fnamelen+1),&idxe,0);\n"

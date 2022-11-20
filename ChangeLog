@@ -1,5 +1,6 @@
 Release R2211:
 ==============
+- support setByName array element addition with argument
 - fix regressions/bugs in ASCII output
 
 Release R2206:

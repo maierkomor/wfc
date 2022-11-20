@@ -1,6 +1,7 @@
 #include "reference.h"
 #include "runcheck.h"
 #include "runcheck.cpp"
+#include <float.h>
 
 
 int main()
@@ -61,7 +62,7 @@ int main()
 	assert(x < 0);
 
 	// arrays
-	x = tb.setByName("kvpairs[+]","");
+	x = tb.setByName("kvpairs[+]",0);
 	assert(x == 0);
 	assert(!tb.kvpairs().empty());
 	x = tb.setByName("kvpairs[0].key","k0");
@@ -73,6 +74,16 @@ int main()
 	assert(tb.kvpairs().size() == 2);
 	x = tb.setByName("kvpairs[1].value","v1");
 	assert(x > 0);
+	x = tb.setByName("FloatV[+]","3.2");
+	assert(x > 0);
+	assert((tb.FloatV(tb.FloatV_size()-1) >= 3.2-FLT_EPSILON) && (tb.FloatV(tb.FloatV_size()-1) <= 3.2+FLT_EPSILON));
+	x = tb.setByName("SSV[+]","something");
+	assert(x > 0);
+	assert(tb.SSV(tb.SSV_size()-1) == "something");
+	x = tb.setByName("PI8V[+]","17");
+	assert(x > 0);
+	assert(tb.PI8V(tb.PI8V_size()-1) == 17);
+
 
 	// delete element
 	x = tb.setByName("kvpairs",0);
