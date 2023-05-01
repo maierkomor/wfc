@@ -20,5 +20,5 @@ jobs:
     - name: install libjson-c
       run: sudo apt-get install libjson-c-dev
     - name: make check
-      run: cd testsute && ./runtests.sh
+      run: cd testsuite && ./runtests.sh
 
