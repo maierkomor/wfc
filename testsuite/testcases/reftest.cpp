@@ -1,5 +1,6 @@
 #include "reference.h"
 
+#include <cfloat>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -17,15 +18,28 @@
 #endif
 
 
-uint8_t ValuesU8[] = {0, 1, 77, INT8_MAX, INT8_MAX+1, UINT8_MAX};
-uint16_t ValuesU16[] = {0, 1, 77,  INT16_MAX, INT16_MAX+1, UINT16_MAX};
-uint32_t ValuesU32[] = {0, 1, 77, INT32_MAX, (uint32_t)INT32_MAX+1ULL, UINT32_MAX};
-uint64_t ValuesU64[] = {0, 1, 77, INT64_MAX, (uint64_t)INT64_MAX+1ULL, UINT64_MAX};
+uint8_t ValuesU8[] = {0, 1, 77, INT8_MAX, UINT8_MAX};
+uint16_t ValuesU16[] = {0, 1, 77,  INT16_MAX, INT8_MAX, INT8_MAX+1, UINT8_MAX, UINT16_MAX};
+uint32_t ValuesU32[] = {0, 1, 77, INT32_MAX, (uint32_t)INT16_MAX+1UL, UINT32_MAX};
+uint64_t ValuesU64[] = {0, 1, 77, INT64_MAX, (uint64_t)INT32_MAX+1ULL, UINT64_MAX};
 
 int8_t ValuesS8[] = {0, -1, 1, -99, 99, INT8_MIN, INT8_MAX};
 int16_t ValuesS16[] = {0, -1, 1, -99, 99, INT8_MIN, INT8_MAX, INT8_MIN-1, INT8_MAX+1, INT16_MIN, INT16_MAX};
 int32_t ValuesS32[] = {0, -1, 1, -99, 99, INT16_MIN, INT16_MAX, INT16_MIN-1, INT16_MAX+1, INT32_MIN, INT32_MAX};
 int64_t ValuesS64[] = {0, -1, 1, -99, 99, INT32_MIN, INT32_MAX, (int64_t)INT32_MIN-1, (int64_t)INT32_MAX+1, INT64_MIN, INT64_MAX};
+
+float Floats[] = {0,-1,1,0.1,-0.1,FLT_EPSILON,M_PI,M_E,M_SQRT2,FLT_MIN,FLT_MAX};
+double Doubles[] = {0,-1,1,0.1,-0.1,DBL_EPSILON,M_PI,M_E,M_SQRT2,DBL_MIN,DBL_MAX};
+
+const char *Strings[] = {
+	"short",
+	"long sequence of characters without non-ascii characters or control characters",
+	"\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t",
+	"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
+	"\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r\r"
+	"\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f\f",
+	"Mixture\tof!some-ASCII&NON-ascii\ncharacters\fformatting\rand\u00a9\u00bc\u00b0."
+};
 
 
 int main(int argc, char *argv[])
@@ -81,8 +95,14 @@ int main(int argc, char *argv[])
 		tb.add_PackedF8Vector(ValuesU8[i]);
 	runcheck(tb);
 
-	for (size_t i = 0; i < sizeof(ValuesU16)/sizeof(ValuesU16[0]); ++i)
+	assert(*tb.mutable_PackedF16Vector(0) == 0x3333);
+	assert(*tb.mutable_UnpackedF16Vector(0) == 0xaaaa);
+	runcheck(tb);
+
+	for (size_t i = 0; i < sizeof(ValuesU16)/sizeof(ValuesU16[0]); ++i) {
 		tb.add_PackedF16Vector(ValuesU16[i]);
+		tb.add_UnpackedF16Vector(ValuesU16[i]);
+	}
 	runcheck(tb);
 
 	for (size_t i = 0; i < sizeof(ValuesU32)/sizeof(ValuesU32[0]); ++i)
@@ -285,5 +305,36 @@ int main(int argc, char *argv[])
 		tb.add_PS64V(ValuesS64[i]);
 	runcheck(tb);
 
+	for (float f : Floats)
+		tb.add_FloatV(f);
+	runcheck(tb);
+
+	for (double d : Doubles)
+		tb.add_DoubleV(d);
+	runcheck(tb);
+
+	for (auto s : Strings)
+		tb.add_SSV(s);
+	runcheck(tb);
+
+	for (auto s : Strings)
+		tb.add_SCV(s);
+	runcheck(tb);
+
+	for (auto s : Strings)
+		tb.add_SPV(s);
+	runcheck(tb);
+
+#ifdef HAVE_TO_JSON
+	stringstream js;
+	tb.toJSON(js);
+	string json = js.str();
+	const char *text = json.c_str();
+	struct json_object *o = json_tokener_parse(text);
+	if (o == 0) {
+		printf("\n\nJSON validation failed.\n%s\n",text);
+		abort();
+	}
+#endif
 	printf("%s: %s\n",argv[0],testcnt());
 }

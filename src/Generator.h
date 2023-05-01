@@ -45,7 +45,7 @@ class Generator
 	const char *getVariable(const std::string &n);
 	bool hasVariable(const std::string &n) const;
 	bool hasValue(const std::string &n) const;
-	void indentingWrite(const char *t, const char *e);
+	void indentingWrite(const char *t, const char *e = 0);
 	void setEnum(const Enum *e);
 	void setField(const Field *f);
 	void setMessage(const Message *m);

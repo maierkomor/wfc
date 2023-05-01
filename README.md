@@ -65,6 +65,9 @@ WFC is mulit-licensed. The open source edition is licensed under the
 GPLv3. It generates code that is also licensed under the same license.
 If you want to use WFC for a non-GPL project, please contact me.
 
+The professional version comes with additional features, such as bitset
+support, enum maps, #ifdef message fields, and more.
+
 Author
 ------
 Thomas Maier-Komor

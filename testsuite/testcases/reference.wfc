@@ -6,6 +6,7 @@ option toString="toString";
 option toJSON="toJSON";
 option header="cstring.h";
 option header="ip4funcs.h";
+//option BaseClass=Message;
 
 option rev2 {
 	withEqual=true;
@@ -62,6 +63,15 @@ message FixedPackable
 }
 
 
+message Mixed
+{
+	string s = 1;
+	int64 i64 = 2;
+	double d = 3;
+	repeated Mixed mixed = 4;
+}
+
+
 message TestBench
 {
 	required int32 VI32 = 1;
@@ -95,11 +105,11 @@ message TestBench
 	repeated FixedPackable FPackedMsgV = 23;
 
 	repeated fixed8 PackedF8Vector = 0x20 [packed=true];
-	repeated fixed16 PackedF16Vector = 0x21 [packed=true];
+	repeated fixed16 PackedF16Vector = 0x21 [packed=true, default=0x3333];
 	repeated fixed32 PackedF32Vector = 0x22 [packed=true];
 	repeated fixed64 PackedF64Vector = 0x23 [packed=true];
 	repeated fixed8 UnpackedF8Vector = 0x24;
-	repeated fixed16 UnpackedF16Vector = 0x25;
+	repeated fixed16 UnpackedF16Vector = 0x25 [default = 0xaaaa];
 
 	repeated sfixed8 PackedS8Vector = 0x26 [packed=true];
 	repeated sfixed16 PackedS16Vector = 0x27 [packed=true];
@@ -168,4 +178,6 @@ message TestBench
 	repeated sint16 PS16V = 0x99	[ packed = true ];
 	repeated sint32 PS32V = 0x9a	[ packed = true ];
 	repeated sint64 PS64V = 0x9b	[ packed = true ];
+
+	repeated Mixed mixed = 0x100;
 }

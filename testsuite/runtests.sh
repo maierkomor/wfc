@@ -24,10 +24,13 @@ SIZE=`which gsize||which size`
 #echo make is $MAKE
 
 declare -A flagsets cxxflags
+flagsets[fs_OsLs]='-Os -fwfclib=static -g'
 flagsets[fs_OsLi]='-Os -fwfclib=inline -g'
 flagsets[fs_OsLe]='-Os -fwfclib=extern -g'
+flagsets[fs_O2Ls]='-O2 -fwfclib=static -g'
 flagsets[fs_O2Li]='-O2 -fwfclib=inline -g'
 flagsets[fs_O2Le]='-O2 -fwfclib=extern -g'
+flagsets[fs_OrLs]='-Or -fwfclib=static -g'
 flagsets[fs_OrLi]='-Or -fwfclib=inline -g'
 flagsets[fs_OrLe]='-Or -fwfclib=extern -g'
 flagsets[fs_O2s]='-O2 -s'
@@ -73,8 +76,8 @@ cxxflags[fs_OsALe]="-Dstringtype=AString"
 cxxflags[fs_OrALe]="-Dstringtype=AString"
 cxxflags[fs_O2le]="-Dstringtype=string"
 
-defaulttests="corruption enumtest empty_test tttest vbittest \
-	stringtest recursion json_hs lt1 skiptest reftest \
+defaulttests="initests corruption enumtest empty_test tttest \
+	vbittest stringtest recursion json_hs lt1 skiptest reftest \
 	vbittest2 tttest fixed_test novi_test pack_test comp_test \
 	ref_byname byname_test inv_def_test arraycheck reftestv2"
 

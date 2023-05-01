@@ -4,8 +4,8 @@ option stringtype=CString;
 option bytestype=Bytes;
 option withEqual=true;
 option withUnequal=true;
-option toJSON="";
-option toString="";
+//option toJSON="";
+//option toString="";
 
 option avr {
 	varintbits = 32;

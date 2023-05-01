@@ -103,13 +103,14 @@ void fail(const char *err)
 using namespace std;
 
 stringtype Wire;
-unsigned NumToASCII, NumToWire, NumToMem, NumFromMem, NumToSink, NumErrThrow;
+unsigned NumToASCII = 0, NumToWire = 0, NumToMem = 0, NumFromMem = 0, NumToSink = 0
+	, NumErrThrow = 0, NumJson = 0;
 
 const char *testcnt()
 {
 	static char buf[128];
-	snprintf(buf,sizeof(buf),"fromMem: %u, toMem: %u, toWire: %u, toSink: %u, toASCII: %u, throw/catch: %u"
-		, NumFromMem, NumToMem, NumToWire, NumToSink, NumToASCII, NumErrThrow);
+	snprintf(buf,sizeof(buf),"fromMem: %u, toMem: %u, toWire: %u, toSink: %u, toASCII: %u, throw/catch: %u, JSON %u"
+		, NumFromMem, NumToMem, NumToWire, NumToSink, NumToASCII, NumErrThrow, NumJson);
 	return buf;
 }
 

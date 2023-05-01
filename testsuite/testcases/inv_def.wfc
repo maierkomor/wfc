@@ -2,6 +2,7 @@ option withEqual=true;
 
 enum number
 {
+	invalid = -1;
 	zero = 0;
 	one = 1;
 	two = 2;
@@ -11,14 +12,28 @@ enum number
 
 message M
 {
-	string str = 1	[ default = "def", unset = "n/a" ];
-	string st_str0 = 2 [ storage = static, default="def", unset="unset"];
-	string st_str1 = 3 [ storage = static, unset="unset"];
+	string str = 1;
+	string strd = 2		[ default = "def" ];
+	string stru = 3		[ unset = "n/a" ];
+	string strdu = 4	[ default = "def", unset = "n/a" ];
 
-	unsigned u = 10 [ default = 1, unset = 0 ];
-	signed s = 11 [ default = 0, unset = -1 ];
+	string st_str = 5;
+	string st_strd = 6 	[ storage = static, default="def" ];
+	string st_stru = 7 	[ storage = static, unset="unset"];
+	string st_strdu = 8 	[ storage = static, default="def", unset="unset"];
 
-	number n0 = 20	[ default = one, unset = two ];
-	number n1 = 21	[ default = one ];
-	number n2 = 22	[ unset = one ];
+	unsigned u = 10;
+	unsigned ud = 11 	[ default = 1 ];
+	unsigned uu = 12 	[ unset = 0 ];
+	unsigned udu = 13 	[ default = 1, unset = 0 ];
+
+	signed s = 15 ;
+	signed sd = 16 		[ default = 0 ];
+	signed su = 17 		[ unset = -1 ];
+	signed sdu = 18 	[ default = 0, unset = -1 ];
+
+	number n = 20;
+	number nd = 21		[ default = one ];
+	number nu = 22		[ unset = invalid ];
+	number ndu = 23		[ default = one, unset = invalid ];
 }

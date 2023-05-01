@@ -159,7 +159,8 @@ UNKNOWN		.
 			return yy::ProtoParser::token::SINT8;
 		  return lookupId(yytext,yyleng,yylval_param);
 		}
-{FIXED8}	{ if (yyextra->getProtocol() == xprotov1)
+{FIXED8}	{ yylval_param->id.str = yytext; yylval_param->id.len = yyleng;
+		  if (yyextra->getProtocol() == xprotov1)
 			return yy::ProtoParser::token::FIXED8;
 		  return lookupId(yytext,yyleng,yylval_param);
 		}
@@ -167,7 +168,8 @@ UNKNOWN		.
 			return yy::ProtoParser::token::SFIXED8;
 		  return lookupId(yytext,yyleng,yylval_param);
 		}
-{FIXED16}	{ if (yyextra->getProtocol() == xprotov1)
+{FIXED16}	{ yylval_param->id.str = yytext; yylval_param->id.len = yyleng;
+		  if (yyextra->getProtocol() == xprotov1)
 			return yy::ProtoParser::token::FIXED16;
 		  return lookupId(yytext,yyleng,yylval_param);
 		}
@@ -199,12 +201,14 @@ UNKNOWN		.
 			return yy::ProtoParser::token::INT;
 		  return lookupId(yytext,yyleng,yylval_param);
 		}
-{FIXED32}	{ return yy::ProtoParser::token::FIXED32; }
+{FIXED32}	{ yylval_param->id.str = yytext; yylval_param->id.len = yyleng;
+		  return yy::ProtoParser::token::FIXED32; }
 {SFIXED32}	{ return yy::ProtoParser::token::SFIXED32; }
 {INT32}		{ return yy::ProtoParser::token::INT32; }
 {UINT32}	{ return yy::ProtoParser::token::UINT32; }
 {SINT32}	{ return yy::ProtoParser::token::SINT32; }
-{FIXED64}	{ return yy::ProtoParser::token::FIXED64; }
+{FIXED64}	{ yylval_param->id.str = yytext; yylval_param->id.len = yyleng;
+		  return yy::ProtoParser::token::FIXED64; }
 {SFIXED64}	{ return yy::ProtoParser::token::SFIXED64; }
 {INT64}		{ return yy::ProtoParser::token::INT64; }
 {UINT64}	{ return yy::ProtoParser::token::UINT64; }
@@ -228,9 +232,8 @@ UNKNOWN		.
 {IDENTIFIER}	{ return lookupId(yytext,yyleng,yylval_param); }
 {IDREF}		{ return lookupId(yytext,yyleng,yylval_param); }
 {SYSINC}	{ return lookupId(yytext,yyleng,yylval_param); }
-{NODEREF}	{	yylval_param->id.str = yytext;
-			yylval_param->id.len = yyleng;
-			return yy::ProtoParser::token::NODEREF;
+{NODEREF}	{ yylval_param->id.str = yytext; yylval_param->id.len = yyleng;
+		  return yy::ProtoParser::token::NODEREF;
 		}
 
 {DECLIT}	{	yylval_param->id.str = yytext;
@@ -302,19 +305,6 @@ int yywrap(yyscan_t scanner)
 
 yy::ProtoParser::token_type lookupId(char *yytxt, unsigned yylen, YYSTYPE *param)
 {
-/*
-	if (drv.syntax == xprotov1) {
-		if (0 == strcmp(yytxt,"fixed8")
-			return yy::ProtoParser::token::FIXED8;
-		if (0 == strcmp(yytxt,"sfixed8")
-			return yy::ProtoParser::token::SFIXED8;
-		if (0 == strcmp(yytxt,"fixed16")
-			return yy::ProtoParser::token::FIXED16;
-		if (0 == strcmp(yytxt,"sfixed16")
-			return yy::ProtoParser::token::SFIXED16;
-
-	}
-	*/
 	if (unsigned n = Message::resolveId(yytxt,yylen)) {
 		param->msgid = n;
 		return yy::ProtoParser::token::MSGNAME;

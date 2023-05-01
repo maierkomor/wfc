@@ -1108,13 +1108,20 @@ bool isIdentifier(const char *id)
 		--l;
 	} else
 		return false;
+	int tbrac = 0;
 	while (--l) {
 		c = *id++;
 		if ((c >= 'a') && (c <= 'z'));
 		else if ((c >= 'A') && (c <= 'Z'));
 		else if ((c >= '0') && (c <= '9'));
 		else if (c == '_');
-		else if (c == ':') {
+		else if (c == '<')
+			++tbrac;
+		else if (c == '>') {
+			--tbrac;
+			if (tbrac < 0)
+				return false;
+		} else if (c == ':') {
 			// this is for e.g. std::string
 			if ((id[0] != ':') || (id[1] == ':') || (id[1] == 0))
 				return false;
@@ -1123,7 +1130,7 @@ bool isIdentifier(const char *id)
 		} else
 			return false;
 	}
-	return true;
+	return tbrac == 0;
 }
 
 

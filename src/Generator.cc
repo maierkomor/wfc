@@ -723,6 +723,8 @@ string Generator::evaluate(const string &a)
 
 void Generator::indentingWrite(const char *t, const char *e)
 {
+	if (e == 0)
+		e = t + strlen(t);
 	errmode_t em = em_invalid;
 	const string &errmode = m_options->getOption("ErrorHandling");
 	if (errmode == "cancel")
@@ -788,7 +790,7 @@ void Generator::indentingWrite(const char *t, const char *e)
 
 Generator &operator << (Generator &g, const char *t)
 {
-	g.indentingWrite(t,t+strlen(t));
+	g.indentingWrite(t);
 	return g;
 }
 

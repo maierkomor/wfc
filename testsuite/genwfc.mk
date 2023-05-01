@@ -25,7 +25,8 @@ WFCSRCS = testcases/empty_elements.wfc testcases/enumtest.wfc testcases/validbit
 	  testcases/reference.wfc testcases/validbits2.wfc testcases/tt.wfc \
 	  testcases/unused.wfc testcases/fixed_only.wfc testcases/novarint.wfc \
 	  testcases/packed.wfc testcases/virtual.wfc testcases/byname.wfc \
-	  testcases/inv_def.wfc testcases/arraycheck.wfc testcases/binformats.wfc
+	  testcases/inv_def.wfc testcases/arraycheck.wfc testcases/binformats.wfc \
+	  testcases/xint.wfc testcases/initest.wfc
 
 
 CXXSRCS	= $(WFCSRCS:testcases/%.wfc=$(ODIR)/%.cpp) $(ODIR)/referencev2.cpp
@@ -42,9 +43,9 @@ $(ODIR)/hostscope.cpp: testcases/hostscope.wfc
 	"$(WFC)" $(WFCFLAGS) -fno-asserts $< -o $(@:.cpp=)
 
 $(ODIR)/xvarint.cpp: testcases/xvarint.wfc
-	"$(WFC)" $(WFCFLAGS) -tvi16 -fwfclib=static $< -o $(ODIR)/xvarint_16
-	"$(WFC)" $(WFCFLAGS) -tvi32 -fwfclib=static $< -o $(ODIR)/xvarint_32
-	"$(WFC)" $(WFCFLAGS) -tvi64 -fwfclib=static $< -o $(ODIR)/xvarint
+	"$(WFC)" $(WFCFLAGS) -fwfclib=static -fBaseClass=\"\" -tvi16 $< -o $(ODIR)/xvarint_16
+	"$(WFC)" $(WFCFLAGS) -tvi32 -fwfclib=static -fBaseClass=\"\" $< -o $(ODIR)/xvarint_32
+	"$(WFC)" $(WFCFLAGS) -tvi64 -fwfclib=static -fBaseClass=\"\" $< -o $(ODIR)/xvarint
 
 $(ODIR)/skip_s.cpp: testcases/skip.wfc
 	"$(WFC)" $(WFCFLAGS) -tsender testcases/skip.wfc -o $(ODIR)/skip_s

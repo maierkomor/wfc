@@ -71,31 +71,31 @@ $(ODIR)/vbittest: $(ODIR)/vbittest.o $(ODIR)/validbits.o $(WFCOBJS)
 $(ODIR)/xvarint: $(ODIR)/xvarint.o $(ODIR)/xvarint_16.o $(ODIR)/xvarint_32.o $(ODIR)/testxvarint.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
-$(ODIR)/cstrtest: $(ODIR)/cstr_test.o $(ODIR)/NodeInfo.o  $(WFCOBJS)
+$(ODIR)/cstrtest: $(ODIR)/cstr_test.o $(ODIR)/NodeInfo.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
-$(ODIR)/stringtest: $(ODIR)/stringtest.o $(ODIR)/stringtypes.o  $(WFCOBJS)
+$(ODIR)/stringtest: $(ODIR)/stringtest.o $(ODIR)/stringtypes.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
-$(ODIR)/recursion: $(ODIR)/rtest.o $(ODIR)/recursion.o  $(WFCOBJS)
+$(ODIR)/recursion: $(ODIR)/rtest.o $(ODIR)/recursion.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
-$(ODIR)/json_hs: $(ODIR)/json_hs.o $(ODIR)/hostscope.o  $(WFCOBJS)
+$(ODIR)/json_hs: $(ODIR)/json_hs.o $(ODIR)/hostscope.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
 $(ODIR)/lt1: $(ODIR)/libtest1.o $(ODIR)/lt1.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
-$(ODIR)/skiptest: $(ODIR)/skiptest.o $(ODIR)/skip_s.o $(ODIR)/skip_r.o  $(WFCOBJS)
+$(ODIR)/skiptest: $(ODIR)/skiptest.o $(ODIR)/skip_s.o $(ODIR)/skip_r.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
-$(ODIR)/reftest: $(ODIR)/reftest.o $(ODIR)/reference.o  $(WFCOBJS)
+$(ODIR)/reftest: $(ODIR)/reftest.o $(ODIR)/reference.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
-$(ODIR)/reftestv2: $(ODIR)/reftestv2.o $(ODIR)/referencev2.o  $(WFCOBJS)
+$(ODIR)/reftestv2: $(ODIR)/reftestv2.o $(ODIR)/referencev2.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
-$(ODIR)/vbittest2: $(ODIR)/vbittest2.o $(ODIR)/validbits2.o  $(WFCOBJS)
+$(ODIR)/vbittest2: $(ODIR)/vbittest2.o $(ODIR)/validbits2.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
 $(ODIR)/tttest: $(ODIR)/tttest.o $(ODIR)/tt.o $(WFCOBJS)
@@ -113,7 +113,7 @@ $(ODIR)/pack_test: $(ODIR)/pack_test.o $(ODIR)/packed.o $(WFCOBJS)
 $(ODIR)/astr_test: $(ODIR)/astr_test.o $(ODIR)/astr.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
-$(ODIR)/comp_test: $(ODIR)/comp_v1.o $(ODIR)/comp_v2.o $(ODIR)/comp_test.o  $(WFCOBJS)
+$(ODIR)/comp_test: $(ODIR)/comp_v1.o $(ODIR)/comp_v2.o $(ODIR)/comp_test.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
 $(ODIR)/ref_byname: $(ODIR)/bynametest.o $(ODIR)/reference.o $(WFCOBJS)
@@ -128,9 +128,9 @@ $(ODIR)/inv_def_test: $(ODIR)/inv_def_test.o $(ODIR)/inv_def.o $(WFCOBJS)
 $(ODIR)/arraycheck: $(ODIR)/checkarray.o $(ODIR)/arraycheck.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
-$(ODIR)/bitsets: $(ODIR)/bitsets.o $(ODIR)/bittest1.o $(WFCOBJS)
+$(ODIR)/xint: $(ODIR)/xint.o $(ODIR)/xint_test.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 
-$(ODIR)/xint: $(ODIR)/xint.o $(ODIR)/xint_test.o $(WFCOBJS)
+$(ODIR)/initests: $(ODIR)/initest.o $(ODIR)/initests.o $(WFCOBJS)
 	$(CXX) $(CXXFLAGS) $^ -o $@ $(LIBS)
 

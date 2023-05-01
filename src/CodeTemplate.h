@@ -73,6 +73,7 @@ class CodeTemplate
 	std::string function, variant, code, comment, filename;
 	std::vector<std::string> includes, sysincludes, dependencies;
 	std::map<std::string,std::string> requirements, metadata;
+	bool forceinline = false, omitdecl = false;
 
 	/* valid requirements:
 	 * varintbits

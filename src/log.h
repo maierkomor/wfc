@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2020, Thomas Maier-Komor
+ *  Copyright (C) 2017-2022, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -36,5 +36,6 @@ void warn(const char *, ...) __attribute__((format(printf,1,2)));
 void error(const char *, ...) __attribute__((format(printf,1,2)));
 void fatal(const char *, ...) __attribute__((format(printf,1,2)));
 void ICE(const char *, ...) __attribute__((format(printf,1,2)));
+void log_cmdline(int argc, char **argv);
 
 #endif

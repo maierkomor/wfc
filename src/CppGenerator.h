@@ -59,7 +59,11 @@ class CppGenerator : public CodeGeneratorImpl
 	void writeEnumDefs(Generator &, Enum *);
 	void writeHelpers(std::vector<unsigned> &);
 
-	bool writeMember(Generator &, Field *,bool,bool = false);
+	void writeMemberDef(Generator &, Field *);
+	bool writeMemberCon(Generator &, Field *, bool);
+	void writeMemberInit(Generator &, Field *);
+	bool writeMember(Generator &, Field *, uint8_t, bool);
+	void writeBaseClass(Generator &G);
 	void writeCalcSize(Generator &out, Field *f);
 	void writeCalcSize(Generator &out, Message *m);
 	void writeClear(Generator &out, Field *f);
@@ -74,12 +78,13 @@ class CppGenerator : public CodeGeneratorImpl
 	void writeFunctions(Generator &G, Message *m);
 	void writeFunctions(Generator &out, Field *f);
 	void writeGet(Generator &out, Field *f);
+	void writeGetMember(Generator &G, Message *m);
 	void writeHas(Generator &, Field *f);
 	void writeHeaderDecls(Generator &, Field *);
 	void writeInlines(Generator &out, Field *f);
 	void writeInlines(Generator &out, Message *m);
 	void writeMaxSize(Generator &, Message *m);
-	void writeMembers(Generator &G, Message *m,bool);
+	void writeMembers(Generator &G, Message *m, uint8_t stage);
 	void writeMutable(Generator &out, Field *f);
 	void writePrint(Generator &out, Field *f);
 	void writePrint(Generator &out, Message *m);

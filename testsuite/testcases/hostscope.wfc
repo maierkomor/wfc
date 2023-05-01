@@ -3,7 +3,7 @@
  * LICENSE: GPLv3, see file LICENSE for details
  */
 
-option toASCII = "";
+//option toASCII = "";
 //option toWire = "";
 //option toMemory = "";
 //option toString = "";

@@ -1111,6 +1111,8 @@ void Field::setOption(const string &option, const string &value)
 		invvalue = value;
 		if (!defvalue.empty() && (invvalue != defvalue))
 			warn("If both default and unset are set, both values should be the same, otherwise clear and construction value will differ.");
+		else if (isString())
+			warn("Option unset should not be used for strings.");
 		else
 			checkRange(value.c_str(),"unset");
 	} else if (option == "packed") {
@@ -1232,7 +1234,7 @@ bool Field::setValidBit(int v)
 		valid_bit = -1;
 		return false;
 	}
-	if (ft_cptr == getType()) {
+	if (isString()) {
 		valid_bit = -1;
 		return false;
 	}

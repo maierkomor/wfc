@@ -1,3 +1,12 @@
+Release R2304:
+==============
+- enhanced base-class support
+- enhancement: reduced cases of superfluous function definitions
+- enhancement: default should have priority over unset
+- fix: wfc keywords must be usable as identifiers in compatibility mode
+- minor code optimizations
+- bugfixes
+
 Release R2211:
 ==============
 - fixes for sign-extended wire-format

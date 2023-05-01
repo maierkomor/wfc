@@ -95,7 +95,7 @@ static void writeEnum(fstream &out, Enum *e, unsigned ind)
 {
 	out << indent(ind) << "<Enum name=\"" << e->getName() << "\">\n";
 	++ind;
-	const map<string,int64_t> &nvp = e->getNameValuePairs();
+	const auto &nvp = e->getNameValuePairs();
 	for (auto i = nvp.begin(), e = nvp.end(); i != e; ++i)
 		out << indent(ind) << "<EnumValue name=\"" << i->first << "\" value=\"" << i->second << "\"/>\n";
 	--ind;

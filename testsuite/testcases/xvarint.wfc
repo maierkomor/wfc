@@ -2,7 +2,12 @@ option toASCII=toASCII;
 option withEqual=true;
 option withUnequal=true;
 
-option vi16 {
+option common {
+	wfclib=static;
+	BaseClass = "";
+}
+
+option vi16 : common {
 	varintbits=16;
 	intsize=16;
 	namespace = VI16;
@@ -11,7 +16,7 @@ option vi16 {
 	toASCII=toASCII;
 }
 
-option vi32 {
+option vi32 : common {
 	varintbits=32;
 	intsize=32;
 	namespace = VI32;
@@ -20,7 +25,7 @@ option vi32 {
 	toASCII=toASCII;
 }
 
-option vi64 {
+option vi64 : common {
 	intsize=64;
 	withEqual=true;
 	withUnequal=true;

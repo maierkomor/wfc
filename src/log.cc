@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2017-2020, Thomas Maier-Komor
+ *  Copyright (C) 2017-2022, Thomas Maier-Komor
  *
  *  This source file belongs to Wire-Format-Compiler.
  *
@@ -32,6 +32,8 @@ using namespace std;
 
 int MsgLog = STDOUT_FILENO;
 int DiagLog = STDOUT_FILENO;
+int ArgC = 0;
+char **ArgV = 0;
 //int DiagLog = STDERR_FILENO;
 
 bool Diags = false;
@@ -42,6 +44,13 @@ bool Debug = false;
 #endif
 
 static set<string> Errors, Warnings;
+
+
+void log_cmdline(int argc, char **argv)
+{
+	ArgC = argc;
+	ArgV = argv;
+}
 
 
 bool hadError()
@@ -163,8 +172,15 @@ void ICE(const char *m, ...)
 
 void fatal(const char *m, ...)
 {
-	char prefix[] = "fatal: ";
+	char prefix[] = "\nfatal: ";
 	char buf[1024];
+	for (int i = 0; i < ArgC; ++i) {
+		int n = snprintf(buf,sizeof(buf),"\narg %u: ",i);
+		if (-1 == write(DiagLog,buf,n))
+			perror("writing to diagnostic log");
+		if (-1 == write(DiagLog,ArgV[i],strlen(ArgV[i])))
+			perror("writing to diagnostic log");
+	}
 	va_list val;
 	va_start(val,m);
 	strcpy(buf,prefix);

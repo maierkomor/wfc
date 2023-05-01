@@ -405,11 +405,13 @@ void CodeTemplate::write_h(Generator &G, libmode_t m)
 	case libstatic:
 		break;
 	case libextern:
-		writeComment(G);
-		if (isTemplate())
-			G << code << "\n\n\n";
-		else
-			G << "extern " << string(c,end_of_decl(c)) << ";\n\n\n";
+		if (omitdecl == false) {
+			writeComment(G);
+			if (isTemplate())
+				G << code << "\n\n\n";
+			else
+				G << "extern " << string(c,end_of_decl(c)) << ";\n\n\n";
+		}
 		break;
 	default:
 		abort();
@@ -462,14 +464,14 @@ void CodeTemplate::write_cpp(Generator &G, libmode_t m)
 		return;
 	}
 	assert(isFunction());
-	if (m == libinline)
+	if ((m == libinline) || ((m == libextern) && forceinline))
 		return;
 	writeComment(G);
 	const char *c = code.c_str();
 	const char *eod = end_of_decl(c);
 	switch (m) {
 	case libstatic:
-		if (!isTemplate())
+		if ((!isTemplate()) && (omitdecl == false))
 			G << "static ";
 		G << code;
 		break;
