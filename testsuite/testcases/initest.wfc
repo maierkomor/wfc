@@ -1,0 +1,32 @@
+
+message M
+{
+	required int32 VI32 = 1		[ default = 1 ];
+	required sint32 SVI32 = 2	[ default = 2 ];
+	required int64 VI64 = 3		[ default = 3 ];
+	required sint64 SVI64 = 4	[ default = 4 ];
+	required double RDouble = 5	[ default = 5 ];
+	required bool B0 = 6		[ default = false ];
+	required bool B1 = 7		[ default = true ];;
+	required fixed8 FI8 = 8		[ default = 8 ];
+	required fixed16 FI16 = 9 	[ default = 9 ];
+	required fixed32 FI32 = 10	[ default = 10 ];
+	required fixed64 FI64 = 11	[ default = 11 ];
+	required string STR = 12	[ default = "12" ];
+	required string STRu = 13	[ unset = "", default="13" ];
+	required float Float = 14	[ default = 14 ];
+
+	optional int32 oVI32 = 21	[ default = 21 ];
+	optional sint32 oSVI32 = 22	[ default = 22 ];
+	optional int64 oVI64 = 23	[ default = 23 ];
+	optional double oDouble = 25	[ default = 25 ];
+	optional bool oB0 = 26		[ default = false ];
+	optional bool oB1 = 27		[ default = true ];;
+	optional fixed8 oFI8 = 28	[ default = 28 ];
+	optional fixed16 oFI16 = 29 	[ default = 29 ];
+	optional fixed32 oFI32 = 30	[ default = 30 ];
+	optional fixed64 oFI64 = 31	[ default = 31 ];
+	optional string oSTR = 32	[ default = "32" ];
+	optional string oSTRu = 33	[ unset = "", default="33" ];
+	required float oFloat = 34	[ default = 34 ];
+}
